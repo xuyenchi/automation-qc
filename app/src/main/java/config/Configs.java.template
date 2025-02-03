@@ -1,0 +1,58 @@
+package config;
+
+/**
+ * Create By: chaule
+ * Create At: 20Jun2023
+ * Notes:
+ */
+public class Configs {
+    /**
+     * Notes:
+     * Điểm khác biệt khi bắt element ở Android và iOS cho trường hợp List
+     * - Android: hiển thị bao nhiêu bắt được bấy nhiêu => element không hiển thị phải scroll down đến khi thấy trên UI mới click dc
+     * - iOS: show tất cả element có trong List => element không hiển thị trên UI vẫn get dc text & click dc
+     * Refer: https://saucelabs.com/blog/speed-native-appium-ios-test-execution-by-knowing-how-appium-works
+     */
+    public static final boolean isStartDevice = true;
+    public static final boolean isEmulator = false;
+    public static final boolean isMobileWeb = false;
+    public static final boolean isAndroid = false;
+
+    public static final Devices iPhone = Devices.Iphone13;
+    public static final Devices AndroidPhone = Devices.Emulator;
+    public static final Users user = Users.SBH_SYSTEM;
+
+    public static final boolean isStartAppiumServer = false;
+
+    // with appium 1.xx => isNotReset is not affect with iOS
+    // with appium 2 => isNotReset will reset data of Android & restart with iOS => fix iOS always TRUE
+    public static final boolean isNotReset = false;
+
+    public static final boolean isUploadImg = true;
+    public static final boolean isHookToLark = true;
+    public static final boolean isUploadFile = true;
+    public static final boolean onlyHookFailed = true;
+
+    /**
+     * Setting AWS
+     * Create by: Chaule
+     * Notes: Don't edit
+     */
+    public static final String aws_access_key_id = "AKIA5R4DTE6KGNNHOHVJ";
+    public static final String aws_secret_access_key = "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";
+    public static final String aws_namecard_bucket = "sbh-qc";
+    public static final String aws_url_return_prefix = "https://sbh-qc.s3.ap-southeast-1.amazonaws.com/";
+
+    public static final Languages defaultLanguage = Languages.VN;
+
+    public static final int ServerSleep = 2000;
+    public static final int ServerDeepSleep = 6000;
+
+    /**
+     * iOS
+     * Notes:
+     * - get Bundle ID: later
+     */
+    public static final String xcodeSigningId = "iPhone Developer";
+    public static final String xcodeOrgId = ""; // check README
+}

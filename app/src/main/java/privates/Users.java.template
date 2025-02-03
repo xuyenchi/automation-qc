@@ -1,0 +1,32 @@
+package privates;
+
+/**
+ * Create By: chaule
+ * Create At: 20Jun2023
+ * Notes:
+ */
+public enum Users {
+    CHAU("Chaule", "\uD83D\uDCA5","#370fe0"),
+    FINAN_SYSTEM("FINAN_SYSTEM", "\uD83D\uDC7B","#dbaf60"),
+    ;
+
+    private String larkID;
+    private String larkIcon;
+    private String larkColor;
+
+    private Users(String larkID, String larkIcon, String larkColor) {
+        this.larkIcon = larkIcon;
+        this.larkID = larkID;
+        this.larkColor = larkColor;
+    }
+
+    public String getLarkID() {
+        return this.larkID;
+    }
+    public String getLarkIcon() {
+        return this.larkIcon;
+    }
+    public String getLarkColor() {
+        return this.larkColor;
+    }
+}

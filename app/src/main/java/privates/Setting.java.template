@@ -1,0 +1,10 @@
+package privates;
+
+/**
+ * Create By: chaule
+ * Create At: 20Jun2023
+ * Notes:
+ */
+public class Setting {
+    public static final Users author = Users.FINAN_SYSTEM;
+}
