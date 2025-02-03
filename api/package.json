@@ -1,0 +1,18 @@
+{
+  "name": "autoapi",
+  "version": "1.0.0",
+  "description": "so ban hang",
+  "main": "",
+  "scripts": {
+    "start": "node upload_cmc_s3.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.677.0",
+    "aws": "^0.0.3-2",
+    "aws-sdk": "^2.1402.0",
+    "imgur": "^1.0.2",
+    "newman": "^6.2.1"
+  },
+  "author": "chaule",
+  "license": "ISC"
+}

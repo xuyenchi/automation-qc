@@ -1,0 +1,1188 @@
+{
+	"info": {
+		"_postman_id": "d47300b1-a16a-4963-a5a7-db429633f2a1",
+		"name": "fo_13_verify_to_sent_reminder",
+		"description": "### Testsuite: verify to sent invoice to buyer\n\n###### Testcase:\n\n1. Login with owner account\n    \n2. Get data\n    \n    1. Invoice / Get list invoice => get invoice without sent (sent_at == null)\n        \n    2. Reminder / Get list reminder => get all reminder had invoice_id at step 2.a.\n        \n3. Sent invoice\n    \n    1. unhappy case: finan_status = draft => failed\n        \n    2. unhappy case: finan_status = paid => failed\n        \n    3. happy case: finan_status = unsent =>\n        \n    4. happy case: finan_status = sent =>\n        \n    5. happy case: finan_status = partial_paid =>\n        \n    6. happy case: finan_status = un_paid =>\n        \n    7. happy case: finan_status = overdue =>\n        \n4. Check data\n    \n    1. Invoice / Get invoice detail => update sent_at\n        \n    2. email-google / get list invoice sent to buyer => had new data & data correctly\n        \n\n###### Note:\n\n- sent_at sẽ dc update theo giá trị mới nhất => check reminder\n    \n- 3.c. \\~ 3.g. will random case to daily run",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 06 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        postman.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-locale",
+								"value": "<string>",
+								"description": "locale",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"    postman.setNextRequest(\"get_current_business\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "get_current_business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"Current business info: \", jsData.data);",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.current_business.list_branch[0].id;",
+									"        pm.environment.set(\"C-branch_id\",branch_id);",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    let payment_method_list = [];",
+									"    for(let i in jsData.data.list_payment_method){",
+									"        if(jsData.data.list_payment_method[i].is_active){",
+									"            payment_method_list[payment_method_list.length] = jsData.data.list_payment_method[i];",
+									"        }",
+									"    }",
+									"",
+									"    pm.test(\"Got payment_method_list \" + payment_method_list.length, function () {",
+									"        pm.expect(payment_method_list.length > 0).to.be.true;",
+									"    });",
+									"    pm.environment.set(\"C-payment_method_list\",payment_method_list);",
+									"    ",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_invoice\"); // get_list_invoice",
+									"} else {",
+									"    console.log(\"Can't get business detail, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/business/get-current",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"business",
+								"get-current"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "invoice",
+			"item": [
+				{
+					"name": "get_list_invoice",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let invoice_obj = null;",
+									"    let isGot = false;",
+									"    let randomCase = 1 //getRandomInt(1,7);",
+									"    loop:",
+									"    for(let item in jsData.data){",
+									"        if(!jsData.data[item].note.includes(\"hasReminder\")){",
+									"            switch(randomCase){",
+									"                case 1:",
+									"                    console.log(\"get invoice with final_status is unsent\");",
+									"                    if(jsData.data[item].final_status == \"unsent\"){",
+									"                        isGot = true;",
+									"                        invoice_obj = jsData.data[item];",
+									"                        break loop;",
+									"                    }",
+									"                    break;",
+									"                case 2:",
+									"                    console.log(\"get invoice with final_status is sent\");",
+									"                    if(jsData.data[item].final_status == \"sent\"){",
+									"                        isGot = true;",
+									"                        invoice_obj = jsData.data[item];",
+									"                        break loop;",
+									"                    }",
+									"                    break;",
+									"                case 3:",
+									"                    console.log(\"get invoice with final_status is partial_paid\");",
+									"                    if(jsData.data[item].final_status == \"partial_paid\"){",
+									"                        isGot = true;",
+									"                        invoice_obj = jsData.data[item];",
+									"                        break loop;",
+									"                    }",
+									"                    break;",
+									"                case 4:",
+									"                    console.log(\"get invoice with final_status is unpaid\");",
+									"                    if(jsData.data[item].final_status == \"unpaid\"){",
+									"                        isGot = true;",
+									"                        invoice_obj = jsData.data[item];",
+									"                        break loop;",
+									"                    }",
+									"                    break;",
+									"                case 5:",
+									"                    console.log(\"get invoice with final_status is overdue\");",
+									"                    if(jsData.data[item].final_status == \"overdue\"){",
+									"                        isGot = true;",
+									"                        invoice_obj = jsData.data[item];",
+									"                        break loop;",
+									"                    }",
+									"                    break;",
+									"                case 6:",
+									"                    console.log(\"get invoice with final_status is draft\");",
+									"                    if(jsData.data[item].final_status == \"draft\"){",
+									"                        isGot = true;",
+									"                        invoice_obj = jsData.data[item];",
+									"                        break loop;",
+									"                    }",
+									"                    break;",
+									"                case 7:",
+									"                    console.log(\"get invoice with final_status is fully_paid\");",
+									"                    if(jsData.data[item].final_status == \"fully_paid\"){",
+									"                        isGot = true;",
+									"                        invoice_obj = jsData.data[item];",
+									"                        break loop;",
+									"                    }",
+									"                    break;",
+									"                default:",
+									"                    console.log(\"missing flow\");",
+									"                    break;",
+									"            }",
+									"            ",
+									"        }",
+									"    }",
+									"    console.log(\"Got invoice_obj:\",invoice_obj);",
+									"    pm.environment.set(\"C-invoice_obj\",invoice_obj);",
+									"",
+									"    if(page >= total_pages || isGot){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got invoice to sent email!\", function () {",
+									"                    pm.expect(isGot).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_list_reminder_of_invoice\"); // get_list_reminder_of_invoice",
+									"                break;",
+									"            case 4:",
+									"                let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"                console.log(\"invoice_id: \" + invoice_obj.invoice_id);",
+									"",
+									"                pm.test(\"Total invoice increase 1: \" + list_invoice.length, function () {",
+									"                    pm.expect(list_invoice.length == old_list_invoice.length + 1).to.be.true;",
+									"                });",
+									"",
+									"                let isFound = false;",
+									"                for(let i in list_invoice){",
+									"                    // console.log(\"list_invoice[i].invoice_id: \" + list_invoice[i].invoice_id);",
+									"                    if(list_invoice[i].invoice_id == invoice_obj.invoice_id){",
+									"                        isFound = true;",
+									"                        pm.test(\"entry_code of invoice correctly! \" + invoice_obj.entry_code, function () {",
+									"                            pm.expect(invoice_obj.entry_code == list_invoice[i].entry_code).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"sub_total_amount of invoice correctly! \" + invoice_obj.sub_total_amount, function () {",
+									"                            pm.expect(invoice_obj.sub_total_amount == list_invoice[i].sub_total_amount).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"contact_id of invoice correctly! \" + invoice_obj.contact_id, function () {",
+									"                            pm.expect(invoice_obj.contact_id == list_invoice[i].contact_id).to.be.true;",
+									"                        });",
+									"",
+									"                        // pm.test(\"email of invoice correctly! \" + invoice_obj.email, function () {",
+									"                        //     pm.expect(invoice_obj.email == list_invoice[i].email).to.be.true;",
+									"                        // });",
+									"",
+									"                        pm.test(\"created_order_at of invoice correctly! \" + invoice_obj.created_order_at, function () {",
+									"                            pm.expect(invoice_obj.created_order_at.substring(0,19) == list_invoice[i].value_at.substring(0,19)).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"due_at of invoice correctly! \" + invoice_obj.due_at, function () {",
+									"                            pm.expect(invoice_obj.due_at.substring(0,19) == list_invoice[i].due_at.substring(0,19)).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"note of invoice correctly! \" + invoice_obj.note, function () {",
+									"                            pm.expect(invoice_obj.note == list_invoice[i].note).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"tax_type of invoice correctly! \" + invoice_obj.tax_type, function () {",
+									"                            pm.expect(invoice_obj.tax_type == list_invoice[i].tax_type).to.be.true;",
+									"                        });",
+									"",
+									"                        // pm.test(\"taxes of invoice correctly! \" + invoice_obj.taxes, function () {",
+									"                        //     pm.expect(JSON.stringify(invoice_obj.taxes) == JSON.stringify(list_invoice[i].taxes)).to.be.true;",
+									"                        // });",
+									"",
+									"                        pm.test(\"payment_menthod of invoice correctly! \" + invoice_obj.payment_menthod, function () {",
+									"                            pm.expect(JSON.stringify(invoice_obj.payment_menthod) == JSON.stringify(list_invoice[i].payment_menthod)).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"status of invoice correctly! \" + invoice_obj.status, function () {",
+									"                            pm.expect(invoice_obj.status == list_invoice[i].status).to.be.true;",
+									"                        });",
+									"",
+									"                        // final_status",
+									"                        if(testcase == 6){",
+									"                            let ranTimeCase = pm.environment.get(\"C-ranTimeCase\");",
+									"                            if(ranTimeCase == 2 || ranTimeCase == 3){",
+									"                                pm.test(\"final_status of invoice is unsent\", function () {",
+									"                                    pm.expect(\"unsent\" == list_invoice[i].final_status).to.be.true;",
+									"                                });",
+									"                            } else {",
+									"                                pm.test(\"final_status of invoice is unsent\", function () {",
+									"                                    pm.expect(\"overdue\" == list_invoice[i].final_status).to.be.true;",
+									"                                });",
+									"                            }",
+									"                        } else {",
+									"                            pm.test(\"final_status of invoice correctly! \" + invoice_obj.status, function () {",
+									"                                pm.expect(invoice_obj.status == list_invoice[i].final_status).to.be.true;",
+									"                            });",
+									"                        }",
+									"",
+									"                        // pm.test(\"discounts of invoice correctly! \" + invoice_obj.discounts, function () {",
+									"                        //     pm.expect(JSON.stringify(invoice_obj.discounts) == JSON.stringify(list_invoice[i].discounts)).to.be.true;",
+									"                        // });",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found new invoice\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                // xoá old_list_invoice cũ",
+									"                pm.environment.unset(\"C-old_list_invoice\");",
+									"",
+									"                postman.setNextRequest(\"get_invoice_detail\"); // get_invoice_detail",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more product\");",
+									"        postman.setNextRequest(\"get_list_invoice\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list product, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 20;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-order/api/v1/invoice/get-list?business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-order",
+								"api",
+								"v1",
+								"invoice",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_invoice_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"// switch(testcase){",
+									"//     case 2:",
+									"//         invoice_obj = pm.environment.get(\"C-create_reminder_invoice\");",
+									"//         break;",
+									"//     case 4:",
+									"//         invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"//         break;",
+									"//     default:",
+									"//         console.log(\"Missing flow\");",
+									"//         break;",
+									"// }",
+									"let invoice_id = invoice_obj.id;",
+									"console.log(\"view detail invoice: \", invoice_obj);",
+									"",
+									"pm.environment.set(\"C-invoice_id\",invoice_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    // console.log(\"Debug: \",jsData);",
+									"    ",
+									"    switch(testcase){",
+									"        case 4:",
+									"            let sent_obj = pm.environment.get(\"C-sent_obj\");",
+									"",
+									"            pm.test(\"sent_at != null (sent for buyer)\", function () {",
+									"                console.log(\"sent_at: \" + jsData.data.sent_at);",
+									"                console.log(\"description: \" + jsData.data.description);",
+									"                pm.expect(jsData.data.sent_at != null).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"Data correctly!!!\", function () {",
+									"                console.log(\"act: \" + jsData.data.sent_at);",
+									"                console.log(\"expected: \" + sent_obj.sent_at);",
+									"                pm.expect(jsData.data.sent_at.substring(0,17) == sent_obj.sent_at.substring(0,17)).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_list_invoice_sent_to_buyer_in_today\"); // get_list_invoice_sent_to_buyer_in_today",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }    ",
+									"} else {",
+									"    console.log(\"Can't get invoice detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-order/api/v1/invoice/get-one/{{C-invoice_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-order",
+								"api",
+								"v1",
+								"invoice",
+								"get-one",
+								"{{C-invoice_id}}"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "sent_invoice_to_buyer",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * bắt buộc dùng mail tranvy991020@gmail.com để call API (build from google app script) check đã thực sự gửi về mail chưa cùng 1 số data basic",
+									" */",
+									"",
+									"let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"let amount = invoice_obj.total_amount;",
+									"let customer = invoice_obj.contact_info.phone_number;",
+									"",
+									"let current = new Date();",
+									"",
+									"let payload = {",
+									"    \"id\": pm.environment.get(\"C-invoice_id\"),",
+									"    \"description\": \"[API] this is not important\",",
+									"    \"emails\": [\"tranvy991020@gmail.com\"],",
+									"    \"title\": \"Thanh toán hóa đơn \" + amount + \" từ \" + customer,",
+									"    \"business_id\": parseInt(pm.environment.get(\"C-business_id\"))",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"",
+									"payload.sent_at = current.toISOString();",
+									"pm.environment.set(\"C-sent_obj\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Debug:\",jsData);",
+									"",
+									"let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"switch(invoice_obj.final_status){",
+									"    case \"unsent\":",
+									"    case \"sent\":",
+									"    case \"partial_paid\":",
+									"    case \"un_paid\":",
+									"    case \"overdue\":",
+									"        pm.test(\"Status code is 200\", function () {",
+									"            pm.response.to.have.status(200);",
+									"        });",
+									"",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"get_invoice_detail\"); // get_invoice_detail",
+									"        break;",
+									"    case \"fully_paid\":",
+									"    case \"draft\":",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"",
+									"        console.log(\"--------- End Testsuite 13 -------------\");",
+									"        postman.setNextRequest(null);",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow, end test\");",
+									"        postman.setNextRequest(null);",
+									"        break;",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-order/api/v1/invoice/send-email",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-order",
+								"api",
+								"v1",
+								"invoice",
+								"send-email"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "reminder",
+			"item": [
+				{
+					"name": "get_list_reminder_of_invoice",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"// switch(testcase){",
+									"//     case 2:",
+									"//         invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"//         break;",
+									"//     case 4:",
+									"//         invoice_obj = pm.environment.get(\"C-check_invoice\");",
+									"//         break;",
+									"//     default:",
+									"//         break;",
+									"// }",
+									"let invoice_id = invoice_obj.id;",
+									"// console.log(\"view detail invoice: \", invoice_obj);",
+									"pm.environment.set(\"C-invoice_id\",invoice_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    console.log(\"current: \",jsData);",
+									"    let total_reminder = null;",
+									"    try {",
+									"        total_reminder = jsData.data.length;",
+									"    } catch {",
+									"        console.log(\"Missing data\");",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got total reminder \" + total_reminder, function () {",
+									"                pm.expect(total_reminder != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-total_reminder\",total_reminder);",
+									"",
+									"            testcase++;",
+									"            pm.environment.set(\"C-testcase\",testcase);",
+									"            postman.setNextRequest(\"sent_invoice_to_buyer\"); // sent_invoice_to_buyer",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list reminder of invoice, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-order/api/v1/reminder/get-list?object_id={{C-invoice_id}}&object_type=invoice&page=1&page_size=20",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-order",
+								"api",
+								"v1",
+								"reminder",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "object_id",
+									"value": "{{C-invoice_id}}"
+								},
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}",
+									"disabled": true
+								},
+								{
+									"key": "object_type",
+									"value": "invoice"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "email-google",
+			"item": [
+				{
+					"name": "get_list_invoice_sent_to_buyer_in_today",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * Note: only call invoice sent to mail: tranvy991020@gmail.com",
+									" */",
+									"setTimeout(function(){}, 5000);",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    let sent_obj = pm.environment.get(\"C-sent_obj\");",
+									"    console.log(\"sent_obj: \",sent_obj);",
+									"    let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"    console.log(\"invoice_obj: \",invoice_obj);",
+									"",
+									"    console.log(\"Debug: \",jsData);",
+									"    let isFound = false;",
+									"    for(let i in jsData.data){",
+									"        if(jsData.data[i].invoice_number == invoice_obj.order_code){",
+									"            isFound = true;",
+									"            let invoice_due_at = new Date(invoice_obj.due_at);",
+									"            let invoie_display_due_at = String(invoice_due_at.getDate()).padStart(2, '0')+'-'+String((invoice_due_at.getMonth()+1)).padStart(2, '0')+'-'+invoice_due_at.getFullYear();",
+									"            pm.test(\"due_date correctly! \" + invoie_display_due_at, function () {",
+									"                pm.expect(jsData.data[i].due_date.substring(0,17) == invoie_display_due_at).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"payment_due_amount correctly!\", function () {",
+									"                pm.expect(jsData.data[i].due_amount == invoice_obj.payment_due_amount).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"customer info correctly!\", function () {",
+									"                pm.expect(jsData.data[i].customer_name == invoice_obj.contact_info.contact_name).to.be.true;",
+									"            });",
+									"",
+									"            // pm.test(\"sent_at is valid (max 5min)!\", function () { // will edit max after apply best practice to retry",
+									"            //     let expected = new Date(sent_obj.sent_at);",
+									"            //     let act = new Date(jsData.data[i].sent_at);",
+									"            //     pm.expect(Math.floor(expected.getTime()/1000) <= Math.floor(act.getTime()/1000) &&  Math.floor(act.getTime()/1000) < Math.floor(expected.getTime()/1000) + 5*60).to.be.true;",
+									"            // });",
+									"            break;",
+									"        }",
+									"    }",
+									"",
+									"    pm.test(\"Had sent invoice to buyer\", function () {",
+									"        pm.expect(isFound).to.be.true;",
+									"    });",
+									"",
+									"    console.log(\"------------ End Testsuite 13 ---------------\");",
+									"    postman.setNextRequest(null);",
+									"} else {",
+									"    console.log(\"Can't call google app script to check email, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "https://script.google.com/macros/s/AKfycbxd29ZMKWJYiYedt9VdClcVlhmjvTFTuKCDQkCt9wtemZlMsKUyg0OiMCtrNiEenYDx/exec",
+							"protocol": "https",
+							"host": [
+								"script",
+								"google",
+								"com"
+							],
+							"path": [
+								"macros",
+								"s",
+								"AKfycbxd29ZMKWJYiYedt9VdClcVlhmjvTFTuKCDQkCt9wtemZlMsKUyg0OiMCtrNiEenYDx",
+								"exec"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":true,",
+					"    \"limit_page\":5,",
+					"    \"timeout\":12000, // miliseconds => timeout to call API",
+					"    \"is_buyer_gen\":false,",
+					"    \"test_payment_method\":\"va_galaxy\" // bank_transfer, viet_qr_pro_mb, va_galaxy",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    switch(request_api.method){",
+					"        case \"PUT\":",
+					"            curl = \"curl --location --request PUT \";",
+					"            break;",
+					"        case \"PATCH\":",
+					"            curl = \"curl --location --request PATCH \";",
+					"            break;",
+					"        case \"DELETE\":",
+					"            curl = \"curl --location --request DELETE \";",
+					"            break;",
+					"        default:",
+					"            curl = \"curl --location \";",
+					"            break;",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.length > 0){",
+					"            curl += \"? \";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\": case \"PATCH\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}

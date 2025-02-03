@@ -1,0 +1,24 @@
+# change filepath, filename, environment before run
+filepath=app/warehouse
+filename=sbh_6_check_stock_received_product_n_ingredient
+environment=sbh_stg
+
+##########################################
+currentDate=$(date '+%Y-%m-%d')
+timestamp=$(date +%s)
+dir=test_report
+if [ ! -d $dir ]; then
+    mkdir -p $dir;
+fi;
+
+# change testfile.json to your filename (ex: app/sbh_12_check_create_new_stocktake_with_product.postman_collection.json)
+newman run ${filepath}/${filename}.postman_collection.json -e config/${environment}.postman_environment.json --insecure -x >$dir/${filename}_${timestamp}.log -r lark,cli
+./lark_notifier.sh "Log here: https://sbh-qc.s3.ap-southeast-1.amazonaws.com/auto-test-api-output/${currentDate}/${filename}_${timestamp}.log"
+
+# upload file to S3
+npm start
+
+#remove .log file
+for filename in ./test_report/*.log; do
+  rm $filename
+done

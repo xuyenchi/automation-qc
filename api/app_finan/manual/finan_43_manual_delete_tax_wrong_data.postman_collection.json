@@ -1,0 +1,744 @@
+{
+	"info": {
+		"_postman_id": "b40d06a5-4cd6-4cc2-95df-053eade35c83",
+		"name": "finan_43_manual_delete_tax_wrong_data",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "verify_email_or_phone_number",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * currently, manual to create account pwd & use charles to get it",
+									" * default pwd created: 21112007 (prod with default account & no need pwd)",
+									" */",
+									"",
+									"let email = pm.environment.get(\"SER-email\");",
+									"let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"",
+									"console.log(\"--- Start Testsuite 23 ---\");",
+									"let testcase = 1;",
+									"",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let isPhone = true;",
+									"",
+									"let payload;",
+									"if(isPhone){",
+									"    console.log(\"login with phone_number: \" + phone_number);",
+									"    payload = {",
+									"        \"phone_number\": phone_number",
+									"    }",
+									"} else {",
+									"    console.log(\"login with email: \" + email);",
+									"    payload = {",
+									"        \"email\": email",
+									"    }",
+									"}",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);",
+									"pm.environment.set(\"C-isPhone\",isPhone);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.is_existed && jsData.data.has_password){",
+									"        postman.setNextRequest(\"login_with_pwd\");",
+									"    } else if(jsData.data.is_existed) {",
+									"        console.log(\"This account doesn't create pwd, please manual create!!!\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        console.log(\"THIS ACCOUNT IS NOT EXISTED IN SYSTEM, WILL MANUAL CREATE IT\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-user/api/v1/auth/account/verify",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_with_pwd",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let crypto = require('crypto-js');",
+									"",
+									"// const algorithm = \"aes-256-gcm\";",
+									"// const IV_LEN = 12;",
+									"// const AUTH_TAG_LEN = 16;",
+									"// const SECRET_KEY = \"7dQ0HwRI5okvwAK0WzxaW6ABFncjeu1E\";",
+									"",
+									"// function encrypt(message) {",
+									"//   const iv = Buffer.from(crypto.randomBytes(IV_LEN));",
+									"//   const cipher = crypto.createCipheriv(algorithm, SECRET_KEY, iv, {",
+									"//     authTagLength: AUTH_TAG_LEN,",
+									"//   });",
+									"//   const encryptedData = Buffer.concat([cipher.update(message), cipher.final()]);",
+									"//   const authTag = cipher.getAuthTag();",
+									"//   const raw = Buffer.concat([iv, encryptedData, authTag]).toString(\"hex\");",
+									"//   return raw;",
+									"// }",
+									"",
+									"// const pwd = \"21112007\";",
+									"// // var superSecretEncrypted = CryptoJS.AES.encrypt(pwd, SECRET_KEY);",
+									"",
+									"// let pwd_enc = encrypt(pwd);",
+									"// console.log(\"pwd_enc: \" + pwd_enc);",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"let isPhone = pm.environment.get(\"C-isPhone\");",
+									"",
+									"let verify_payload = JSON.parse(pm.environment.get(\"C-payload\"));",
+									"",
+									"let payload;",
+									"let version = pm.environment.get(\"x-current-version\");",
+									"if(isPhone){",
+									"    payload = {",
+									"        \"phone_number\": verify_payload.phone_number,",
+									"        \"pwd\": pm.environment.get(\"pwd\"),",
+									"        \"platform\": \"gtapp\",",
+									"        \"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",",
+									"        \"app_version\": version,",
+									"        \"device_name\": \"iPhone\"",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"email\": verify_payload.email,",
+									"        \"pwd\": pm.environment.get(\"pwd\"),",
+									"        \"platform\": \"gtapp\",",
+									"        \"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",",
+									"        \"app_version\": version,",
+									"        \"device_name\": \"iPhone\"",
+									"    }",
+									"}",
+									"console.log(\"debug: \", payload);",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id); // ",
+									"",
+									"        let testcase = pm.environment.get(\"C-testcase\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"get_branch_id\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-user/api/v1/auth/account/login",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_branch_id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.id;",
+									"    } catch {",
+									"        console.log(\"Can't get branch_id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch_id\", function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    if(branch_id != null){",
+									"        pm.environment.set(\"C-business_id\",branch_id);",
+									"        postman.setNextRequest(\"get_list_tax\"); // ",
+									"    } else {",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-business/api/v1/branch/detail/{{C-business_id}}",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"branch",
+								"detail",
+								"{{C-business_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "tax",
+			"item": [
+				{
+					"name": "get_list_tax",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_tax, old_list_tax;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_tax = pm.environment.get(\"C-list_tax\");",
+									"            if(!list_tax){",
+									"                list_tax = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_tax = pm.environment.get(\"C-old_list_tax\");",
+									"            if(!old_list_tax){",
+									"                old_list_tax = pm.environment.get(\"C-list_tax\");",
+									"                pm.environment.unset(\"C-list_tax\");",
+									"                pm.environment.set(\"C-old_list_tax\",old_list_tax);",
+									"            }",
+									"",
+									"            list_tax = pm.environment.get(\"C-list_tax\");",
+									"            if(!list_tax){",
+									"                list_tax = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    let list_wrong_tax = [];",
+									"    for(let item in jsData.data){",
+									"        list_tax[list_tax.length] = {",
+									"            \"tax_id\":jsData.data[item].id,",
+									"            \"name\":jsData.data[item].name,",
+									"            \"rate\":jsData.data[item].rate,",
+									"            \"description\":jsData.data[item].description,",
+									"            \"account_id\":jsData.data[item].accountID,",
+									"            \"identify_id\":jsData.data[item].identify_id,",
+									"            \"displays_id\":jsData.data[item].displays_id",
+									"        }",
+									"",
+									"        // add condition to get wrong tax",
+									"        if(jsData.data[item].rate < 0 || jsData.data[item].rate > 100 || jsData.data[item].name == \"\"){",
+									"            list_wrong_tax[list_wrong_tax.length] = jsData.data[item].id;",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_wrong_tax\",list_wrong_tax);",
+									"    pm.environment.set(\"C-list_tax\",list_tax);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all wrong tax! \" + list_wrong_tax.length, function () {",
+									"                    pm.expect(list_wrong_tax.length > 0).to.be.true;",
+									"                });",
+									"",
+									"                if(list_wrong_tax.length > 0){",
+									"                    postman.setNextRequest(\"delete_tax\"); // delete_tax",
+									"                } else {",
+									"                    console.log(\"Nothing tax with wrong data!\");",
+									"                    postman.setNextRequest(null); // delete_tax",
+									"                }",
+									"                break;",
+									"            case 4:",
+									"                let tax_obj = pm.environment.get(\"C-tax_obj\");",
+									"",
+									"                pm.test(\"Total tax increase 1\", function () {",
+									"                    pm.expect(list_tax.length == old_list_tax.length + 1).to.be.true;",
+									"                });",
+									"",
+									"                let isFound = false;",
+									"                for(let i in jsData.data){",
+									"                    if(jsData.data[i].id == tax_obj.tax_id){",
+									"                        isFound = true;",
+									"                        pm.test(\"name of tax correctly! \" + tax_obj.name, function () {",
+									"                            pm.expect(tax_obj.name == jsData.data[i].name).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"phone_number of tax correctly! \" + tax_obj.phone_number, function () {",
+									"                            pm.expect(tax_obj.phone_number == jsData.data[i].phone_number).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"email of tax correctly! \" + tax_obj.email, function () {",
+									"                            pm.expect(tax_obj.email == jsData.data[i].email).to.be.true;",
+									"                        });",
+									"",
+									"                        // pm.test(\"birthday of tax correctly! \" + tax_obj.birthday, function () {",
+									"                        //     pm.expect(tax_obj.birthday == jsData.data[i].birthday).to.be.true;",
+									"                        // });",
+									"",
+									"                        pm.test(\"gender of tax correctly! \" + tax_obj.gender, function () {",
+									"                            pm.expect(tax_obj.gender == jsData.data[i].gender).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"address_info of tax correctly! \" + tax_obj.address_info, function () {",
+									"                            pm.expect(tax_obj.address_info == jsData.data[i].address_info).to.be.true;",
+									"                        });",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found new tax\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_tax_detail\"); //get_tax_detail",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more tax\");",
+									"        postman.setNextRequest(\"seller_view_list_tax\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list tax, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/tax/list?branch_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&option=&status=",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"tax",
+								"list"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "option",
+									"value": ""
+								},
+								{
+									"key": "status",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_tax_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \", jsData);",
+									"",
+									"    let list_wrong_tax = pm.environment.get(\"C-list_wrong_tax\");",
+									"    let fix_pos = pm.environment.get(\"C-fix_pos\");",
+									"",
+									"    if(fix_pos < (list_wrong_tax.length - 1)){",
+									"        fix_pos++;",
+									"        pm.environment.set(\"C-fix_pos\",fix_pos);",
+									"        postman.setNextRequest(\"\"); // delete_tax",
+									"    } else {",
+									"        pm.environment.unset(\"C-fix_pos\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get tax detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}​​/finan-ledger​/api​/v1/tax​/detail​/{{C-tax_id}}?branch_id={{C-business_id}}",
+							"host": [
+								"{{finan_base_url}}​​"
+							],
+							"path": [
+								"finan-ledger​",
+								"api​",
+								"v1",
+								"tax​",
+								"detail​",
+								"{{C-tax_id}}"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete_tax",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let list_wrong_tax = pm.environment.get(\"C-list_wrong_tax\");",
+									"let fix_pos = pm.environment.get(\"C-fix_pos\");",
+									"if(!fix_pos){",
+									"    fix_pos = 0;",
+									"    pm.environment.set(\"C-fix_pos\",fix_pos);",
+									"} ",
+									"",
+									"pm.environment.set(\"C-tax_id\",list_wrong_tax[fix_pos]);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"jsData: \" + JSON.stringify(jsData));",
+									"    ",
+									"    postman.setNextRequest(\"get_tax_detail\"); // get_tax_detail",
+									"} else {",
+									"    console.log(\"jsData: \" + JSON.stringify(jsData));",
+									"    console.log(\"Can't delete tax, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/tax/delete/{{C-tax_id}}",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"tax",
+								"delete",
+								"{{C-tax_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

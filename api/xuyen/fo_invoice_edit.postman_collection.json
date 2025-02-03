@@ -1,0 +1,1511 @@
+{
+	"info": {
+		"_postman_id": "7f25518f-2950-49ed-bbd6-59aa05bd3fb6",
+		"name": "fo_invoice_edit",
+		"description": "1. Login\n    \n2. Get info\n    \n    1. Get list invoice => save obj edit\n        \n    2. Get list customer\n        \n    3. Get list product\n        \n    4. Get lis tax\n        \n    \n3. Update invoice",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17535207",
+		"_collection_link": "https://warped-spaceship-122945.postman.co/workspace/Learn_API_Testing~870ffb9e-5962-40b3-8d91-530fbf3c4242/collection/17535207-7f25518f-2950-49ed-bbd6-59aa05bd3fb6?action=share&source=collection_link&creator=17535207"
+	},
+	"item": [
+		{
+			"name": "login",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let payload = {",
+							"    \"phone_number\": \"+84327007116\",",
+							"    \"email\": \"\",",
+							"    \"username\": \"\",",
+							"    \"encrypted_password\": \"658969975cdd27957711aca7441cb6dfee716275b79fc2ee0a8953ea95f0bc713b4a\",",
+							"    \"device_info\": {",
+							"        \"id\": \"2e1d16e4-d289-4aba-8ddf-f625a0615b893\",",
+							"        \"name\": \"desktop\",",
+							"        \"os\": \"MacOS\"",
+							"    },",
+							"    \"app_version\": \"1.1.1\",",
+							"    \"platform_key\": \"desktop-web\"",
+							"}",
+							"pm.environment.set(\"payload\", JSON.stringify(payload));",
+							"",
+							"let testcase = 1;",
+							"pm.environment.set(\"testcase\", testcase);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let responseJson = pm.response.json();",
+							"pm.environment.set(\"X-token\",responseJson.data.access_token);",
+							"",
+							"pm.test('Verify Status code is 200', function () {",
+							"pm.response.to.have.status(200);",
+							"});",
+							"",
+							"let testcase = 2;",
+							"pm.environment.set(\"testcase\", testcase);",
+							"",
+							"postman.setNextRequest(\"get_list_transaction\");",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,vi;q=0.8,eu;q=0.7"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					},
+					{
+						"key": "origin",
+						"value": "https://id-stg.finan.one"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://id-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "x-locale-code",
+						"value": "en_US"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "UTC+07:00"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{{payload}}"
+				},
+				"url": {
+					"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+					"host": [
+						"{{finone_url}}"
+					],
+					"path": [
+						"fo-user",
+						"api",
+						"v1",
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get_invoice_list_all",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let page = pm.environment.get(\"page\");",
+							"if(!page)",
+							"    page = 1;",
+							"pm.environment.set(\"page\", page);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"function getRandomInt(min, max) {",
+							"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+							"}",
+							"",
+							"let responseJson = pm.response.json();",
+							"let page = pm.environment.get(\"page\");",
+							"let total_pages = responseJson.meta.total_pages;",
+							"let testcase = pm.environment.get(\"testcase\");",
+							"",
+							"switch(testcase){",
+							"    case 2:",
+							"        let list_invoice = pm.environment.get(\"list_invoice\");",
+							"        if(!list_invoice){",
+							"            list_invoice = [];",
+							"        }",
+							"        for(let i in responseJson.data){",
+							"            list_invoice.push(responseJson.data[i]);",
+							"        }",
+							"        console.log(\"list_invoice:\", list_invoice);",
+							"        if(page >= total_pages){",
+							"            pm.environment.unset(\"page\");",
+							"            let index = getRandomInt(0, list_invoice.length - 1);",
+							"            console.log(\"index:\", index);",
+							"            let invoice_edited = list_invoice[index];",
+							"            pm.environment.set(\"invoice_edited\", invoice_edited);",
+							"            console.log(\"invoice_edited:\", invoice_edited);",
+							"            postman.setNextRequest(\"\");",
+							"        }",
+							"        else{",
+							"            page++;",
+							"            pm.environment.set(\"page\", page);",
+							"            postman.setNextRequest(\"get_invoice_list_all\");",
+							"        }",
+							"        break;",
+							"    case 4:",
+							"        break;",
+							"    default:",
+							"        break;",
+							"",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
+					},
+					{
+						"key": "x-locale",
+						"value": "vi"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "Asia/Ho_Chi_Minh"
+					},
+					{
+						"key": "x-platform-key",
+						"value": "desktop-web"
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer {{X-token}}"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Referer",
+						"value": "https://book-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					}
+				],
+				"url": {
+					"raw": "https://stg-api.finan.one/fo-order/api/v1/invoice/get-list?page={{page}}&page_size=10&search=&status=&payment_status=&contact_id=&business_id=305",
+					"protocol": "https",
+					"host": [
+						"stg-api",
+						"finan",
+						"one"
+					],
+					"path": [
+						"fo-order",
+						"api",
+						"v1",
+						"invoice",
+						"get-list"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "{{page}}"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						},
+						{
+							"key": "search",
+							"value": ""
+						},
+						{
+							"key": "status",
+							"value": ""
+						},
+						{
+							"key": "payment_status",
+							"value": ""
+						},
+						{
+							"key": "contact_id",
+							"value": ""
+						},
+						{
+							"key": "business_id",
+							"value": "305"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get_invoice_detail",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,vi;q=0.8,eu;q=0.7"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJGTyBVc2VyIiwic3ViIjoiNTFmZTE3N2MtNDBmZS00MzJlLWI3OTktMWZhNjE0MjEwN2M4IiwiYXVkIjpbIkZPIFVzZXIiXSwiZXhwIjoxNzI4MDk2NDU0LCJuYmYiOjE3MjU1MDQ0NTQsImlhdCI6MTcyNTUwNDQ1NCwib3JnX2lkIjoiMzA1IiwiYnVzaW5lc3NfaWQiOiIzMDUiLCJkZXZpY2VfaWQiOiI3Y2RjYmEyNi1jZDUzLTRjZWMtOTQ1Ni0zODY4NjEwNDI4N2IiLCJwbGF0Zm9ybV9rZXkiOiJ3ZWItYm9vayIsInVzZXJfaWQiOiI1MWZlMTc3Yy00MGZlLTQzMmUtYjc5OS0xZmE2MTQyMTA3YzgiLCJsb2dpbl9tZXRob2QiOiJwYXNzd29yZCIsImFwcF92ZXJzaW9uIjoiMS4xLjEiLCJzZWN1cml0eV9yb2xlIjowLCJyZWZyZXNoX3Rva2VuX2lkIjoiYzJkNjZlY2ItYThiYi00NzY2LWI0ZjktZTg2NDdhZGJhODAzIn0.s7kX_lmo4ppCooX1ZDx61VHF9IocwEifLypAufzSKkY"
+					},
+					{
+						"key": "origin",
+						"value": "https://book-stg.finan.one"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://book-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "x-locale",
+						"value": "vi"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "Asia/Ho_Chi_Minh"
+					},
+					{
+						"key": "x-platform-key",
+						"value": "desktop-web"
+					}
+				],
+				"url": {
+					"raw": "https://stg-api.finan.one/fo-order/api/v1/invoice/get-one/1f88afac-399a-4c06-b223-eae794553caf",
+					"protocol": "https",
+					"host": [
+						"stg-api",
+						"finan",
+						"one"
+					],
+					"path": [
+						"fo-order",
+						"api",
+						"v1",
+						"invoice",
+						"get-one",
+						"1f88afac-399a-4c06-b223-eae794553caf"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get_contact_list",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let page = pm.environment.get(\"page\");",
+							"if(!page)",
+							"    page = 1;",
+							"pm.environment.set(\"page\", page);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"",
+							"function getRandomInt(min, max) {",
+							"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+							"}",
+							"",
+							"let responseJson = pm.response.json();",
+							"let page = pm.environment.get(\"page\");",
+							"let total_pages = responseJson.meta.total_pages;",
+							"let testcase = pm.environment.get(\"testcase\");",
+							"let invoice_edited = pm.environment.get(\"invoice_edited\");",
+							"",
+							"switch(testcase){",
+							"    case 2:",
+							"        let list_contact = pm.environment.get(\"list_contact\");",
+							"        if(!list_contact){",
+							"            list_contact = [];",
+							"        }",
+							"        for(let i in responseJson.data){",
+							"",
+							"            list_contact.push(responseJson.data[i]);",
+							"        }",
+							"        console.log(\"list_contact:\", list_contact);",
+							"        if(page >= total_pages){",
+							"            pm.environment.unset(\"page\");",
+							"            let index;",
+							"            do{",
+							"                index = getRandomInt(0, list_contact.length - 1);",
+							"            }while(list_contact[index].id == invoice_edited.contact_id);         ",
+							"            //console.log(\"index:\", index);",
+							"            let contact_edited = list_contact[index];",
+							"            pm.environment.set(\"contact_edited\", contact_edited);",
+							"            console.log(\"contact_edited:\", contact_edited);",
+							"            postman.setNextRequest(\"\");",
+							"        }",
+							"        else{",
+							"            page++;",
+							"            pm.environment.set(\"page\", page);",
+							"            postman.setNextRequest(\"get_contact_list\");",
+							"        }",
+							"        break;",
+							"    case 4:",
+							"        break;",
+							"    default:",
+							"        break;",
+							"",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
+					},
+					{
+						"key": "x-locale",
+						"value": "vi"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "Asia/Ho_Chi_Minh"
+					},
+					{
+						"key": "x-platform-key",
+						"value": "desktop-web"
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer {{X-token}}"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Referer",
+						"value": "https://book-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					}
+				],
+				"url": {
+					"raw": "https://stg-api.finan.one/fo-business/api/v1/contact/get-list?page={{page}}&page_size=10&sort=&search=&business_id=305",
+					"protocol": "https",
+					"host": [
+						"stg-api",
+						"finan",
+						"one"
+					],
+					"path": [
+						"fo-business",
+						"api",
+						"v1",
+						"contact",
+						"get-list"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "{{page}}"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						},
+						{
+							"key": "sort",
+							"value": ""
+						},
+						{
+							"key": "search",
+							"value": ""
+						},
+						{
+							"key": "business_id",
+							"value": "305"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get_tax_list",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,vi;q=0.8,eu;q=0.7"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJGTyBVc2VyIiwic3ViIjoiNTFmZTE3N2MtNDBmZS00MzJlLWI3OTktMWZhNjE0MjEwN2M4IiwiYXVkIjpbIkZPIFVzZXIiXSwiZXhwIjoxNzI4MDk2NDU0LCJuYmYiOjE3MjU1MDQ0NTQsImlhdCI6MTcyNTUwNDQ1NCwib3JnX2lkIjoiMzA1IiwiYnVzaW5lc3NfaWQiOiIzMDUiLCJkZXZpY2VfaWQiOiI3Y2RjYmEyNi1jZDUzLTRjZWMtOTQ1Ni0zODY4NjEwNDI4N2IiLCJwbGF0Zm9ybV9rZXkiOiJ3ZWItYm9vayIsInVzZXJfaWQiOiI1MWZlMTc3Yy00MGZlLTQzMmUtYjc5OS0xZmE2MTQyMTA3YzgiLCJsb2dpbl9tZXRob2QiOiJwYXNzd29yZCIsImFwcF92ZXJzaW9uIjoiMS4xLjEiLCJzZWN1cml0eV9yb2xlIjowLCJyZWZyZXNoX3Rva2VuX2lkIjoiYzJkNjZlY2ItYThiYi00NzY2LWI0ZjktZTg2NDdhZGJhODAzIn0.s7kX_lmo4ppCooX1ZDx61VHF9IocwEifLypAufzSKkY"
+					},
+					{
+						"key": "origin",
+						"value": "https://book-stg.finan.one"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://book-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "x-locale",
+						"value": "vi"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "Asia/Ho_Chi_Minh"
+					},
+					{
+						"key": "x-platform-key",
+						"value": "desktop-web"
+					}
+				],
+				"url": {
+					"raw": "https://stg-api.finan.one/fo-business/api/v1/tax/get-list?page=1&page_size=10&business_id=305",
+					"protocol": "https",
+					"host": [
+						"stg-api",
+						"finan",
+						"one"
+					],
+					"path": [
+						"fo-business",
+						"api",
+						"v1",
+						"tax",
+						"get-list"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						},
+						{
+							"key": "business_id",
+							"value": "305"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get_product_list",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"",
+							"function getRandomInt(min, max) {",
+							"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+							"}",
+							"",
+							"let responseJson = pm.response.json();",
+							"let page = pm.environment.get(\"page\");",
+							"let total_pages = responseJson.meta.total_pages;",
+							"let testcase = pm.environment.get(\"testcase\");",
+							"let invoice_edited = pm.environment.get(\"invoice_edited\");",
+							"",
+							"switch(testcase){",
+							"    case 2:",
+							"        let list_item = pm.environment.get(\"list_item\");",
+							"        if(!list_item){",
+							"            list_item = [];",
+							"        }",
+							"        for(let i in responseJson.data){",
+							"",
+							"            list_item.push(responseJson.data[i]);",
+							"        }",
+							"        ",
+							"        if(page >= total_pages){",
+							"            pm.environment.unset(\"page\");",
+							"            pm.environment.set(\"list_item\", list_item);",
+							"            //pm.environment.unset(\"list_item\")",
+							"            console.log(\"list_item:\", pm.environment.get(\"list_item\"));",
+							"            // let index;",
+							"            // do{",
+							"            //     index = getRandomInt(0, list_item.length - 1);",
+							"            // }while(list_item[index].id == invoice_edited.item_id);         ",
+							"            // //console.log(\"index:\", index);",
+							"            // let item_edited = list_item[index];",
+							"            // pm.environment.set(\"item_edited\", item_edited);",
+							"            // console.log(\"item_edited:\", item_edited);",
+							"            postman.setNextRequest(\"\");",
+							"        }",
+							"        else{",
+							"            page++;",
+							"            pm.environment.set(\"page\", page);",
+							"            postman.setNextRequest(\"get_product_list\");",
+							"        }",
+							"        break;",
+							"    case 4:",
+							"        break;",
+							"    default:",
+							"        break;",
+							"",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let page = pm.environment.get(\"page\");",
+							"if(!page)",
+							"    page = 1;",
+							"pm.environment.set(\"page\", page);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
+					},
+					{
+						"key": "x-locale",
+						"value": "vi"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "Asia/Ho_Chi_Minh"
+					},
+					{
+						"key": "x-platform-key",
+						"value": "desktop-web"
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer {{X-token}}"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Referer",
+						"value": "https://book-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					}
+				],
+				"url": {
+					"raw": "https://stg-api.finan.one/fo-business/api/v1/product/get-list?page={{page}}&page_size=10&sort=&account_id=true&business_id=305",
+					"protocol": "https",
+					"host": [
+						"stg-api",
+						"finan",
+						"one"
+					],
+					"path": [
+						"fo-business",
+						"api",
+						"v1",
+						"product",
+						"get-list"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "{{page}}"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						},
+						{
+							"key": "sort",
+							"value": ""
+						},
+						{
+							"key": "account_id",
+							"value": "true"
+						},
+						{
+							"key": "business_id",
+							"value": "305"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "update_invoice",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"eval(pm.environment.get(\"list_common_func\"));",
+							"let configs = {",
+							"    \"tax_type\" : \"price_excluding_tax\",//price_excluding_tax, price_including_tax, tax_not_applicable",
+							"    \"discount_rate\" : false, //",
+							"    \"discount_type\" : \"price_after_tax\" // price_after_tax, price_before_tax",
+							"}",
+							"let X_case = 1;",
+							"let list_item = pm.environment.get(\"list_item\");",
+							"let list_tax = pm.environment.get(\"list_tax\");",
+							"let list_item_edited = new Array(utils.getRandomInt(1,1));",
+							"",
+							"//set discount",
+							"let discount = new Array();",
+							"if(configs.discount_rate == false){",
+							"    discount ={",
+							"      \"is_rate\": configs.discount_rate,",
+							"      \"value\": utils.getRandomInt(1000, 10000)",
+							"    }",
+							"}",
+							"else if (configs.discount_rate == true){",
+							"     discount = {",
+							"      \"is_rate\": configs.discount_rate,",
+							"      \"value\": utils.getRandomInt(1, 100) ",
+							"    }",
+							"}",
+							"pm.environment.set(\"discount\", discount);",
+							"console.log(\"discount:\", discount);",
+							"",
+							"//end set discount",
+							"",
+							"// chạy vòng lặp nạp 1 số data",
+							"for(let i = 0; i < list_item_edited.length; i++){",
+							"  ",
+							"let index_item = utils.getRandomInt(0, list_item.length - 1);",
+							"let index_tax = utils.getRandomInt(0, list_tax.length - 1);",
+							"let quantity_item = utils.getRandomInt(1,3);",
+							"",
+							"",
+							"list_item_edited[i] = {",
+							"        ",
+							"            \"sku_id\": list_item[index_item].list_sku[0].id,",
+							"            \"product_id\": list_item[index_item].id,",
+							"            \"product_name\": list_item[index_item].product_name,",
+							"            \"account_id\": list_item[index_item].product_link_account.income_account_id,",
+							"            \"item_amount\": list_item[index_item].list_sku[0].sale_price,",
+							"            \"before_tax_amount\": null,",
+							"            \"after_tax_amount\": null,",
+							"            \"discount_amount\": 0,",
+							"            \"item_tax_amount\": null,",
+							"            \"total_item_amount\": 0,",
+							"            \"total_line_item_amount\": 0,",
+							"            \"quantity\": quantity_item,",
+							"            \"taxes\": [",
+							"                {",
+							"                    \"id\": list_tax[index_tax].id,",
+							"                    \"name\": list_tax[index_tax].name,",
+							"                    \"tax_id\": list_tax[index_tax].id,",
+							"                    \"rate\": list_tax[index_tax].rate,",
+							"                    \"amount\":null",
+							"                }",
+							"            ],",
+							"            \"sku_info\": {",
+							"                \"id\": \"4e190b2a-ce63-43a7-bc5b-7d0b7a34bb6e\",",
+							"                \"uom\": \"\",",
+							"                \"taxes\": null,",
+							"                \"images\": null,",
+							"                \"bar_code\": \"\",",
+							"                \"priority\": 0,",
+							"                \"sku_code\": \"SP00001\",",
+							"                \"sku_name\": list_item[index_item].product_name,",
+							"                \"inventory\": {",
+							"                    \"cost_price\": 0,",
+							"                    \"total_quantity\": 0,",
+							"                    \"total_can_pick_quantity\": 0,",
+							"                    \"total_delivery_quantity\": 0",
+							"                },",
+							"                \"is_hidden\": false,",
+							"                \"cost_price\": list_item[index_item].list_sku[0].sale_price,",
+							"                \"product_id\": list_item[index_item].id,",
+							"                \"sale_price\": list_item[index_item].list_sku[0].sale_price,",
+							"                \"shelf_life\": 0,",
+							"                \"product_name\": list_item[index_item].product_name,",
+							"                \"product_type\": \"physical\",",
+							"                \"selling_price\": 0,",
+							"                \"sold_quantity\": 0,",
+							"                \"is_in_business\": true,",
+							"                \"product_images\": null,",
+							"                \"is_product_fast\": false,",
+							"                \"shelf_life_unit\": \"\",",
+							"                \"track_inventory\": false,",
+							"                \"is_saved_product\": false,",
+							"                \"allow_negative_inventory\": false",
+							"            },",
+							"            \"note\": \"\"",
+							"        ",
+							"    }",
+							"}",
+							"console.log(\"list_item_edited\", list_item_edited);",
+							"//end vòng lặp nạp data",
+							"//chạy vòng lặp tính toán",
+							"",
+							"/* Tính toán total amount */",
+							"let total_item_amount = 0;",
+							"for(let i in list_item_edited){",
+							"    total_item_amount += list_item_edited[i].quantity * list_item_edited[i].item_amount;",
+							"}",
+							"console.log(\"total_item_amount\", total_item_amount);",
+							"/* End tính toán total amount */",
+							"for(let i = 0; i < list_item_edited.length; i++){",
+							"",
+							"",
+							"//calculator before / after tax",
+							"let before_tax_amount;",
+							"let after_tax_amount;",
+							"let item_tax_amount;",
+							"let discount_amount;",
+							"let total_line_item_amount;",
+							"//tính trọng số mỗi item product",
+							"let discount_rate_line_item = (list_item_edited[i].quantity * list_item_edited[i].item_amount) / total_item_amount;",
+							"",
+							"switch(true){",
+							"    //nhóm giảm giá sau thuế",
+							"    case (configs.discount_type == \"price_after_tax\" && configs.tax_type == \"price_excluding_tax\" && configs.discount_rate == true ):",
+							"    // confirm lại giảm giá tính theo tỉ trọng sau thuế hay trước thuế giá gốc",
+							"        console.log(\"Giảm giá sau thuế - Giá chưa bao gồm thuế - Giảm giá theo %\");",
+							"        before_tax_amount = Math.round(list_item_edited[i].quantity * list_item_edited[i].item_amount);",
+							"        item_tax_amount = before_tax_amount * (list_item_edited[i].taxes[0].rate / 100);",
+							"        discount_amount = Math.round ((list_item_edited[i].quantity * list_item_edited[i].item_amount + item_tax_amount) * (discount.value / 100));",
+							"       ",
+							"        after_tax_amount = before_tax_amount + item_tax_amount;",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"    case (configs.discount_type == \"price_after_tax\" && configs.tax_type == \"price_excluding_tax\" && configs.discount_rate == false ):",
+							"        console.log(\"Giảm giá sau thuế - Giá chưa bao gồm thuế - Giảm giá theo số tiền\");",
+							"        before_tax_amount = Math.round(list_item_edited[i].quantity * list_item_edited[i].item_amount);",
+							"        discount_amount = Math.round(discount_rate_line_item * discount.value);",
+							"        item_tax_amount = before_tax_amount * (list_item_edited[i].taxes[0].rate / 100);",
+							"        after_tax_amount = before_tax_amount + item_tax_amount;",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"    case (configs.discount_type == \"price_after_tax\" && configs.tax_type == \"price_including_tax\" && configs.discount_rate == true ):",
+							"        console.log(\"Giảm giá sau thuế - Giá đã bao gồm thuế - Giảm giá theo %\");",
+							"        before_tax_amount =Math.round( (list_item_edited[i].quantity * list_item_edited[i].item_amount) / (1 + list_item_edited[i].taxes[0].rate / 100));",
+							"        discount_amount = Math.round (list_item_edited[i].quantity * list_item_edited[i].item_amount * (discount.value / 100));",
+							"        item_tax_amount = Math.round(list_item_edited[i].quantity * list_item_edited[i].item_amount - before_tax_amount);",
+							"        after_tax_amount = before_tax_amount;",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"    case (configs.discount_type == \"price_after_tax\" && configs.tax_type == \"price_including_tax\" && configs.discount_rate == false ):",
+							"        console.log(\"Giảm giá sau thuế - Giá đã bao gồm thuế - Giảm giá theo số tiền\");",
+							"        before_tax_amount = Math.round((list_item_edited[i].quantity * list_item_edited[i].item_amount) / (1 + list_item_edited[i].taxes[0].rate",
+							"         / 100));",
+							"        discount_amount = Math.round(discount_rate_line_item * discount.value);",
+							"        item_tax_amount = Math.round(list_item_edited[i].quantity * list_item_edited[i].item_amount - before_tax_amount);",
+							"        after_tax_amount = before_tax_amount;",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"    case (configs.discount_type == \"price_after_tax\" && configs.tax_type == \"tax_not_applicable\" && configs.discount_rate == true ):",
+							"        console.log(\"Giảm giá sau thuế - Không tính thuế - Giảm giá theo %\");",
+							"        before_tax_amount = Math.round(list_item_edited[i].quantity * list_item_edited[i].item_amount);",
+							"        discount_amount = Math.round (list_item_edited[i].quantity * list_item_edited[i].item_amount * (discount.value / 100));",
+							"        item_tax_amount = 0;",
+							"        after_tax_amount = before_tax_amount;",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"    case (configs.discount_type == \"price_after_tax\" && configs.tax_type == \"tax_not_applicable\" && configs.discount_rate == false ):",
+							"        console.log(\"Giảm giá sau thuế - Không tính thuế - Giảm giá theo số tiền\");",
+							"        before_tax_amount =Math.round( list_item_edited[i].quantity * list_item_edited[i].item_amount);",
+							"        discount_amount = Math.round(discount_rate_line_item * discount.value);",
+							"        item_tax_amount = 0;",
+							"        after_tax_amount = before_tax_amount;",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"",
+							"    //nhóm giảm giá trước thuế  ",
+							"    case (configs.discount_type == \"price_before_tax\" && configs.tax_type == \"price_excluding_tax\" && configs.discount_rate == true ):",
+							"        console.log(\"Giảm giá trước thuế - Giá chưa bao gồm thuế - Giảm giá theo %\");",
+							"        before_tax_amount = Math.round(list_item_edited[i].quantity * list_item_edited[i].item_amount);",
+							"        discount_amount = Math.round (list_item_edited[i].quantity * list_item_edited[i].item_amount * (discount.value / 100));",
+							"        item_tax_amount = Math.round((before_tax_amount - discount_amount) * (list_item_edited[i].taxes[0].rate / 100));",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"    case (configs.discount_type == \"price_before_tax\" && configs.tax_type == \"price_excluding_tax\" && configs.discount_rate == false ):",
+							"        console.log(\"Giảm giá trước thuế - Giá chưa bao gồm thuế - Giảm giá theo số tiền\");",
+							"        before_tax_amount = Math.round(list_item_edited[i].quantity * list_item_edited[i].item_amount);",
+							"        discount_amount = Math.round(discount_rate_line_item * discount.value);",
+							"        item_tax_amount = Math.round((before_tax_amount - discount_amount) * (list_item_edited[i].taxes[0].rate / 100));",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"    case (configs.discount_type == \"price_before_tax\" && configs.tax_type == \"price_including_tax\" && configs.discount_rate == true ):",
+							"        console.log(\"Giảm giá trước thuế - Giá đã bao gồm thuế - Giảm giá theo %\");",
+							"        before_tax_amount = Math.round( (list_item_edited[i].quantity * list_item_edited[i].item_amount) / (1 + list_item_edited[i].taxes[0].rate / 100));",
+							"        discount_amount = Math.round (before_tax_amount * (discount.value / 100));",
+							"        item_tax_amount = Math.round((before_tax_amount - discount_amount) * (list_item_edited[i].taxes[0].rate / 100));",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"    case (configs.discount_type == \"price_before_tax\" && configs.tax_type == \"price_including_tax\" && configs.discount_rate == false ):",
+							"        console.log(\"Giảm giá trước thuế - Giá đã bao gồm thuế - Giảm giá theo số tiền\");",
+							"        before_tax_amount =Math.round( (list_item_edited[i].quantity * list_item_edited[i].item_amount) / (1 + list_item_edited[i].taxes[0].rate / 100));",
+							"        discount_amount = Math.round(discount_rate_line_item * discount.value);",
+							"        item_tax_amount = Math.round((before_tax_amount - discount_amount) * (list_item_edited[i].taxes[0].rate / 100));",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"    case (configs.discount_type == \"price_before_tax\" && configs.tax_type == \"tax_not_applicable\" && configs.discount_rate == true ):",
+							"        console.log(\"Giảm giá trước thuế - Không tính thuế - Giảm giá theo %\");",
+							"        before_tax_amount = Math.round(list_item_edited[i].quantity * list_item_edited[i].item_amount);",
+							"        discount_amount = Math.round (list_item_edited[i].quantity * list_item_edited[i].item_amount * (discount.value / 100));",
+							"        item_tax_amount = 0;",
+							"        break;",
+							"    case (configs.discount_type == \"price_before_tax\" && configs.tax_type == \"tax_not_applicable\" && configs.discount_rate == false ):",
+							"        console.log(\"Giảm giá trước thuế - Không tính thuế - Giảm giá theo số tiền\");",
+							"        before_tax_amount = Math.round(list_item_edited[i].quantity * list_item_edited[i].item_amount);",
+							"        discount_amount = Math.round(discount_rate_line_item * discount.value);",
+							"        item_tax_amount = 0;",
+							"        total_line_item_amount = before_tax_amount + item_tax_amount - discount_amount;",
+							"        break;",
+							"    default :",
+							"        console.log(\"Egde case\");",
+							"        break;",
+							"}",
+							"    list_item_edited[i].before_tax_amount = before_tax_amount;",
+							"    list_item_edited[i].discount_amount = discount_amount;",
+							"    list_item_edited[i].item_tax_amount = item_tax_amount;",
+							"    list_item_edited[i].total_line_item_amount = total_line_item_amount;",
+							"    //console.log(\"before tax amount thu i\", list_item[i].before_tax_amount);",
+							"}",
+							"",
+							"",
+							"//end vòng lặp tính toán",
+							"",
+							"console.log(\"list_item_edited\", list_item_edited);",
+							"pm.environment.set(\"list_item_edited\", list_item_edited);",
+							"",
+							"//set is_pre_tax",
+							"let is_pre_tax = true;",
+							"if(configs.discount_type == \"price_after_tax\")",
+							"    is_pre_tax = false;",
+							"is_pre_tax = true;",
+							"//end set is_pre_tax",
+							"",
+							"",
+							"",
+							"let body = {",
+							"    \"items\": list_item_edited,",
+							"    \"contact_id\": \"bff8f5e3-a803-4095-9593-060059021ea2\",",
+							"    \"value_at\": \"2024-09-10T17:00:00.000Z\",",
+							"    \"discounts\": [",
+							"        discount",
+							"    ],",
+							"    \"cart_status\": \"saved\",",
+							"    \"due_at\": \"2024-09-11T16:59:59.999Z\",",
+							"    \"tax_type\": \"price_excluding_tax\",",
+							"    \"order_code\": \"HD32\",",
+							"    \"note\": \"\",",
+							"    \"email\": \"xuyenchi1@mail.com\",",
+							"    \"items_amount\": null,",
+							"    \"discount_amount\": null,",
+							"    \"tax_amount\": null,",
+							"    \"total_amount\": null,",
+							"    \"payment_config\": [],",
+							"    \"payment_account_id\": null,",
+							"    \"reference_code\": \"\",",
+							"    \"branch_id\": \"b9824bb7-de87-451f-bf90-7a5f48ce55b0\",",
+							"    \"payment_info\": null,",
+							"    \"currency\": \"vnd\",",
+							"    \"attachment_url\": [],",
+							"    \"is_pre_tax\": is_pre_tax,",
+							"    \"business_id\": 305",
+							"}",
+							"",
+							"pm.environment.set(\"payload\", JSON.stringify(body));"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let responseJson = pm.environment.toJSON();",
+							"let list_item_edited = pm.environment.get(\"list_item_edited\");",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,vi;q=0.8,eu;q=0.7"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer {{X-token}}"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					},
+					{
+						"key": "origin",
+						"value": "https://book-stg.finan.one"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://book-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "x-locale",
+						"value": "vi"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "Asia/Ho_Chi_Minh"
+					},
+					{
+						"key": "x-platform-key",
+						"value": "desktop-web"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{{payload}}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://stg-api.finan.one/fo-order/api/v1/invoice/update/{{id_invoice_edited}}",
+					"protocol": "https",
+					"host": [
+						"stg-api",
+						"finan",
+						"one"
+					],
+					"path": [
+						"fo-order",
+						"api",
+						"v1",
+						"invoice",
+						"update",
+						"{{id_invoice_edited}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "calculate",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"eval(pm.environment.get(\"list_common_func\"));",
+							"let configs = {",
+							"    \"tax_type\" : \"price_excluding_tax\",",
+							"    \"discount_rate\" : true //",
+							"}",
+							"let list_item = pm.environment.get(\"list_item\");",
+							"let list_tax = pm.environment.get(\"list_tax\");",
+							"let list_item_edited = new Array(utils.getRandomInt(1,2));",
+							"",
+							"// //set discount",
+							"// let discount = new Array();",
+							"// if(configs.discount_rate == false){",
+							"//     discount ={",
+							"//       \"is_rate\": configs.discount_rate,",
+							"//       \"value\": utils.getRandomInt(1000, 10000)",
+							"//     }",
+							"// }",
+							"// else if (configs.discount_rate == true){",
+							"//      discount = {",
+							"//       \"is_rate\": configs.discount_rate,",
+							"//       \"value\": utils.getRandomInt(1, 100) ",
+							"//     }",
+							"// }",
+							"// pm.environment.set(\"discount\", discount);",
+							"// console.log(\"discount:\", discount);",
+							"",
+							"//end set discount",
+							"",
+							"",
+							"// for(let i = 0; i < list_item_edited.length; i++){",
+							"// let index_item = utils.getRandomInt(0, list_item.length - 1);",
+							"// let index_tax = utils.getRandomInt(0, list_tax.length - 1);",
+							"// let quantity_item = utils.getRandomInt(1,3);",
+							"// //calculator before / after tax",
+							"// let before_tax_amount;",
+							"// let after_tax_amount;",
+							"// //let discount_amount; sau khi tính xong các product thì mới tính discount được",
+							"// let item_tax_amount;",
+							"// let total_item_amount; // sau khi tính được discount thì mới tính total item",
+							"// let total_line_item_amount;  // sau khi tính được discount mới tính đc line item",
+							"",
+							"// if(configs.tax_type == \"price_excluding_tax\"){",
+							"//     before_tax_amount = quantity_item * list_item[index_item].list_sku[0].sale_price;",
+							"//     after_tax_amount = before_tax_amount + (before_tax_amount * list_tax[index_tax].rate/ 100 );",
+							"//     item_tax_amount = before_tax_amount * list_tax[index_tax].rate/ 100;",
+							"",
+							"// }",
+							"// else if (configs.tax_type == \"price_including_tax\"){",
+							"",
+							"// }",
+							"// else{",
+							"",
+							"// }",
+							"// console.log(\"---info item thu \", i);",
+							"// console.log(\"before_tax_amount :\", before_tax_amount);",
+							"// console.log(\"after_tax_amount :\", after_tax_amount);",
+							"// console.log(\"item_tax_amount:\", item_tax_amount);",
+							"",
+							"// //end calculator before / after tax",
+							"",
+							"",
+							"// list_item_edited[i] = {",
+							"        ",
+							"//             \"sku_id\": list_item[index_item].list_sku[0].id,",
+							"//             \"product_id\": list_item[index_item].id,",
+							"//             \"product_name\": list_item[index_item].product_name,",
+							"//             \"account_id\": 1010016,",
+							"//             \"item_amount\": list_item[index_item].list_sku[0].sale_price,",
+							"//             \"before_tax_amount\": before_tax_amount,",
+							"//             \"after_tax_amount\": after_tax_amount,",
+							"//             \"discount_amount\": 0,",
+							"//             \"item_tax_amount\": item_tax_amount,",
+							"//             \"total_item_amount\": 0,",
+							"//             \"total_line_item_amount\": 0,",
+							"//             \"quantity\": quantity_item,",
+							"//             \"taxes\": [",
+							"//                 {",
+							"//                     \"id\": list_tax[index_tax].id,",
+							"//                     \"name\": list_tax[index_tax].name,",
+							"//                     \"tax_id\": list_tax[index_tax].id,",
+							"//                     \"rate\": list_tax[index_tax].rate,",
+							"//                     \"amount\": item_tax_amount",
+							"//                 }",
+							"//             ],",
+							"//             \"sku_info\": {",
+							"//                 \"id\": \"4e190b2a-ce63-43a7-bc5b-7d0b7a34bb6e\",",
+							"//                 \"uom\": \"\",",
+							"//                 \"taxes\": null,",
+							"//                 \"images\": null,",
+							"//                 \"bar_code\": \"\",",
+							"//                 \"priority\": 0,",
+							"//                 \"sku_code\": \"SP00001\",",
+							"//                 \"sku_name\": list_item[index_item].product_name,",
+							"//                 \"inventory\": {",
+							"//                     \"cost_price\": 0,",
+							"//                     \"total_quantity\": 0,",
+							"//                     \"total_can_pick_quantity\": 0,",
+							"//                     \"total_delivery_quantity\": 0",
+							"//                 },",
+							"//                 \"is_hidden\": false,",
+							"//                 \"cost_price\": list_item[index_item].list_sku[0].sale_price,",
+							"//                 \"product_id\": \"18019433-edca-47f8-bfbb-fb7fd359647e\",",
+							"//                 \"sale_price\": list_item[index_item].list_sku[0].sale_price,",
+							"//                 \"shelf_life\": 0,",
+							"//                 \"product_name\": list_item[index_item].product_name,",
+							"//                 \"product_type\": \"physical\",",
+							"//                 \"selling_price\": 0,",
+							"//                 \"sold_quantity\": 0,",
+							"//                 \"is_in_business\": true,",
+							"//                 \"product_images\": null,",
+							"//                 \"is_product_fast\": false,",
+							"//                 \"shelf_life_unit\": \"\",",
+							"//                 \"track_inventory\": false,",
+							"//                 \"is_saved_product\": false,",
+							"//                 \"allow_negative_inventory\": false",
+							"//             },",
+							"//             \"note\": \"\"",
+							"        ",
+							"//     }",
+							"// }",
+							"// console.log(\"list_item_edited:\", list_item_edited);",
+							"// //calculator discount and line item",
+							"// let total_item_amount_before_tax = 0;",
+							"// let total_item_amount_after_tax = 0;",
+							"// let discount_amount = 0; ",
+							"// let total_item_amount; ",
+							"// let total_line_item_amount;  ",
+							"// let discount_rate_line_item;",
+							"// for(let i in list_item_edited){",
+							"//     total_item_amount_after_tax += list_item_edited[i].after_tax_amount;",
+							"//     total_item_amount_before_tax += list_item_edited[i].before_tax_amount;",
+							"// }",
+							"",
+							"// for(let i = 0; i < list_item_edited.length; i++){",
+							"",
+							"//     //Tính toán discount từng line item",
+							"//     if(true){//giảm giá sau thuế- truyền điều kiện",
+							"//         if(configs.discount_rate == false){",
+							"//             discount_rate_line_item = list_item_edited[i].before_tax_amount / total_item_amount_before_tax; ",
+							"//         console.log(\"befor tax :\", list_item_edited[i].before_tax_amount);",
+							"//         console.log(\"total befor tax:\", total_item_amount_before_tax);",
+							"//          console.log(\"discount_rate_line_item\", discount_rate_line_item);",
+							"//         // console.log(\"discount value:\", discount.value);",
+							"//         discount_amount = discount_rate_line_item * discount.value;",
+							"//         }",
+							"//         else{",
+							"            ",
+							"//             discount_amount = list_item_edited[i].after_tax_amount * discount.value / 100;     ",
+							"//         }",
+							"",
+							"//    console.log(\"discount_amount:\", discount_amount);",
+							"//         //end tính toán discount",
+							"//         //tính toán total amount line item",
+							"//         if(configs.tax_type == \"price_excluding_tax\"){",
+							"//             total_line_item_amount",
+							"//         }",
+							"//         else if(configs.tax_type == \"price_including_tax\"){}",
+							"//         else{}",
+							"",
+							"//         //end tính toán amount line item",
+							"   ",
+							"// }",
+							"// else{//giảm giá trước thuế",
+							"",
+							"",
+							"",
+							"// }",
+							"   ",
+							"//    list_item_edited[i].discount_amount = discount_amount;",
+							"// }",
+							"",
+							"// // console.log(\"total_item_amount_after_tax:\", total_item_amount_after_tax);",
+							"// // console.log(\"total_item_amount_before_tax:\", total_item_amount_before_tax);",
+							"// console.log(\"----list_item_edited last----\");",
+							"// console.log(list_item_edited);",
+							"// //end calculator discount or line item",
+							"let body = {",
+							"    \"tax_type\": \"price_excluding_tax\",",
+							"    \"items\": [",
+							"        {",
+							"            \"client_id\": \"d4f5161d-58e8-4045-b547-7d5a2d0cf46f\",",
+							"            \"product_id\": \"00000000-0000-0000-0000-000000000000\",",
+							"            \"product_name\": \"Tui xach xanh\",",
+							"            \"account_id\": 0,",
+							"            \"item_amount\": 100000,",
+							"            \"before_tax_amount\": 100000,",
+							"            \"discount_amount\": 19473,",
+							"            \"item_tax_amount\": 100000,",
+							"            \"total_item_amount\": 100000,",
+							"            \"total_line_item_amount\": 100000,",
+							"            \"after_tax_amount\": 100000,",
+							"            \"sku_id\": \"00000000-0000-0000-0000-000000000000\",",
+							"            \"sku_name\": \"Tui xach xanh\",",
+							"            \"quantity\": 3,",
+							"            \"taxes\": [],",
+							"            \"note\": \"\"",
+							"        },",
+							"        {",
+							"            \"client_id\": \"4a6d8769-305d-4c57-91f4-bb896875863f\",",
+							"            \"product_id\": \"00000000-0000-0000-0000-000000000000\",",
+							"            \"product_name\": \"Iphone 16 vang sa mac\",",
+							"            \"account_id\": 0,",
+							"            \"item_amount\": 200000,",
+							"            \"before_tax_amount\": 400000,",
+							"            \"discount_amount\": 77891,",
+							"            \"item_tax_amount\": 200000,",
+							"            \"total_item_amount\": 400000,",
+							"            \"total_line_item_amount\": 400000,",
+							"            \"after_tax_amount\": 400000,",
+							"            \"sku_id\": \"00000000-0000-0000-0000-000000000000\",",
+							"            \"sku_name\": \"Iphone 16 vang sa mac\",",
+							"            \"quantity\": 2,",
+							"            \"taxes\": [],",
+							"            \"note\": \"\"",
+							"        }",
+							"    ],",
+							"    \"discounts\": [",
+							"        {",
+							"            \"is_rate\": false,",
+							"            \"value\": 97364",
+							"        }",
+							"    ],",
+							"    \"is_pre_tax\": false,",
+							"    \"branch_id\": \"00000000-0000-0000-0000-000000000000\"",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
+					},
+					{
+						"key": "x-locale",
+						"value": "vi"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "Asia/Ho_Chi_Minh"
+					},
+					{
+						"key": "x-platform-key",
+						"value": "desktop-web"
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer {{X-token}}"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Referer",
+						"value": "https://book-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tax_type\": \"price_excluding_tax\",\n    \"items\": [\n        {\n            \"client_id\": \"d4f5161d-58e8-4045-b547-7d5a2d0cf46f\",\n            \"product_id\": \"00000000-0000-0000-0000-000000000000\",\n            \"product_name\": \"Tui xach xanh\",\n            \"account_id\": 0,\n            \"item_amount\": 100000,\n            \"before_tax_amount\": 100000,\n            \"discount_amount\": 19473,\n            \"item_tax_amount\": 100000,\n            \"total_item_amount\": 100000,\n            \"total_line_item_amount\": 100000,\n            \"after_tax_amount\": 100000,\n            \"sku_id\": \"00000000-0000-0000-0000-000000000000\",\n            \"sku_name\": \"Tui xach xanh\",\n            \"quantity\": 3,\n            \"taxes\": [],\n            \"note\": \"\"\n        },\n        {\n            \"client_id\": \"4a6d8769-305d-4c57-91f4-bb896875863f\",\n            \"product_id\": \"00000000-0000-0000-0000-000000000000\",\n            \"product_name\": \"Iphone 16 vang sa mac\",\n            \"account_id\": 0,\n            \"item_amount\": 200000,\n            \"before_tax_amount\": 400000,\n            \"discount_amount\": 77891,\n            \"item_tax_amount\": 200000,\n            \"total_item_amount\": 400000,\n            \"total_line_item_amount\": 400000,\n            \"after_tax_amount\": 400000,\n            \"sku_id\": \"00000000-0000-0000-0000-000000000000\",\n            \"sku_name\": \"Iphone 16 vang sa mac\",\n            \"quantity\": 2,\n            \"taxes\": [],\n            \"note\": \"\"\n        }\n    ],\n    \"discounts\": [\n        {\n            \"is_rate\": false,\n            \"value\": 97364\n        }\n    ],\n    \"is_pre_tax\": false,\n    \"branch_id\": \"00000000-0000-0000-0000-000000000000\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://stg-api.finan.one/fo-order/api/v1/invoice/calculate",
+					"protocol": "https",
+					"host": [
+						"stg-api",
+						"finan",
+						"one"
+					],
+					"path": [
+						"fo-order",
+						"api",
+						"v1",
+						"invoice",
+						"calculate"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

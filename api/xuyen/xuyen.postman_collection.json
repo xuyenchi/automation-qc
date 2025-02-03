@@ -1,0 +1,275 @@
+{
+	"info": {
+		"_postman_id": "8ff8d296-38c0-4e35-880c-80d334b994f9",
+		"name": "xuyen",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17535207",
+		"_collection_link": "https://warped-spaceship-122945.postman.co/workspace/Learn_API_Testing~870ffb9e-5962-40b3-8d91-530fbf3c4242/collection/17535207-8ff8d296-38c0-4e35-880c-80d334b994f9?action=share&source=collection_link&creator=17535207"
+	},
+	"item": [
+		{
+			"name": "login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,vi;q=0.8,eu;q=0.7"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					},
+					{
+						"key": "origin",
+						"value": "https://id-stg.finan.one"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://id-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "x-locale-code",
+						"value": "en_US"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "UTC+07:00"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"phone_number\":\"+84327007131\",\"email\":\"\",\"username\":\"\",\"encrypted_password\":\"245dc0e83e7d560884240af4d9af21fd11e33919cacef6e423f19f48a6111b255f00\",\"device_info\":{\"id\":\"97f1f9d0-bd30-4909-80c1-5f2fefebecb6\",\"name\":\"desktop\",\"os\":\"MacOS\",\"domain\":\"https://book-stg.finan.one\"},\"app_version\":\"1.1.1\",\"platform_key\":\"web-book\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://stg-api.finan.one/fo-user/api/v1/auth/login",
+					"protocol": "https",
+					"host": [
+						"stg-api",
+						"finan",
+						"one"
+					],
+					"path": [
+						"fo-user",
+						"api",
+						"v1",
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get_product_list",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"",
+							"eval(pm.environment.get(\"common\"));",
+							"let randomNum = obj.getRandomInt(1,10);",
+							"let randomChar = obj.randomChars(5);",
+							"console.log(\"random num:\", randomNum);",
+							"console.log(\"random char :\", randomChar);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,vi;q=0.8,eu;q=0.7"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJGTyBVc2VyIiwic3ViIjoiZDE1NDY4YzgtODg1MS00NTEwLWFjN2UtMzk4MjQwZDg0M2VmIiwiYXVkIjpbIkZPIFVzZXIiXSwiZXhwIjoxNzI3MzI2NTIxLCJuYmYiOjE3MjQ3MzQ1MjEsImlhdCI6MTcyNDczNDUyMSwib3JnX2lkIjoiMjAiLCJidXNpbmVzc19pZCI6IjIwIiwiZGV2aWNlX2lkIjoiOTdmMWY5ZDAtYmQzMC00OTA5LTgwYzEtNWYyZmVmZWJlY2I2IiwicGxhdGZvcm1fa2V5Ijoid2ViLWJvb2siLCJ1c2VyX2lkIjoiZDE1NDY4YzgtODg1MS00NTEwLWFjN2UtMzk4MjQwZDg0M2VmIiwibG9naW5fbWV0aG9kIjoicGFzc3dvcmQiLCJhcHBfdmVyc2lvbiI6IjEuMS4xIiwic2VjdXJpdHlfcm9sZSI6MCwicmVmcmVzaF90b2tlbl9pZCI6IjQwMmIwYzA2LWZkNWUtNDJmMS04NjQwLTg2NDc5ZDhlNzdhYSJ9.VHN_EZV8BLF_22NRqbENKA8rv_RrIEbHyr53xyz1CtE"
+					},
+					{
+						"key": "origin",
+						"value": "https://book-stg.finan.one"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://book-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "x-locale",
+						"value": "vi"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "Asia/Ho_Chi_Minh"
+					},
+					{
+						"key": "x-platform-key",
+						"value": "desktop-web"
+					}
+				],
+				"url": {
+					"raw": "https://stg-api.finan.one/fo-business/api/v1/product/get-list?page=1&page_size=10&search=&sort=&account_id=true&business_id=20",
+					"protocol": "https",
+					"host": [
+						"stg-api",
+						"finan",
+						"one"
+					],
+					"path": [
+						"fo-business",
+						"api",
+						"v1",
+						"product",
+						"get-list"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						},
+						{
+							"key": "search",
+							"value": ""
+						},
+						{
+							"key": "sort",
+							"value": ""
+						},
+						{
+							"key": "account_id",
+							"value": "true"
+						},
+						{
+							"key": "business_id",
+							"value": "20"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"",
+					"let common = `obj = {",
+					"getRandomInt: function(min, max) {",
+					"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+					"    },",
+					"randomChars: function (length) {",
+					"    var result           = '';",
+					"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+					"    var charactersLength = characters.length;",
+					"    for ( var i = 0; i < length; i++ ) {",
+					"      result += characters.charAt(Math.floor(Math.random() * ",
+					" charactersLength));",
+					"   }",
+					"   return result;",
+					"}",
+					"}`",
+					"pm.environment.set(\"common\", common);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

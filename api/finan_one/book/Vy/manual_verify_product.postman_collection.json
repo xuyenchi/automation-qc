@@ -1,0 +1,1048 @@
+{
+	"info": {
+		"_postman_id": "558c1d44-cdd4-433b-a396-b18b455a626f",
+		"name": "Vy_product",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32564955"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 114 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        pm.execution.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        pm.execution.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"    let user_id = jsData.data.user_id;",
+									"    console.log(\"user_id: \" + user_id);",
+									"    pm.environment.set(\"C-user_id\",user_id);",
+									"",
+									"    // switch(configs.feature){",
+									"    //     case \"create_client\":",
+									"    //         pm.execution.setNextRequest(\"create_client\");",
+									"    //         break;",
+									"    //     case \"edit_client\":",
+									"    //         if(pm.environment.get(\"C-default_client\") != null){",
+									"    //             pm.execution.setNextRequest(\"update_client\");",
+									"    //         } else {",
+									"    //             console.log(\"missing default_client\");",
+									"    //             pm.execution.setNextRequest(null);",
+									"    //         }",
+									"    //         break;",
+									"    //     case \"create_va\":",
+									"    //         if(pm.environment.get(\"C-default_client\") != null){",
+									"    //             pm.execution.setNextRequest(\"get_master_account\");",
+									"    //         } else {",
+									"    //             console.log(\"missing default_client\");",
+									"    //             pm.execution.setNextRequest(null);",
+									"    //         }",
+									"    //         break;",
+									"    //     case \"create_external_transfer\":",
+									"    //     case \"create_internal_transfer\":",
+									"    //     default:",
+									"    //         if(pm.environment.get(\"C-default_client\") != null){",
+									"    //             pm.execution.setNextRequest(\"get_list_va\");",
+									"    //         } else {",
+									"    //             console.log(\"missing default_client\");",
+									"    //             pm.execution.setNextRequest(null);",
+									"    //         }",
+									"    // }",
+									"    pm.execution.setNextRequest(\"get_current_business\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "get_current_business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"Current business info: \", jsData.data);",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.current_business.list_branch[0].id;",
+									"        pm.environment.set(\"C-branch_id\",branch_id);",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    let payment_method = null;",
+									"    let list_payment_method = [];",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let test_payment_method = configs.test_payment_method;",
+									"    try {",
+									"        switch(test_payment_method){",
+									"            case \"viet_qr_pro_mb\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].key == test_payment_method){ ",
+									"                        payment_method = jsData.data.list_payment_method[i];",
+									"                        break;",
+									"                    }",
+									"                }",
+									"                break;",
+									"            case \"va_galaxy\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].bank_account.account_number.includes(\"SBB\")){ ",
+									"                        list_payment_method[list_payment_method.length] = jsData.data.list_payment_method[i];",
+									"                    }",
+									"                }",
+									"                payment_method = list_payment_method[getRandomInt(0,list_payment_method.length -1)];",
+									"                break;",
+									"            case \"bank_transfer\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].key == test_payment_method){ ",
+									"                        list_payment_method[list_payment_method.length] = jsData.data.list_payment_method[i];",
+									"                    }",
+									"                }",
+									"                payment_method = list_payment_method[getRandomInt(0,list_payment_method.length -1)];",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow\");",
+									"                break;",
+									"        }",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"    pm.environment.set(\"C-viet_qr_payment\",payment_method);",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"    ",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    pm.execution.setNextRequest(\"get_list_customer\");",
+									"} else {",
+									"    console.log(\"Can't get business detail, end test\", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/business/get-current",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"business",
+								"get-current"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "product",
+			"item": [
+				{
+					"name": "get_list_product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"let product_id;",
+									"let product_name = pm.environment.get(\"V-product_name\");",
+									"console.log(\"product_name 1 \" + product_name);",
+									"let jsData = pm.response.json();",
+									"if (pm.response.code == 200 && jsData.data.length > 0) {",
+									"    let list_product = pm.environment.get(\"C-list_product\");",
+									"    if (!list_product) {",
+									"        list_product = [];",
+									"    }",
+									"    for (i in jsData.data) {",
+									"        list_product[list_product.length] = {",
+									"            \"id\": jsData.data[i].id,",
+									"            \"item_name\": jsData.data[i].general_info.item_name,",
+									"            \"sku_code\": jsData.data[i].general_info.sku_code,",
+									"            \"unit\": jsData.data[i].general_info.unit,",
+									"            \"sale_price\": jsData.data[i].sale_info.sale_price,",
+									"            \"sale_category_code\": jsData.data[i].sale_info.sale_category_code,",
+									"            \"sale_tax_code\": jsData.data[i].sale_info.sale_tax_code,",
+									"            \"purchase_price\": jsData.data[i].purchase_info.purchase_price,",
+									"            \"purchase_category_code\": jsData.data[i].purchase_info.purchase_category_code,",
+									"            \"purchase_tax\": jsData.data[i].purchase_info.purchase_info",
+									"        }",
+									"    }",
+									"    ",
+									"    for(i in jsData.data){",
+									"        if(jsData.data[i].general_info.item_name == product_name){",
+									"            product_id = jsData.data[i].id",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"V-product_id\", product_id);",
+									"    console.log(\"V-product_id \" + product_id);",
+									"    console.log(\"V-product_name \" + product_name);",
+									"    // pm.environment.set(\"C-list_product\", list_product);",
+									"    console.log(\"meta data \", jsData.meta.total_rows);",
+									"    // console.log(\"list_product \", list_product);",
+									"    // pm.execution.setNextRequest(\"\"); //set api tiếp theo",
+									"} else {",
+									"    console.log(\"Can't get list product, try again\")",
+									"    pm.execution.setNextRequest(null);",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"",
+									"// Example secret key for signing, replace with your actual secret",
+									"const secretKey = pm.environment.get(\"C-client_key\");",
+									"console.log(\"secretKey: \" + secretKey);",
+									"",
+									"// function ()",
+									"let today = new Date();",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;",
+									"console.log(\"timestamp: \" + timestamp);",
+									"// Get method, URL, body, and timestamp",
+									"const method = pm.request.method;",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");",
+									"const body = pm.request.body ? pm.request.body.raw : '';",
+									"// const timestamp = pm.request.headers.get('x-timestamp');",
+									"// Concatenate the components to form the message to sign",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;",
+									"console.log(\"Generated message: \", message);",
+									"",
+									"// Generate SHA256 signature",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);",
+									"console.log(\"Generated signature: \", signature);",
+									"",
+									"pm.environment.set(\"C-timestamp\",timestamp);",
+									"",
+									"// Add the signature to the headers",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}"
+							},
+							{
+								"key": "x-signature",
+								"value": "f6857329fb1bbd279ca7f2c00eecca5daf67f350d363db4f18568b1f9feabf7d",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "User-Agent",
+								"value": "PostmanRuntime/7.39.1"
+							},
+							{
+								"key": "Accept",
+								"value": "*/*"
+							},
+							{
+								"key": "Cache-Control",
+								"value": "no-cache"
+							},
+							{
+								"key": "Postman-Token",
+								"value": "6b075165-728a-4921-91b0-58d688d6dc2f",
+								"disabled": true
+							},
+							{
+								"key": "Host",
+								"value": "api-stg.finan.one",
+								"disabled": true
+							},
+							{
+								"key": "Accept-Encoding",
+								"value": "gzip, deflate, br"
+							},
+							{
+								"key": "Connection",
+								"value": "keep-alive"
+							},
+							{
+								"key": "Content-Length",
+								"value": "288",
+								"disabled": true
+							},
+							{
+								"key": "x-business-id",
+								"value": "523",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "x-user-id",
+								"value": "66d4ee47-1f7d-40aa-b542-0f35fddace1d",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/products",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{C-page}}",
+									"disabled": true
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_product",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let testcase = pm.environment.get(\"C-testcase\");",
+									"// if(!testcase){",
+									"//     testcase = 2;",
+									"//     pm.environment.set(\"C-testcase\", testcase);",
+									"// // }",
+									"// console.log(\"Testcase: \" + testcase);",
+									"// let configs = pm.environment.get(\"C-configs\");",
+									"",
+									"",
+									"",
+									"// Example secret key for signing, replace with your actual secret",
+									"const secretKey = pm.environment.get(\"C-client_key\");",
+									"console.log(\"secretKey: \" + secretKey);",
+									"",
+									"// function ()",
+									"let today = new Date();",
+									"let timestamp = Math.floor(today.getTime() / 1000) + 30;",
+									"console.log(\"timestamp: \" + timestamp);",
+									"// Get method, URL, body, and timestamp",
+									"const method = pm.request.method;",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\", \"\");",
+									"// const body = pm.request.body ? pm.request.body.raw : '';",
+									"// const timestamp = pm.request.headers.get('x-timestamp');",
+									"// url = url.replace(\"{{C-page}}\", page);",
+									"// url = url.replace(\"{{C-page_size}}\", page_size);",
+									"",
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));",
+									"let list_tax_code = [\"TAX_CODE_10\", \"TAX_CODE_8\", \"TAX_CODE_2\", \"TAX_CODE_5\", \"TAX_CODE_0\", \"TAX_CODE_1\"];",
+									"let product_name = \"[PRODUCT] \" + list_func.randomChars(7);",
+									"// let testcase = pm.environment.get(\"C-testcase\");",
+									"// console.log(\"Create product Testcase: \" + testcase);",
+									"let body = {",
+									"    \"general_info\": {",
+									"        \"item_name\": product_name,",
+									"        \"sku_code\": \"SKU\" + list_func.randomChars(4),",
+									"        \"unit\": \"pcs\",",
+									"        \"description\": \"This is a sample product.\"",
+									"    },",
+									"    \"sale_info\": {",
+									"        \"sale_price\": list_func.getRandomInt(10,200)*1000,",
+									"        \"sale_tax_code\": list_tax_code[list_func.getRandomInt(0, list_tax_code.length - 1)]",
+									"    },",
+									"    \"purchase_info\": {",
+									"        \"purchase_price\": list_func.getRandomInt(10,200)*1000,",
+									"        \"purchase_tax\": list_tax_code[list_func.getRandomInt(0, list_tax_code.length - 1)]",
+									"    }",
+									"}",
+									"",
+									"console.log(body)",
+									"body = JSON.stringify(body);",
+									"console.log(\"payload: \", body)",
+									"// Concatenate the components to form the message to sign",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;",
+									"console.log(\"Generated message: \", message);",
+									"",
+									"// Generate SHA256 signature",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);",
+									"console.log(\"Generated signature: \", signature);",
+									"",
+									"pm.environment.set(\"C-timestamp\", timestamp);",
+									"pm.environment.set(\"C-payload\", body);",
+									"pm.environment.set(\"C-customer_obj\", JSON.parse(body));",
+									"// Add the signature to the headers",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();",
+									"let product_name = jsData.data.general_info.item_name;",
+									"pm.environment.set(\"V-product_name\", product_name);",
+									"console.log(\"product_name \"+ product_name);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}"
+							},
+							{
+								"key": "x-signature",
+								"value": "f6857329fb1bbd279ca7f2c00eecca5daf67f350d363db4f18568b1f9feabf7d",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "User-Agent",
+								"value": "PostmanRuntime/7.39.1"
+							},
+							{
+								"key": "Accept",
+								"value": "*/*"
+							},
+							{
+								"key": "Cache-Control",
+								"value": "no-cache"
+							},
+							{
+								"key": "Postman-Token",
+								"value": "6b075165-728a-4921-91b0-58d688d6dc2f",
+								"disabled": true
+							},
+							{
+								"key": "Host",
+								"value": "api-stg.finan.one",
+								"disabled": true
+							},
+							{
+								"key": "Accept-Encoding",
+								"value": "gzip, deflate, br"
+							},
+							{
+								"key": "Connection",
+								"value": "keep-alive"
+							},
+							{
+								"key": "Content-Length",
+								"value": "288",
+								"disabled": true
+							},
+							{
+								"key": "x-business-id",
+								"value": "523",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "x-user-id",
+								"value": "66d4ee47-1f7d-40aa-b542-0f35fddace1d",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/products",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete_product",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase delete customer: \" + testcase);",
+									"const secretKey = pm.environment.get(\"C-client_key\");",
+									"console.log(\"secretKey: \" + secretKey);",
+									"",
+									"// function ()",
+									"let today = new Date();",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;",
+									"console.log(\"timestamp: \" + timestamp);",
+									"let product_id = pm.environment.get(\"V-product_id\");",
+									"console.log(\"product_id\" + product_id);",
+									"// Get method, URL, body, and timestamp",
+									"const method = pm.request.method;",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");",
+									"url = url.replace(\"{{V-product_id}}\", product_id);",
+									"const body = pm.request.body ? pm.request.body.raw : '';",
+									"// const timestamp = pm.request.headers.get('x-timestamp');",
+									"// Concatenate the components to form the message to sign",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;",
+									"console.log(\"Generated message: \", message);",
+									"",
+									"// Generate SHA256 signature",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);",
+									"console.log(\"Generated signature: \", signature);",
+									"",
+									"pm.environment.set(\"C-timestamp\",timestamp);",
+									"// Add the signature to the headers",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}"
+							},
+							{
+								"key": "x-signature",
+								"value": "f6857329fb1bbd279ca7f2c00eecca5daf67f350d363db4f18568b1f9feabf7d",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "User-Agent",
+								"value": "PostmanRuntime/7.39.1"
+							},
+							{
+								"key": "Accept",
+								"value": "*/*"
+							},
+							{
+								"key": "Cache-Control",
+								"value": "no-cache"
+							},
+							{
+								"key": "Postman-Token",
+								"value": "6b075165-728a-4921-91b0-58d688d6dc2f",
+								"disabled": true
+							},
+							{
+								"key": "Host",
+								"value": "api-stg.finan.one",
+								"disabled": true
+							},
+							{
+								"key": "Accept-Encoding",
+								"value": "gzip, deflate, br"
+							},
+							{
+								"key": "Connection",
+								"value": "keep-alive"
+							},
+							{
+								"key": "Content-Length",
+								"value": "288",
+								"disabled": true
+							},
+							{
+								"key": "x-business-id",
+								"value": "523",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "x-user-id",
+								"value": "66d4ee47-1f7d-40aa-b542-0f35fddace1d",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/products/{{V-product_id}}",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{V-product_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_product_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"let product_id = pm.environment.get(\"V-product_id\");",
+									"console.log(\"product_id: \" + product_id);",
+									"",
+									"",
+									"// Example secret key for signing, replace with your actual secret",
+									"const secretKey = pm.environment.get(\"C-client_key\");",
+									"console.log(\"secretKey: \" + secretKey);",
+									"",
+									"// function ()",
+									"let today = new Date();",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;",
+									"console.log(\"timestamp: \" + timestamp);",
+									"",
+									"// Get method, URL, body, and timestamp",
+									"const method = pm.request.method;",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");",
+									"url = url.replace(\"{{V-product_id}}\", product_id);",
+									"// url = url.replace(\"{{C-page_size}}\",page_size);",
+									"// let configs = pm.environment.get(\"C-configs\");",
+									"// console.log(\"config: \", configs);",
+									"// switch (configs.test_type){",
+									"//     case \"create\": ",
+									"//         customer_id = customer_obj_id;",
+									"//         pm.environment.set(\"C-customer_id\", customer_id);",
+									"//         url = url.replace(\"{{C-customer_id}}\", customer_id);",
+									"",
+									"//         break;",
+									"//     case \"edit\":",
+									"//         customer_id = customer_obj_edit_id;",
+									"//         pm.environment.set(\"C-customer_id\", customer_id);",
+									"//         url = url.replace(\"{{C-customer_id}}\", customer_id);",
+									"//         console.log(\"customer_id\" + customer_id);",
+									"//        break;",
+									"//     default: ",
+									"//     console.log(\"can't parse customer_id\"); ",
+									"//         break;",
+									"// }",
+									"",
+									"const body = pm.request.body ? pm.request.body.raw : '';",
+									"// const timestamp = pm.request.headers.get('x-timestamp');",
+									"",
+									"// Concatenate the components to form the message to sign",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;",
+									"console.log(\"Generated message: \", message);",
+									"",
+									"// Generate SHA256 signature",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);",
+									"console.log(\"Generated signature: \", signature);",
+									"",
+									"pm.environment.set(\"C-timestamp\",timestamp);",
+									"",
+									"// Add the signature to the headers",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}"
+							},
+							{
+								"key": "x-signature",
+								"value": "f6857329fb1bbd279ca7f2c00eecca5daf67f350d363db4f18568b1f9feabf7d",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "User-Agent",
+								"value": "PostmanRuntime/7.39.1"
+							},
+							{
+								"key": "Accept",
+								"value": "*/*"
+							},
+							{
+								"key": "Cache-Control",
+								"value": "no-cache"
+							},
+							{
+								"key": "Postman-Token",
+								"value": "6b075165-728a-4921-91b0-58d688d6dc2f",
+								"disabled": true
+							},
+							{
+								"key": "Host",
+								"value": "api-stg.finan.one",
+								"disabled": true
+							},
+							{
+								"key": "Accept-Encoding",
+								"value": "gzip, deflate, br"
+							},
+							{
+								"key": "Connection",
+								"value": "keep-alive"
+							},
+							{
+								"key": "Content-Length",
+								"value": "288",
+								"disabled": true
+							},
+							{
+								"key": "x-business-id",
+								"value": "523",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "x-user-id",
+								"value": "66d4ee47-1f7d-40aa-b542-0f35fddace1d",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/products/{{V-product_id}}",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{V-product_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

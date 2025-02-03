@@ -1,0 +1,548 @@
+{
+	"info": {
+		"_postman_id": "b65110e5-8e45-46a6-a1e2-4b5ba3751835",
+		"name": "finan_49_manual_gen_coa_default",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "verify_email_or_phone_number",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * currently, manual to create account pwd & use charles to get it",
+									" * default pwd created: 21112007 (prod with default account & no need pwd)",
+									" */",
+									"",
+									"let email = \"bavawa2974@fahih.com\";",
+									"let phone_number = \"0907470431\";",
+									"",
+									"let isPhone = true;",
+									"",
+									"console.log(\"--- GEN COA ---\");",
+									"let testcase = 1;",
+									"// console.log(\"Testcase: \" + testcase);",
+									"",
+									"let payload;",
+									"if(isPhone){",
+									"    console.log(\"-- login with phone_number: \" + phone_number);",
+									"    payload = {",
+									"        \"phone_number\": phone_number",
+									"    }",
+									"} else {",
+									"    console.log(\"-- login with email: \" + email);",
+									"    payload = {",
+									"        \"email_login\": email",
+									"    }",
+									"}",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);",
+									"pm.environment.set(\"C-isPhone\",isPhone);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.is_existed && jsData.data.has_password){",
+									"        postman.setNextRequest(\"login_with_pwd\");",
+									"    } else if(jsData.data.is_existed) {",
+									"        console.log(\"This account doesn't create pwd, please manual create!!!\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        console.log(\"THIS ACCOUNT IS NOT EXISTED IN SYSTEM, WILL MANUAL CREATE IT\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-user/api/v1/auth/account/verify",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_with_pwd",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let crypto = require('crypto-js');",
+									"",
+									"// const algorithm = \"aes-256-gcm\";",
+									"// const IV_LEN = 12;",
+									"// const AUTH_TAG_LEN = 16;",
+									"// const SECRET_KEY = \"7dQ0HwRI5okvwAK0WzxaW6ABFncjeu1E\";",
+									"",
+									"// function encrypt(message) {",
+									"//   const iv = Buffer.from(crypto.randomBytes(IV_LEN));",
+									"//   const cipher = crypto.createCipheriv(algorithm, SECRET_KEY, iv, {",
+									"//     authTagLength: AUTH_TAG_LEN,",
+									"//   });",
+									"//   const encryptedData = Buffer.concat([cipher.update(message), cipher.final()]);",
+									"//   const authTag = cipher.getAuthTag();",
+									"//   const raw = Buffer.concat([iv, encryptedData, authTag]).toString(\"hex\");",
+									"//   return raw;",
+									"// }",
+									"",
+									"// const pwd = \"21112007\";",
+									"// // var superSecretEncrypted = CryptoJS.AES.encrypt(pwd, SECRET_KEY);",
+									"",
+									"// let pwd_enc = encrypt(pwd);",
+									"// console.log(\"pwd_enc: \" + pwd_enc);",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"let isPhone = pm.environment.get(\"C-isPhone\");",
+									"",
+									"let verify_payload = JSON.parse(pm.environment.get(\"C-payload\"));",
+									"console.log(\"verify_payload: \", verify_payload);",
+									"",
+									"let payload;",
+									"let version = pm.environment.get(\"x-current-version\");",
+									"if(isPhone){",
+									"    payload = {",
+									"        \"phone_number\": verify_payload.phone_number,",
+									"        \"pwd\": pm.environment.get(\"pwd\"),",
+									"        \"platform\": \"gtapp\",",
+									"        \"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",",
+									"        \"app_version\": version,",
+									"        \"device_name\": \"iPhone\"",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"email_login\": verify_payload.email_login,",
+									"        \"pwd\": pm.environment.get(\"pwd\"),",
+									"        \"platform\": \"pro_web\",",
+									"        \"device_id\": \"50e26649-c41f-493d-a2f7-30db4407fc06\",",
+									"        \"app_version\": version,",
+									"        \"device_name\":\"desktop\"",
+									"    }",
+									"}",
+									"console.log(\"debug: \", payload);",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"        let testcase = pm.environment.get(\"C-testcase\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"get_branch_id\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-user/api/v1/auth/account/login",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_branch_id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.id;",
+									"    } catch {",
+									"        console.log(\"Can't get branch_id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch_id\", function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    if(branch_id != null){",
+									"        pm.environment.set(\"C-business_id\",branch_id);",
+									"        postman.setNextRequest(\"gen_coa\"); // gen_coa",
+									"    } else {",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-business/api/v1/branch/detail/{{C-business_id}}",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"branch",
+								"detail",
+								"{{C-business_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "gen_coa",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    console.log(\"Gen completed, double check coa default\");",
+									"    postman.setNextRequest(\"get_list_internal_account\");",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"branch_id\":{{C-business_id}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/account/create-default",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"account",
+								"create-default"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "internal-account",
+			"item": [
+				{
+					"name": "get_list_internal_account",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"/**",
+									" * trong sub_group \"Current Liabilities\" chứa tất cả account",
+									" *  - tạo từ coa => có thể edit và delete",
+									" *  - tạo từ tax config => ko cho edit và delete",
+									" */",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let coa_tax = null;",
+									"    try {",
+									"        for(let i in jsData.data){",
+									"            let sub_group_i;",
+									"                for(let j in jsData.data[i].sub_group){",
+									"                    let accounts_j = [];",
+									"                        for(let k in jsData.data[i].sub_group[j].accounts){",
+									"                            accounts_j[accounts_j.length] = {",
+									"                                \"account_name\":jsData.data[i].sub_group[j].accounts[k].name,",
+									"                                \"account_id\":jsData.data[i].sub_group[j].accounts[k].id,",
+									"                                \"group_name\":jsData.data[i].sub_group[j].accounts[k].group_name,",
+									"                                \"sub_group_name\":jsData.data[i].sub_group[j].accounts[k].sub_name,",
+									"                                \"branch_id\":jsData.data[i].sub_group[j].accounts[k].branch_id,",
+									"                                \"displays_id\":jsData.data[i].sub_group[j].accounts[k].displays_id,",
+									"                                \"account_source\":jsData.data[i].sub_group[j].accounts[k].account_source,",
+									"                                \"account_type\":jsData.data[i].sub_group[j].accounts[k].account_type,",
+									"                                \"account_code\":jsData.data[i].sub_group[j].accounts[k].account_code,",
+									"                                \"coa_type\":jsData.data[i].sub_group[j].accounts[k].coa_type,",
+									"                                \"sub_coa_deepest\":jsData.data[i].sub_group[j].accounts[k].sub_coa_deepest,",
+									"                                \"name_en\":jsData.data[i].sub_group[j].accounts[k].name_en,",
+									"                                \"status\":jsData.data[i].sub_group[j].accounts[k].status,",
+									"                                \"parent_id\":jsData.data[i].sub_group[j].accounts[k].parent_id,",
+									"                                \"description\":jsData.data[i].sub_group[j].accounts[k].description,",
+									"                                \"open_amount\":jsData.data[i].sub_group[j].accounts[k].open_amount,",
+									"                                \"currency\":jsData.data[i].sub_group[j].accounts[k].currency,",
+									"                                \"is_edit\":jsData.data[i].sub_group[j].accounts[k].is_edit,",
+									"                                \"is_delete\":jsData.data[i].sub_group[j].accounts[k].is_delete",
+									"                                // \"opening_at\":jsData.data[i].sub_group[j].accounts[k].opening_at",
+									"                                // \"closing_at\":jsData.data[i].sub_group[j].accounts[k].closing_at",
+									"                            }",
+									"                        }",
+									"",
+									"                        sub_group_i = {",
+									"                            \"sub_group_name\":jsData.data[i].sub_group[j].name,",
+									"                            \"sub_group_id\":jsData.data[i].sub_group[j].id,",
+									"                            \"sub_group_description\":jsData.data[i].sub_group[j].description,",
+									"                            \"accounts\":accounts_j",
+									"                        }",
+									"                        break;",
+									"                }",
+									"",
+									"                coa_tax = {",
+									"                    \"group_name\":jsData.data[i].name,",
+									"                    \"value\":jsData.data[i].value,",
+									"                    \"index\":jsData.data[i].index,",
+									"                    \"sub_group\":sub_group_i",
+									"                }",
+									"                break;",
+									"        }",
+									"    } catch {",
+									"        console.log(\"can't get all account in coa_tax\");",
+									"    }",
+									"",
+									"    pm.test(\"Got coa_tax of this user's branch\", function () {",
+									"        pm.expect(coa_tax != null).to.be.true;",
+									"    });",
+									"",
+									"    postman.setNextRequest(null);",
+									"} else {",
+									"    console.log(\"Can't get list internal account, end test \", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}​/finan-ledger/api/v1/account/list?branch_id={{C-business_id}}&coa_type",
+							"host": [
+								"{{finan_base_url}}​"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"account",
+								"list"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "coa_type",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

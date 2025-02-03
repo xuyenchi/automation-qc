@@ -1,0 +1,1155 @@
+{
+	"info": {
+		"_postman_id": "fd7d762b-a42b-47d3-ba92-d3e71a60cc92",
+		"name": "fo_32_verify_to_create_new_customer",
+		"description": "### Testsuite: Verify to create new Customer\n\n###### Testcase:\n\n1. Login with owner account\n    \n2. Get data\n    1. Contact / Get list contact => get total customer\n        \n3. Create customer\n    1. Unhappy case: null data (name, phone, email, type, date of birth, sex, address)\n        \n    2. Happy case\n        \n4. Check data\n    1. Contact / Get list contact => increase 1, matching data\n        \n    2. Contact / Get contact detail => data correctly\n        \n\n###### Note:\n\n- Customer sẽ bao gồm bộ config mới (config_invoice created_at & due_at, config_payment, config_email_template)\n    \n- Bộ config mới ko bắt buộc, sẽ handle sau khi có define structure response từ dev\n    \n- Contact detail sẽ đi kèm thêm bộ report, bộ invoice cho contact, bộ bill cho contact",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 32 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        postman.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-locale",
+								"value": "<string>",
+								"description": "locale",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_location\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "location tree",
+			"item": [
+				{
+					"name": "get_location",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * loc_lvl: 1 = Thành Phố/Tỉnh, 2 = Quận/Huyện, 3 = Phường Xã",
+									" * parent_short_id",
+									" */",
+									"",
+									"let loc_lvl, parent_short_id;",
+									"",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"if(!case_){",
+									"    case_ = 1;",
+									"    pm.environment.set(\"C-case_\",case_);",
+									"}",
+									"",
+									"switch(case_){",
+									"    case 1:",
+									"        // get City",
+									"        console.log(\"Lấy danh sách Tỉnh/Thành\");",
+									"        loc_lvl = 1;",
+									"        parent_short_id = \"\";",
+									"        break;",
+									"    case 2:",
+									"        // get District in City at case 1",
+									"        let city_obj = pm.environment.get(\"C-city_obj\");",
+									"        console.log(\"Lấy danh sách Quận/Huyện tương ứng với Tỉnh/Thành: \" + city_obj.name);",
+									"        loc_lvl = 2;",
+									"        parent_short_id = city_obj.short_id;",
+									"        break;",
+									"    case 3:",
+									"        // get ward",
+									"        let district_obj = pm.environment.get(\"C-district_obj\");",
+									"        console.log(\"Lấy danh sách Phường/Xã tương ứng với Quận/Huyện: \" + district_obj.name);",
+									"        loc_lvl = 3;",
+									"        parent_short_id = district_obj.short_id;",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow\");",
+									"        break;",
+									"}",
+									"",
+									"pm.environment.set(\"C-loc_lvl\",loc_lvl);",
+									"pm.environment.set(\"C-parent_short_id\",parent_short_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let case_ = pm.environment.get(\"C-case_\");",
+									"",
+									"    let city_obj;",
+									"    switch(case_){",
+									"        case 1:",
+									"            console.log(\"Total city: \" + jsData.meta.total_rows);",
+									"            city_obj = jsData.data[getRandomInt(0, jsData.meta.total_rows - 1)];",
+									"            console.log(\"Random city: \", city_obj);",
+									"            pm.environment.set(\"C-city_obj\",city_obj);",
+									"",
+									"            case_++;",
+									"            pm.environment.set(\"C-case_\",case_);",
+									"            postman.setNextRequest(\"get_location\");",
+									"            break;",
+									"        case 2:",
+									"            city_obj = pm.environment.get(\"C-city_obj\");",
+									"            console.log(\"Total district: \" + jsData.meta.total_rows + \" of city \" + city_obj.name);",
+									"            district_obj = jsData.data[getRandomInt(0, jsData.meta.total_rows - 1)];",
+									"            console.log(\"Random district: \", district_obj);",
+									"            pm.environment.set(\"C-district_obj\",district_obj);",
+									"",
+									"            case_++;",
+									"            pm.environment.set(\"C-case_\",case_);",
+									"            postman.setNextRequest(\"get_location\");",
+									"            break;",
+									"        case 3:",
+									"            // ward",
+									"            district_obj = pm.environment.get(\"C-district_obj\");",
+									"            console.log(\"Total ward: \" + jsData.meta.total_rows + \" of district \" + district_obj.name);",
+									"            ward_obj = jsData.data[getRandomInt(0, jsData.meta.total_rows - 1)];",
+									"            console.log(\"Random ward_obj: \", ward_obj);",
+									"            pm.environment.set(\"C-ward_obj\",ward_obj);",
+									"",
+									"            pm.environment.unset(\"C-case_\");",
+									"            postman.setNextRequest(\"get_list_contact\");",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);        ",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get location tree, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-common/api/v1/vn-location/get-list?loc_lvl={{C-loc_lvl}}&parent_short_id={{C-parent_short_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-common",
+								"api",
+								"v1",
+								"vn-location",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "loc_lvl",
+									"value": "{{C-loc_lvl}}"
+								},
+								{
+									"key": "parent_short_id",
+									"value": "{{C-parent_short_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "contact",
+			"item": [
+				{
+					"name": "get_list_contact",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_contact, old_list_contact;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_contact = pm.environment.get(\"C-list_contact\");",
+									"            if(!list_contact){",
+									"                list_contact = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_contact = pm.environment.get(\"C-old_list_contact\");",
+									"            if(!old_list_contact){",
+									"                old_list_contact = pm.environment.get(\"C-list_contact\");",
+									"                pm.environment.unset(\"C-list_contact\");",
+									"                pm.environment.set(\"C-old_list_contact\",old_list_contact);",
+									"            }",
+									"",
+									"            list_contact = pm.environment.get(\"C-list_contact\");",
+									"            if(!list_contact){",
+									"                list_contact = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_contact[list_contact.length] = {",
+									"            \"contact_id\":jsData.data[item].id,",
+									"            \"contact_name\":jsData.data[item].contact_name,",
+									"            \"type\":jsData.data[item].type,",
+									"            \"phone_number\":jsData.data[item].phone_number,",
+									"            \"email\":jsData.data[item].email,",
+									"            \"gender\":jsData.data[item].gender,",
+									"            \"is_expired\":jsData.data[item].is_expired,",
+									"            \"invoice_config\":jsData.data[item].invoice_config,",
+									"            \"tax_code\":jsData.data[item].tax_code,",
+									"            \"payment_methods\":jsData.data[item].payment_methods",
+									"        }",
+									"",
+									"    }",
+									"    pm.environment.set(\"C-list_contact\",list_contact);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all contact! \" + list_contact.length, function () {",
+									"                    pm.expect(list_contact.length > 0).to.be.true;",
+									"                });",
+									"",
+									"                testcase++;",
+									"                if(jsData.data.length > 0){",
+									"                    pm.environment.set(\"C-contact_name\", jsData.data[0].contact_name)",
+									"                }",
+									"                pm.environment.set(\"C-testcase\",testcase);",
+									"                postman.setNextRequest(\"create_contact\"); // create_contact",
+									"                break;",
+									"            case 4:",
+									"                let contact_obj = pm.environment.get(\"C-contact_obj\");",
+									"",
+									"                pm.test(\"Total contact increase 1\", function () {",
+									"                    pm.expect(list_contact.length == old_list_contact.length + 1).to.be.true;",
+									"                });",
+									"",
+									"                let isFound = false;",
+									"                for(let i in list_contact){",
+									"                    if(list_contact[i].contact_id == contact_obj.contact_id){",
+									"                        isFound = true;",
+									"                        pm.test(\"name of contact correctly! \" + contact_obj.contact_name, function () {",
+									"                            pm.expect(contact_obj.contact_name == list_contact[i].contact_name).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"phone_number of contact correctly! \" + contact_obj.phone_number, function () {",
+									"                            pm.expect(contact_obj.phone_number == list_contact[i].phone_number).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"email of contact correctly! \" + contact_obj.email, function () {",
+									"                            pm.expect(contact_obj.email == list_contact[i].email).to.be.true;",
+									"                        });",
+									"",
+									"                        // pm.test(\"birthday of contact correctly! \" + contact_obj.birthday, function () {",
+									"                        //     pm.expect(contact_obj.birthday == list_contact[i].birthday).to.be.true;",
+									"                        // });",
+									"",
+									"                        pm.test(\"gender of contact correctly! \" + contact_obj.gender, function () {",
+									"                            pm.expect(contact_obj.gender == list_contact[i].gender).to.be.true;",
+									"                        });",
+									"",
+									"                        // pm.test(\"address of contact correctly! \" + contact_obj.address, function () {",
+									"                        //     console.log(\"Debug: \", list_contact[i]);",
+									"                        //     pm.expect(contact_obj.address == list_contact[i].address).to.be.true;",
+									"                        // });",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found new contact\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_contact_detail\"); //get_contact_detail",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more contact\");",
+									"        postman.setNextRequest(\"get_list_contact\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list contact, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/contact/get-list?business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"contact",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "sort",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "option",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "state",
+									"value": "complete",
+									"description": "waiting_confirm,delivering,complete",
+									"disabled": true
+								},
+								{
+									"key": "is_active",
+									"value": "false",
+									"description": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_contact_detail",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"",
+									"    let contact_obj = pm.environment.get(\"C-contact_obj\");",
+									"",
+									"    pm.test(\"name of contact correctly! \" + contact_obj.contact_name, function () {",
+									"        pm.expect(contact_obj.contact_name == jsData.data.contact_name).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"phone_number of contact correctly! \" + contact_obj.phone_number, function () {",
+									"        pm.expect(contact_obj.phone_number == jsData.data.phone_number).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"email of contact correctly! \" + contact_obj.email, function () {",
+									"        pm.expect(contact_obj.email == jsData.data.email).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"birthday of contact correctly! \" + contact_obj.birthday, function () {",
+									"        pm.expect(contact_obj.birthday == jsData.data.birthday).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"gender of contact correctly! \" + contact_obj.gender, function () {",
+									"        pm.expect(contact_obj.gender == jsData.data.gender).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"detail_address of contact correctly! \" + contact_obj.detail_address, function () {",
+									"        pm.expect(contact_obj.detail_address == jsData.data.detail_address).to.be.true;",
+									"    });",
+									"",
+									"    console.log(\"--- End Testsuite 32 ---\");",
+									"    postman.setNextRequest(null);",
+									"} else {",
+									"    console.log(\"Can't get internal contact detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let contact_obj = pm.environment.get(\"C-contact_obj\");",
+									"let contact_id = contact_obj.contact_id;",
+									"console.log(\"view detail contact: \" + contact_id);",
+									"",
+									"pm.environment.set(\"C-contact_id\",contact_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							},
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/contact/get-one/{{C-contact_id}}?business_id={{C-business_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"contact",
+								"get-one",
+								"{{C-contact_id}}"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_contact",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// \"invoice_config\": {",
+									"//     \"due_date_config\": {",
+									"//     \"after_days_issue_date\": 0,",
+									"//     \"on_invoice_issue_date\": true",
+									"//     },",
+									"//     \"payment_method_config\": {",
+									"//     \"account_id\": \"string\",",
+									"//     \"bank_transfer\": true,",
+									"//     \"internal_card\": true,",
+									"//     \"momo_wallet\": true,",
+									"//     \"zalo_pay\": true",
+									"//     }",
+									"// },",
+									"",
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"// ============================= random phone number",
+									"let randomPhone = () => {",
+									"    let phoneNumber = \"\";",
+									"    let viettel = ['86','96','97','98','32','33','34','35','36','37','38','39'];",
+									"    let vina = ['88','81','82','83','84','85','91','94'];",
+									"    let mobi = ['89','90','93','70','76','77','78','79'];",
+									"    let vinamobile = ['92','56','58'];",
+									"    let gmobile = ['99','59'];",
+									"    let itelecom = ['87'];",
+									"    let phoneFormat = ['+84'];//'+84','0'",
+									"    phoneNumber += phoneFormat[getRandomInt(0,phoneFormat.length - 1)];",
+									"    let allNet = [...viettel,...vina,...mobi,...vinamobile,...gmobile,...itelecom];",
+									"    phoneNumber += allNet[getRandomInt(0,allNet.length)];",
+									"    for(let i = 0; i < 7; i++){",
+									"        phoneNumber += getRandomInt(0,9);",
+									"    }",
+									"    return phoneNumber;",
+									"}",
+									"let contact_name_existed = pm.environment.get(\"C-contact_name\");",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"if(!case_){",
+									"    case_ = 1;",
+									"    pm.environment.set(\"C-case_\",case_);",
+									"}",
+									"console.log(\"Testcase: \" + testcase + \".\" + case_);",
+									"",
+									"let contact_name, phone_number, email, birthday, gender, address, group_of_contact_ids = [];",
+									"let types = [\"personal\",\"company\"];",
+									"",
+									"let city_obj = pm.environment.get(\"C-city_obj\");",
+									"let district_obj = pm.environment.get(\"C-district_obj\");",
+									"let ward_obj = pm.environment.get(\"C-ward_obj\");",
+									"switch(case_){",
+									"    case 1:",
+									"        contact_name = \"\";",
+									"        phone_number = \"\";",
+									"        email = \"\";",
+									"        birthday = \"\";",
+									"        gender = \"\";",
+									"        address = \"\";",
+									"        break;",
+									"    case 2:",
+									"        contact_name = contact_name_existed;",
+									"        phone_number = \"\";",
+									"        email = \"\";",
+									"        birthday = \"\";",
+									"        gender = \"\";",
+									"        address = \"\";",
+									"        break;",
+									"    case 3:",
+									"        contact_name = \"[API] Customer \" + randomChars(8); // required",
+									"        phone_number = randomPhone();",
+									"        email = randomChars(10) + \"@finanteam.testinator.com\";",
+									"        birthday = \"\";",
+									"        gender = \"\";",
+									"        if(ward_obj != null){",
+									"            address = ward_obj.full_name;",
+									"        } else {",
+									"            address = district_obj.full_name;",
+									"        }",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow\");",
+									"        break;",
+									"}",
+									"",
+									"let payload = {",
+									"    \"detail_address\": address, // address => detail_address",
+									"    \"birthday\": birthday,",
+									"    \"contact_name\": contact_name,",
+									"    \"area_level2_name\": district_obj.name, // district => area_level2_name",
+									"    \"email\": email,",
+									"    \"gender\": gender,",
+									"    \"invoice_config\": null,",
+									"    // \"invoice_email_template_id\": \"\",",
+									"    // \"payment_email_template_id\": \"\",",
+									"    \"phone_number\": phone_number,",
+									"    \"area_level1_name\": city_obj.name, // province => area_level1_name",
+									"    \"type\": types[getRandomInt(0,types.length - 1)],",
+									"    \"area_level3_name\": ward_obj.name // ward => area_level3_name",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-contact_obj\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"",
+									"// console.log(\"debug: \",jsData);",
+									"const request_api = pm.request.toJSON();",
+									"switch(case_){",
+									"    case 1:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"",
+									"        pm.test(\"System code is 104000\", function () {",
+									"            pm.expect(jsData.code).to.eql(104000);",
+									"        });",
+									"",
+									"        pm.test(\"Error about name can not be empty\", function () {",
+									"            pm.expect(jsData.message.content.includes(\"Name Can not be empty\"));",
+									"        });",
+									"",
+									"        case_++;",
+									"        pm.environment.set(\"C-case_\",case_);",
+									"        postman.setNextRequest(\"create_contact\");",
+									"        break;",
+									"    case 2:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"",
+									"        pm.test(\"System code is 154001\", function () {",
+									"            pm.expect(jsData.code).to.eql(154001);",
+									"        });",
+									"        console.log(\"debug: \",jsData);",
+									"",
+									"        pm.test(\"Error message: Trùng tên liên hệ\", function () {",
+									"            pm.expect(jsData.message.content).to.contains(\"Trùng tên liên hệ\");",
+									"        });",
+									"",
+									"        case_++;",
+									"        pm.environment.set(\"C-case_\",case_);",
+									"        postman.setNextRequest(\"create_contact\");",
+									"        break;",
+									"    case 3:",
+									"        console.log(\"debug: \",jsData);",
+									"        ",
+									"        pm.test(\"Status code is 200\", function () {",
+									"            pm.response.to.have.status(200);",
+									"        });",
+									"",
+									"        pm.test(\"System code is 102001\", function () {",
+									"            pm.expect(jsData.code).to.eql(102001);",
+									"        });",
+									"",
+									"        pm.environment.unset(\"C-case_\");",
+									"        let contact_obj = pm.environment.get(\"C-contact_obj\");",
+									"",
+									"        // update contact_id for contact_obj",
+									"        contact_obj.contact_id = jsData.data.id;",
+									"",
+									"        pm.test(\"name of contact correctly! \" + contact_obj.name, function () {",
+									"            pm.expect(contact_obj.name == jsData.data.name).to.be.true;",
+									"        });",
+									"",
+									"        if(contact_obj.phone_number.charAt(0) == \"0\"){",
+									"            contact_obj.phone_number = contact_obj.phone_number.replace('0','+84');",
+									"        }",
+									"        pm.test(\"phone_number of contact correctly! \" + contact_obj.phone_number, function () {",
+									"            pm.expect(contact_obj.phone_number == jsData.data.phone_number).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"email of contact correctly! \" + contact_obj.email, function () {",
+									"            pm.expect(contact_obj.email == jsData.data.email).to.be.true;",
+									"        });",
+									"",
+									"        if(contact_obj.birthday == \"\"){",
+									"            // contact_obj.birthday = \"01-01-2000\";",
+									"            contact_obj.birthday = null;",
+									"            pm.environment.set(\"C-contact_obj\",contact_obj);",
+									"        }",
+									"        pm.test(\"birthday of contact correctly! \" + contact_obj.birthday, function () {",
+									"            pm.expect(contact_obj.birthday == jsData.data.birthday).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"gender of contact correctly! \" + contact_obj.gender, function () {",
+									"            pm.expect(contact_obj.gender == jsData.data.gender).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"detail_address of contact correctly! \" + contact_obj.detail_address, function () {",
+									"            pm.expect(contact_obj.detail_address == jsData.data.detail_address).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"type of contact correctly! \" + contact_obj.type, function () {",
+									"            pm.expect(contact_obj.type == jsData.data.type).to.be.true;",
+									"        });",
+									"",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        pm.environment.set(\"C-contact_obj\",contact_obj);",
+									"        postman.setNextRequest(\"get_list_contact\"); // get_list_contact",
+									"        break;",
+									"    default:",
+									"        console.log(\"missing flow, end test\");",
+									"        postman.setNextRequest(null);",
+									"        break;",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "content-type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-location-timezone",
+								"value": "UTC+07:00"
+							},
+							{
+								"key": "x-platform-key",
+								"value": "pro_web"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}"
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/contact/create",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"contact",
+								"create"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":true,",
+					"    \"limit_page\":5,",
+					"    \"timeout\":12000, // miliseconds => timeout to call API",
+					"    \"is_buyer_gen\":false,",
+					"    \"test_payment_method\":\"va_galaxy\" // bank_transfer, viet_qr_pro_mb, va_galaxy",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    switch(request_api.method){",
+					"        case \"PUT\":",
+					"            curl = \"curl --location --request PUT \";",
+					"            break;",
+					"        case \"PATCH\":",
+					"            curl = \"curl --location --request PATCH \";",
+					"            break;",
+					"        case \"DELETE\":",
+					"            curl = \"curl --location --request DELETE \";",
+					"            break;",
+					"        default:",
+					"            curl = \"curl --location \";",
+					"            break;",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.length > 0){",
+					"            curl += \"? \";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\": case \"PATCH\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}

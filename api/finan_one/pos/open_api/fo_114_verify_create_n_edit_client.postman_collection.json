@@ -1,0 +1,1120 @@
+{
+	"info": {
+		"_postman_id": "f1432c5e-7904-4a21-ac6d-5eb4348beb3f",
+		"name": "fo_114_verify_create_n_edit_client",
+		"description": "Testsuite: verify to create and edit client\n\n1. Login (F1 flow)\n    \n2. Get data\n    \n    1. Get list clients => get 1 client to edit\n        \n3. Action - Create / Edit\n    \n4. Check data\n    \n    1. Get list clients => check data\n        \n\nNote:\n\n- Bộ này thực hiện bên F1, ko cần signature",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 114 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        postman.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"    let user_id = jsData.data.user_id;",
+									"    console.log(\"user_id: \" + user_id);",
+									"    pm.environment.set(\"C-user_id\",user_id);",
+									"",
+									"    // switch(configs.feature){",
+									"    //     case \"create_client\":",
+									"    //         postman.setNextRequest(\"create_client\");",
+									"    //         break;",
+									"    //     case \"edit_client\":",
+									"    //         if(pm.environment.get(\"C-default_client\") != null){",
+									"    //             postman.setNextRequest(\"update_client\");",
+									"    //         } else {",
+									"    //             console.log(\"missing default_client\");",
+									"    //             postman.setNextRequest(null);",
+									"    //         }",
+									"    //         break;",
+									"    //     case \"create_va\":",
+									"    //         if(pm.environment.get(\"C-default_client\") != null){",
+									"    //             postman.setNextRequest(\"get_master_account\");",
+									"    //         } else {",
+									"    //             console.log(\"missing default_client\");",
+									"    //             postman.setNextRequest(null);",
+									"    //         }",
+									"    //         break;",
+									"    //     case \"create_external_transfer\":",
+									"    //     case \"create_internal_transfer\":",
+									"    //     default:",
+									"    //         if(pm.environment.get(\"C-default_client\") != null){",
+									"    //             postman.setNextRequest(\"get_list_va\");",
+									"    //         } else {",
+									"    //             console.log(\"missing default_client\");",
+									"    //             postman.setNextRequest(null);",
+									"    //         }",
+									"    // }",
+									"    postman.setNextRequest(\"get_current_business\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "get_current_business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"Current business info: \", jsData.data);",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.current_business.list_branch[0].id;",
+									"        pm.environment.set(\"C-branch_id\",branch_id);",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    let payment_method = null;",
+									"    let list_payment_method = [];",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let test_payment_method = configs.test_payment_method;",
+									"    try {",
+									"        switch(test_payment_method){",
+									"            case \"viet_qr_pro_mb\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].key == test_payment_method){ ",
+									"                        payment_method = jsData.data.list_payment_method[i];",
+									"                        break;",
+									"                    }",
+									"                }",
+									"                break;",
+									"            case \"va_galaxy\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].bank_account.account_number.includes(\"SBB\")){ ",
+									"                        list_payment_method[list_payment_method.length] = jsData.data.list_payment_method[i];",
+									"                    }",
+									"                }",
+									"                payment_method = list_payment_method[getRandomInt(0,list_payment_method.length -1)];",
+									"                break;",
+									"            case \"bank_transfer\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].key == test_payment_method){ ",
+									"                        list_payment_method[list_payment_method.length] = jsData.data.list_payment_method[i];",
+									"                    }",
+									"                }",
+									"                payment_method = list_payment_method[getRandomInt(0,list_payment_method.length -1)];",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow\");",
+									"                break;",
+									"        }",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"    pm.environment.set(\"C-viet_qr_payment\",payment_method);",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"    ",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_clients\");",
+									"} else {",
+									"    console.log(\"Can't get business detail, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/business/get-current",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"business",
+								"get-current"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "client",
+			"item": [
+				{
+					"name": "create_client",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let business_id = pm.environment.get(\"C-business_id\")",
+									"let payload = {",
+									"    \"user_id\":pm.environment.get(\"C-user_id\"),",
+									"    \"business_id\": parseInt(business_id),",
+									"    \"name\": \"[API] SUPER ADMIN \" + business_id + \"-\" + list_func.randomChars(6)",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-client_obj\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let client_obj = pm.environment.get(\"C-client_obj\");",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let client_id = null, client_key = null;",
+									"    try {",
+									"        client_id = jsData.data.id;",
+									"        client_key = jsData.data.client_secret;",
+									"    } catch {",
+									"        console.log(\"Missing data\");",
+									"    }",
+									"",
+									"    pm.test(\"Got client_id\", function () {",
+									"        pm.expect(client_id != null).to.be.true;",
+									"    });",
+									"    pm.environment.set(\"C-client_id\",client_id);",
+									"",
+									"    pm.test(\"Got client_key\", function () {",
+									"        pm.expect(client_key != null).to.be.true;",
+									"    });",
+									"    pm.environment.set(\"C-client_key\",client_key);",
+									"",
+									"    client_obj.client_id = client_id;",
+									"    pm.environment.set(\"C-client_obj\",client_obj);",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_clients\");",
+									"} else {",
+									"    // xài tạm acc STG của Nhân",
+									"    // pm.environment.set(\"C-client_id\",\"f8cdb81e-6f7c-4056-8b81-ee5859c54786\");",
+									"    // pm.environment.set(\"C-client_key\",\"91b8d989119e004b41953cf65b92d5d8ec4ccedae7d47422b7b775654b937ebc\");",
+									"    console.log(\"Can't create new client, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{C-user_id}}",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "x-business-id",
+								"value": "{{C-business_id}}",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/client/create-client",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"client",
+								"create-client"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_list_clients",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");\r",
+									"console.log(\"Testcase: \" + testcase);\r",
+									"\r",
+									"let page = pm.environment.get(\"C-page\");\r",
+									"let page_size = pm.environment.get(\"C-page_size\");\r",
+									"if(!page){\r",
+									"    page = 1;\r",
+									"    pm.environment.set(\"C-page\",page);\r",
+									"\r",
+									"    page_size = 20;\r",
+									"    pm.environment.set(\"C-page_size\",page_size);\r",
+									"}\r",
+									"\r",
+									"// // Example secret key for signing, replace with your actual secret\r",
+									"// const secretKey = pm.environment.get(\"C-client_key\");\r",
+									"// console.log(\"secretKey: \" + secretKey);\r",
+									"\r",
+									"// // function ()\r",
+									"// let today = new Date();\r",
+									"// let timestamp = Math.floor(today.getTime()/1000) + 30;\r",
+									"// console.log(\"timestamp: \" + timestamp);\r",
+									"\r",
+									"// // Get method, URL, body, and timestamp\r",
+									"// const method = pm.request.method;\r",
+									"// const url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");\r",
+									"// const body = pm.request.body ? pm.request.body.raw : '';\r",
+									"// // const timestamp = pm.request.headers.get('x-timestamp');\r",
+									"\r",
+									"// // Concatenate the components to form the message to sign\r",
+									"// const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;\r",
+									"// console.log(\"Generated message: \", message);\r",
+									"\r",
+									"// // Generate SHA256 signature\r",
+									"// const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);\r",
+									"// console.log(\"Generated signature: \", signature);\r",
+									"\r",
+									"// pm.environment.set(\"C-timestamp\",timestamp);\r",
+									"\r",
+									"// // Add the signature to the headers\r",
+									"// pm.request.headers.add({ key: 'x-signature', value: signature });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let page = pm.environment.get(\"C-page\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"",
+									"    let list_clients, old_list_clients;",
+									"    // console.log(\"debug total record in page: \" + jsData.data.length);",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_clients = pm.environment.get(\"C-list_clients\");",
+									"            if(!list_clients){",
+									"                list_clients = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_clients = pm.environment.get(\"C-old_list_clients\");",
+									"            if(!old_list_clients){",
+									"                old_list_clients = pm.environment.get(\"C-list_clients\");",
+									"                pm.environment.unset(\"C-list_clients\");",
+									"                pm.environment.set(\"C-old_list_clients\",old_list_clients);",
+									"            }",
+									"",
+									"            list_clients = pm.environment.get(\"C-list_clients\");",
+									"            if(!list_clients){",
+									"                list_clients = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_clients[list_clients.length] = {",
+									"            \"client_id\":jsData.data[item].id,",
+									"            \"business_id\":jsData.data[item].business_id,",
+									"            \"client_secret\":jsData.data[item].client_secret,",
+									"            \"name\":jsData.data[item].name,",
+									"            \"owner_id\":jsData.data[item].owner_id,",
+									"            \"webhook_url\":jsData.data[item].webhook_url,",
+									"            \"is_active\":jsData.data[item].is_active,",
+									"            \"created_at\":jsData.data[item].created_at,",
+									"            \"updated_at\":jsData.data[item].updated_at",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_clients\",list_clients);",
+									"",
+									"    if(page >= total_pages || page >= configs.limit_page){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        let business_id = parseInt(pm.environment.get(\"C-business_id\"));",
+									"        let user_id = pm.environment.get(\"C-user_id\");",
+									"        let client_obj = pm.environment.get(\"C-client_obj\");",
+									"",
+									"        let record_obj = null;",
+									"        if(configs.client_action == \"create\"){",
+									"            switch(testcase){",
+									"                case 2:",
+									"                    // tạo client, cần lưu total",
+									"                    pm.test(\"Got total clients \" + list_clients.length, function () {",
+									"                        pm.expect(list_clients.length > 0).to.be.true;",
+									"                    });",
+									"",
+									"                    testcase++;",
+									"                    pm.environment.set(\"C-testcase\",testcase);",
+									"                    postman.setNextRequest(\"create_client\");",
+									"                    break;",
+									"                case 4:",
+									"                    pm.test(\"Total clients increase 1\", function () {",
+									"                        pm.expect(list_clients.length).to.eql(old_list_clients.length + 1);",
+									"                    });",
+									"",
+									"                    for(let i in list_clients){",
+									"                        if(list_clients[i].client_id == client_obj.client_id){",
+									"                            record_obj = list_clients[i];",
+									"                            console.log(\"debug record_obj:\", record_obj);",
+									"                            break;",
+									"                        }",
+									"                    }",
+									"",
+									"                    // check data",
+									"                    if(record_obj != null){",
+									"                        // business_id",
+									"                        pm.test(\"business_id is \" + business_id, function () {",
+									"                            console.log(\"act: \" + record_obj.business_id);",
+									"                            pm.expect(business_id == record_obj.business_id).to.be.true;",
+									"                        });",
+									"",
+									"                        // name",
+									"                        pm.test(\"name is \" + client_obj.name, function () {",
+									"                            pm.expect(client_obj.name).to.eql(record_obj.name);",
+									"                        });",
+									"",
+									"                        // owner_id",
+									"                        pm.test(\"owner_id is \" + user_id, function () {",
+									"                            pm.expect(user_id).to.eql(record_obj.owner_id);",
+									"                        });",
+									"",
+									"                        // is_active",
+									"                        pm.test(\"is_active must be true\", function () {",
+									"                            pm.expect(record_obj.is_active).to.be.true;",
+									"                        });",
+									"",
+									"                        // created_at",
+									"                        let today = new Date();",
+									"                        let value_at = today.toISOString();",
+									"                        pm.test(\"created_at is \" + value_at, function () {",
+									"                            console.log(\"act: \" + record_obj.created_at);",
+									"                            pm.expect(value_at.substring(0,19)).to.eql(record_obj.created_at.substring(0,19));",
+									"                        });",
+									"                    } else {",
+									"                        pm.test(\"Can't found client\", function () {",
+									"                            pm.expect(true).to.be.false;",
+									"                        });",
+									"                    }",
+									"",
+									"                    console.log(\"-------- End Testsuite 114 --------\");",
+									"                    postman.setNextRequest(null);",
+									"                    break;",
+									"                default:",
+									"                    console.log(\"Missing flow, end test\");",
+									"                    postman.setNextRequest(null);",
+									"            }",
+									"        } else {",
+									"            let edit_client_obj = null;",
+									"            switch(testcase){",
+									"                case 2:",
+									"                    // edit client, cần chọn client và lưu data",
+									"                    edit_client_obj = list_clients[list_func.getRandomInt(0,list_clients.length - 1)]",
+									"                    pm.test(\"Got client to edit\", function () {",
+									"                        pm.expect(edit_client_obj != null).to.be.true;",
+									"                    });",
+									"                    pm.environment.set(\"C-edit_client_obj\",edit_client_obj);",
+									"                    pm.environment.set(\"C-client_id\",edit_client_obj.client_id);",
+									"",
+									"                    console.log(\"will edit client: \", edit_client_obj)",
+									"",
+									"                    testcase++;",
+									"                    pm.environment.set(\"C-testcase\",testcase);",
+									"                    postman.setNextRequest(\"update_client\");",
+									"                    break;",
+									"                case 4:",
+									"                    edit_client_obj = pm.environment.get(\"C-edit_client_obj\");",
+									"                    pm.test(\"Nothing happen!!!\", function () {",
+									"                        pm.expect(list_clients.length).to.eql(old_list_clients.length);",
+									"                    });",
+									"",
+									"                    for(let i in list_clients){",
+									"                        if(list_clients[i].client_id == edit_client_obj.client_id){",
+									"                            record_obj = list_clients[i];",
+									"                            break;",
+									"                        }",
+									"                    }",
+									"",
+									"                    // check data",
+									"                    if(record_obj != null){",
+									"                        // business_id",
+									"                        pm.test(\"business_id is \" + business_id, function () {",
+									"                            console.log(\"act: \" + record_obj.business_id);",
+									"                            pm.expect(business_id == record_obj.business_id).to.be.true;",
+									"                        });",
+									"",
+									"                        // name",
+									"                        pm.test(\"name is \" + client_obj.name, function () {",
+									"                            pm.expect(client_obj.name).to.eql(record_obj.name);",
+									"                        });",
+									"",
+									"                        // owner_id",
+									"                        pm.test(\"owner_id is \" + user_id, function () {",
+									"                            pm.expect(user_id).to.eql(record_obj.owner_id);",
+									"                        });",
+									"",
+									"                        // is_active",
+									"                        pm.test(\"is_active must be true\", function () {",
+									"                            pm.expect(record_obj.is_active).to.be.true;",
+									"                        });",
+									"",
+									"                        // webhook_url",
+									"                        pm.test(\"webhook_url is \" + client_obj.webhook_url, function () {",
+									"                            pm.expect(client_obj.webhook_url).to.eql(record_obj.webhook_url);",
+									"                        });",
+									"",
+									"                        // updated_at",
+									"                        let today = new Date();",
+									"                        let value_at = today.toISOString();",
+									"                        pm.test(\"updated_at is \" + value_at, function () {",
+									"                            console.log(\"act: \" + record_obj.updated_at);",
+									"                            pm.expect(value_at.substring(0,19)).to.eql(record_obj.updated_at.substring(0,19));",
+									"                        });",
+									"",
+									"                        // created_at => muốn thì kiểm tra thêm so với create_at lúc get data",
+									"                    } else {",
+									"                        pm.test(\"Can't found client\", function () {",
+									"                            pm.expect(true).to.be.false;",
+									"                        });",
+									"                    }",
+									"",
+									"                    console.log(\"-------- End Testsuite 114 --------\");",
+									"                    postman.setNextRequest(null);",
+									"                    break;",
+									"                default:",
+									"                    console.log(\"Missing flow, end test\");",
+									"                    postman.setNextRequest(null);",
+									"            }",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more clients\");",
+									"        postman.setNextRequest(\"get_list_clients\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list client, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/client/get-clients?page={{C-page}}&page_size={{C-page_size}}",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"client",
+								"get-clients"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update_client",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"// // Example secret key for signing, replace with your actual secret",
+									"// const secretKey = pm.environment.get(\"C-client_key\");",
+									"// console.log(\"secretKey: \" + secretKey);",
+									"",
+									"let today = new Date();",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;",
+									"console.log(\"timestamp: \" + timestamp);",
+									"",
+									"let edit_client_obj = pm.environment.get(\"C-edit_client_obj\");",
+									"",
+									"// // Get method, URL, body, and timestamp",
+									"// const method = pm.request.method;",
+									"// let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");",
+									"// url = url.replace(\"{{C-client_id}}\",edit_client_obj.client_id);",
+									"// // console.log(\" ======== url: \", url);",
+									"",
+									"let business_id = pm.environment.get(\"C-business_id\")",
+									"let body = {",
+									"    \"name\": \"[API][Update] Client \" + business_id + \"-\" + list_func.randomChars(6),",
+									"    \"webhook_url\": \"https://open.larksuite.com/open-apis/bot/v2/hook/0f271c16-5fb2-47fd-87ba-347e22f8655e\"",
+									"}",
+									"body = JSON.stringify(body);",
+									"",
+									"// // Concatenate the components to form the message to sign",
+									"// const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;",
+									"// console.log(\"Generated message: \", message);",
+									"",
+									"// // Generate SHA256 signature",
+									"// const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);",
+									"// console.log(\"Generated signature: \", signature);",
+									"",
+									"// pm.environment.set(\"C-timestamp\",timestamp);",
+									"",
+									"// Add the signature to the headers",
+									"// pm.request.headers.add({ key: 'x-signature', value: signature });",
+									"",
+									"console.log(\"payload: \",body);",
+									"pm.environment.set(\"C-payload\",body);",
+									"pm.environment.set(\"C-client_obj\",JSON.parse(body));",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let client_obj = pm.environment.get(\"C-client_obj\");",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    // let client_id = null, client_key = null;",
+									"    // try {",
+									"    //     client_id = jsData.data.id;",
+									"    //     client_key = jsData.data.client_secret;",
+									"    // } catch {",
+									"    //     console.log(\"Missing data\");",
+									"    // }",
+									"",
+									"    // pm.test(\"Got client_id\", function () {",
+									"    //     pm.expect(client_id != null).to.be.true;",
+									"    // });",
+									"    // pm.environment.set(\"C-client_id\",client_id);",
+									"",
+									"    // pm.test(\"Got client_key\", function () {",
+									"    //     pm.expect(client_key != null).to.be.true;",
+									"    // });",
+									"    // pm.environment.set(\"C-client_key\",client_key);",
+									"",
+									"    // client_obj.client_id = client_id;",
+									"    // pm.environment.set(\"C-client_obj\",client_obj);",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_clients\");",
+									"} else {",
+									"    // xài tạm acc STG của Nhân",
+									"    // pm.environment.set(\"C-client_id\",\"f8cdb81e-6f7c-4056-8b81-ee5859c54786\");",
+									"    // pm.environment.set(\"C-client_key\",\"91b8d989119e004b41953cf65b92d5d8ec4ccedae7d47422b7b775654b937ebc\");",
+									"    console.log(\"Can't create new client, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/client/update-client/{{C-client_id}}",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"client",
+								"update-client",
+								"{{C-client_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":true,",
+					"    \"limit_page\":10,",
+					"    \"timeout\":12000,",
+					"    \"client_action\":\"edit\", // create, edit",
+					"    // \"feature\":\"create_external_transfer\", // create_client, edit_client, create_va, create_external_transfer, create_internal_transfer",
+					"    \"test_payment_method\":\"bank_transfer\" // mb, bidv, bank_transfer - Open API chưa support GP",
+					"}",
+					"",
+					"// const default_client = {",
+					"//     \"client_id\":\"64d1202b-ca10-49a6-82b1-3ab5c14bcbe3\" // mỗi lần run thì cuối luồng trả về default_client",
+					"// }",
+					"",
+					"// pm.environment.set(\"C-default_client\",default_client);",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    switch(request_api.method){",
+					"        case \"PUT\":",
+					"            curl = \"curl --location --request PUT \";",
+					"            break;",
+					"        case \"PATCH\":",
+					"            curl = \"curl --location --request PATCH \";",
+					"            break;",
+					"        case \"DELETE\":",
+					"            curl = \"curl --location --request DELETE \";",
+					"            break;",
+					"        default:",
+					"            curl = \"curl --location \";",
+					"            break;",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.query.length > 0){",
+					"            curl += \"?\";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\": case \"PATCH\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"// console.log(\"request_api\",request_api);",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}

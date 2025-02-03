@@ -1,0 +1,733 @@
+{
+	"info": {
+		"_postman_id": "bb8620a5-3cb6-4d1d-8feb-79643ed5aa42",
+		"name": "fo_73_manual_delete_tax_wrong_data",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 73 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        postman.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-locale",
+								"value": "<string>",
+								"description": "locale",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"    postman.setNextRequest(\"get_current_business\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "get_current_business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"Current business info: \", jsData.data);",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.current_business.list_branch[0].id;",
+									"        pm.environment.set(\"C-branch_id\",branch_id);",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"    ",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_tax\");",
+									"} else {",
+									"    console.log(\"Can't get business detail, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/business/get-current",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"business",
+								"get-current"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "tax",
+			"item": [
+				{
+					"name": "get_list_tax",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_tax, old_list_tax;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_tax = pm.environment.get(\"C-list_tax\");",
+									"            if(!list_tax){",
+									"                list_tax = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_tax = pm.environment.get(\"C-old_list_tax\");",
+									"            if(!old_list_tax){",
+									"                old_list_tax = pm.environment.get(\"C-list_tax\");",
+									"                pm.environment.unset(\"C-list_tax\");",
+									"                pm.environment.set(\"C-old_list_tax\",old_list_tax);",
+									"            }",
+									"",
+									"            list_tax = pm.environment.get(\"C-list_tax\");",
+									"            if(!list_tax){",
+									"                list_tax = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    let list_wrong_tax = [];",
+									"    for(let item in jsData.data){",
+									"        list_tax[list_tax.length] = {",
+									"            \"tax_id\":jsData.data[item].id,",
+									"            \"name\":jsData.data[item].name,",
+									"            \"rate\":jsData.data[item].rate,",
+									"            \"description\":jsData.data[item].description,",
+									"            \"account_id\":jsData.data[item].accountID,",
+									"            \"identify_id\":jsData.data[item].identify_id,",
+									"            \"displays_id\":jsData.data[item].displays_id",
+									"        }",
+									"",
+									"        // add condition to get wrong tax",
+									"        if(jsData.data[item].account_id == 0){ // || jsData.data[item].rate > 100 || jsData.data[item].name == \"\"",
+									"            list_wrong_tax[list_wrong_tax.length] = jsData.data[item].id;",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_wrong_tax\",list_wrong_tax);",
+									"    pm.environment.set(\"C-list_tax\",list_tax);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all wrong tax! \" + list_wrong_tax.length, function () {",
+									"                    pm.expect(list_wrong_tax.length > 0).to.be.true;",
+									"                });",
+									"",
+									"                if(list_wrong_tax.length > 0){",
+									"                    console.log(\"total wrong tax: \" + list_wrong_tax.length);",
+									"                    postman.setNextRequest(\"delete_tax\"); // delete_tax",
+									"                } else {",
+									"                    console.log(\"Nothing tax with wrong data!\");",
+									"                    postman.setNextRequest(null); // delete_tax",
+									"                }",
+									"                break;",
+									"            case 4:",
+									"                let tax_obj = pm.environment.get(\"C-tax_obj\");",
+									"",
+									"                pm.test(\"Total tax increase 1\", function () {",
+									"                    pm.expect(list_tax.length == old_list_tax.length + 1).to.be.true;",
+									"                });",
+									"",
+									"                let isFound = false;",
+									"                for(let i in jsData.data){",
+									"                    if(jsData.data[i].id == tax_obj.tax_id){",
+									"                        isFound = true;",
+									"                        pm.test(\"name of tax correctly! \" + tax_obj.name, function () {",
+									"                            pm.expect(tax_obj.name == jsData.data[i].name).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"phone_number of tax correctly! \" + tax_obj.phone_number, function () {",
+									"                            pm.expect(tax_obj.phone_number == jsData.data[i].phone_number).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"email of tax correctly! \" + tax_obj.email, function () {",
+									"                            pm.expect(tax_obj.email == jsData.data[i].email).to.be.true;",
+									"                        });",
+									"",
+									"                        // pm.test(\"birthday of tax correctly! \" + tax_obj.birthday, function () {",
+									"                        //     pm.expect(tax_obj.birthday == jsData.data[i].birthday).to.be.true;",
+									"                        // });",
+									"",
+									"                        pm.test(\"gender of tax correctly! \" + tax_obj.gender, function () {",
+									"                            pm.expect(tax_obj.gender == jsData.data[i].gender).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"address_info of tax correctly! \" + tax_obj.address_info, function () {",
+									"                            pm.expect(tax_obj.address_info == jsData.data[i].address_info).to.be.true;",
+									"                        });",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found new tax\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_tax_detail\"); //get_tax_detail",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more tax\");",
+									"        postman.setNextRequest(\"seller_view_list_tax\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list tax, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 20;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/tax/get-list?business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&option=&status=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"tax",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "option",
+									"value": ""
+								},
+								{
+									"key": "status",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_tax_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// pm.test(\"Status code is 200\", function () {",
+									"//     pm.response.to.have.status(200);",
+									"// });",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200 || pm.response.code == 400){ // ",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \", jsData);",
+									"",
+									"    let list_wrong_tax = pm.environment.get(\"C-list_wrong_tax\");",
+									"    let fix_pos = pm.environment.get(\"C-fix_pos\");",
+									"",
+									"    if(fix_pos < (list_wrong_tax.length - 1)){",
+									"        fix_pos++;",
+									"        pm.environment.set(\"C-fix_pos\",fix_pos);",
+									"        postman.setNextRequest(\"delete_tax\"); // delete_tax",
+									"    } else {",
+									"        pm.environment.unset(\"C-fix_pos\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get tax detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}​/fo-business/api/v1/tax/get-one/{{C-tax_id}}",
+							"host": [
+								"{{finone_url}}​"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"tax",
+								"get-one",
+								"{{C-tax_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete_tax",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let list_wrong_tax = pm.environment.get(\"C-list_wrong_tax\");",
+									"let fix_pos = pm.environment.get(\"C-fix_pos\");",
+									"if(!fix_pos){",
+									"    fix_pos = 0;",
+									"    pm.environment.set(\"C-fix_pos\",fix_pos);",
+									"} ",
+									"",
+									"pm.environment.set(\"C-tax_id\",list_wrong_tax[fix_pos]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"jsData: \" + JSON.stringify(jsData));",
+									"    ",
+									"    postman.setNextRequest(\"get_tax_detail\"); // get_tax_detail",
+									"} else {",
+									"    console.log(\"jsData: \" + JSON.stringify(jsData));",
+									"    console.log(\"Can't delete tax, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/tax/delete/{{C-tax_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"tax",
+								"delete",
+								"{{C-tax_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":true,",
+					"    \"limit_page\":5,",
+					"    \"timeout\":12000, // miliseconds => timeout to call API",
+					"    \"is_buyer_gen\":false,",
+					"    \"test_payment_method\":\"va_galaxy\" // bank_transfer, viet_qr_pro_mb, va_galaxy",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

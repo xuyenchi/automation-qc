@@ -1,0 +1,3664 @@
+{
+	"info": {
+		"_postman_id": "0f1facdb-dd4e-40ef-9090-37f96ce25ed8",
+		"name": "finan_60_verify_to_create_new_transaction_via_qr",
+		"description": "Testsuite: Verify to create new transaction via bank account (QR)\n\nTestcase:\n\n1. Login with owner account\n2. Get data\n    1. account coa / get list account\n    2. account bank / get list bank account\n    3. invoice / get list invoice => get invoice had payment_account_id & un_paid/partital_paid status\n    4. invoice / get invoice detail => update more data for invoice at 2.c.\n    5. Posting / Get list posting => get total posting\n    6. Report / Get report cash_flow => has change with tnx (confirm with PO)\n    7. Report / Get report account => get data\n    8. Report / Get report account receivable paid => get data\n    9. Report / Get report account receivable unpaid => get data\n    10. Report / Get report account receivable customer => get data respective with invoice at 2.c.\n    11. Report / Get report account receivable invoice => get data respective with 2.c\n    12. \\[New\\] payment / get list payment => get total\n    13. Transaction / Get list transaction => get total transaction\n3. Create transaction\n    1. payment / gen buyer payment QR\n    2. hook / pay for this QR\n4. Check data\n    1. Transaction / Get list transaction => have new record\n    2. Transaction / Get transaction detail => data correctly\n    3. \\[New\\] payment / get list payment => increase 1\n    4. \\[New\\] payment / get payment detail => data correctly\n    5. Account cash_n_bank / Get list account => check respective banlance_amount\n    6. Invoice / Get list invoice => check invoice status at 2.c\n    7. Invoice / Get invoice detail => update data\n    8. Posting / get list posting => have 2 new posting (account receivable & account debit)\n    9. Report / Get report cash_flow => update data\n    10. Report / Get report account => update data\n    11. Report / Get report account receivable paid => update data\n    12. Report / Get report account receivable unpaid => update data\n    13. Report / Get report account receivable customer => update data\n    14. Report / Get report account receivable invoice => update data\n\nNote:\n\n- Không cần call HOOK, server sẽ tự động hook sau 10s để payment sau khi gen QR",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "verify_email_or_phone_number",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * currently, manual to create account pwd & use charles to get it",
+									" * default pwd created: 21112007 (prod with default account & no need pwd)",
+									" */",
+									"",
+									"let email = pm.environment.get(\"SER-email\");",
+									"let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"",
+									"console.log(\"--- Start Testsuite 60 ---\");",
+									"let testcase = 1;",
+									"",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let isPhone = true;",
+									"",
+									"let payload;",
+									"if(isPhone){",
+									"    console.log(\"login with phone_number: \" + phone_number);",
+									"    payload = {",
+									"        \"phone_number\": phone_number",
+									"    }",
+									"} else {",
+									"    console.log(\"login with email: \" + email);",
+									"    payload = {",
+									"        \"email\": email",
+									"    }",
+									"}",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);",
+									"pm.environment.set(\"C-isPhone\",isPhone);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.is_existed && jsData.data.has_password){",
+									"        postman.setNextRequest(\"login_with_pwd\");",
+									"    } else if(jsData.data.is_existed) {",
+									"        console.log(\"This account doesn't create pwd, please manual create!!!\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        console.log(\"THIS ACCOUNT IS NOT EXISTED IN SYSTEM, WILL MANUAL CREATE IT\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-user/api/v1/auth/account/verify",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_with_pwd",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let crypto = require('crypto-js');",
+									"",
+									"// const algorithm = \"aes-256-gcm\";",
+									"// const IV_LEN = 12;",
+									"// const AUTH_TAG_LEN = 16;",
+									"// const SECRET_KEY = \"7dQ0HwRI5okvwAK0WzxaW6ABFncjeu1E\";",
+									"",
+									"// function encrypt(message) {",
+									"//   const iv = Buffer.from(crypto.randomBytes(IV_LEN));",
+									"//   const cipher = crypto.createCipheriv(algorithm, SECRET_KEY, iv, {",
+									"//     authTagLength: AUTH_TAG_LEN,",
+									"//   });",
+									"//   const encryptedData = Buffer.concat([cipher.update(message), cipher.final()]);",
+									"//   const authTag = cipher.getAuthTag();",
+									"//   const raw = Buffer.concat([iv, encryptedData, authTag]).toString(\"hex\");",
+									"//   return raw;",
+									"// }",
+									"",
+									"// const pwd = \"21112007\";",
+									"// // var superSecretEncrypted = CryptoJS.AES.encrypt(pwd, SECRET_KEY);",
+									"",
+									"// let pwd_enc = encrypt(pwd);",
+									"// console.log(\"pwd_enc: \" + pwd_enc);",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"let isPhone = pm.environment.get(\"C-isPhone\");",
+									"",
+									"let verify_payload = JSON.parse(pm.environment.get(\"C-payload\"));",
+									"",
+									"let payload;",
+									"let version = pm.environment.get(\"x-current-version\");",
+									"if(isPhone){",
+									"    payload = {",
+									"        \"phone_number\": verify_payload.phone_number,",
+									"        \"pwd\": pm.environment.get(\"pwd\"),",
+									"        \"platform\": \"gtapp\",",
+									"        \"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",",
+									"        \"app_version\": version,",
+									"        \"device_name\": \"iPhone\"",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"email\": verify_payload.email,",
+									"        \"pwd\": pm.environment.get(\"pwd\"),",
+									"        \"platform\": \"gtapp\",",
+									"        \"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",",
+									"        \"app_version\": version,",
+									"        \"device_name\": \"iPhone\"",
+									"    }",
+									"}",
+									"console.log(\"debug: \", payload);",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id); // business_id",
+									"",
+									"        postman.setNextRequest(\"get_branch_id\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-user/api/v1/auth/account/login",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_branch_id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.id;",
+									"    } catch {",
+									"        console.log(\"Can't get branch_id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch_id\", function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    if(branch_id != null){",
+									"        pm.environment.set(\"C-business_id\",branch_id);",
+									"",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"get_list_internal_account\"); // get_list_internal_account",
+									"    } else {",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-business/api/v1/branch/detail/{{C-business_id}}",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"branch",
+								"detail",
+								"{{C-business_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "account coa",
+			"item": [
+				{
+					"name": "get_list_internal_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let coa = [];",
+									"    try {",
+									"        for(let i in jsData.data){",
+									"            let sub_group_i = [];",
+									"            for(let j in jsData.data[i].sub_group){",
+									"                let accounts_j = [];",
+									"                for(let k in jsData.data[i].sub_group[j].accounts){",
+									"                    accounts_j[accounts_j.length] = {",
+									"                        \"account_name\":jsData.data[i].sub_group[j].accounts[k].name,",
+									"                        \"account_id\":jsData.data[i].sub_group[j].accounts[k].id,",
+									"                        \"group_name\":jsData.data[i].sub_group[j].accounts[k].group_name,",
+									"                        \"sub_group_name\":jsData.data[i].sub_group[j].accounts[k].sub_name,",
+									"                        \"branch_id\":jsData.data[i].sub_group[j].accounts[k].branch_id,",
+									"                        \"displays_id\":jsData.data[i].sub_group[j].accounts[k].displays_id,",
+									"                        \"account_source\":jsData.data[i].sub_group[j].accounts[k].account_source,",
+									"                        \"account_type\":jsData.data[i].sub_group[j].accounts[k].account_type,",
+									"                        \"account_code\":jsData.data[i].sub_group[j].accounts[k].account_code,",
+									"                        \"coa_type\":jsData.data[i].sub_group[j].accounts[k].coa_type,",
+									"                        \"sub_coa_deepest\":jsData.data[i].sub_group[j].accounts[k].sub_coa_deepest,",
+									"                        \"name_en\":jsData.data[i].sub_group[j].accounts[k].name_en,",
+									"                        \"status\":jsData.data[i].sub_group[j].accounts[k].status,",
+									"                        \"parent_id\":jsData.data[i].sub_group[j].accounts[k].parent_id,",
+									"                        \"description\":jsData.data[i].sub_group[j].accounts[k].description,",
+									"                        \"open_amount\":jsData.data[i].sub_group[j].accounts[k].open_amount,",
+									"                        \"currency\":jsData.data[i].sub_group[j].accounts[k].currency",
+									"                        // \"opening_at\":jsData.data[i].sub_group[j].accounts[k].opening_at",
+									"                        // \"closing_at\":jsData.data[i].sub_group[j].accounts[k].closing_at",
+									"                    }",
+									"",
+									"                    if(jsData.data[i].sub_group[j].accounts[k].key == \"account_receivable\"){",
+									"                        pm.environment.set(\"C-account_receivable\",jsData.data[i].sub_group[j].accounts[k]);",
+									"                    }",
+									"                }",
+									"",
+									"                sub_group_i[sub_group_i.length] = {",
+									"                    \"sub_group_name\":jsData.data[i].sub_group[j].name,",
+									"                    \"sub_group_id\":jsData.data[i].sub_group[j].id,",
+									"                    \"sub_group_value\":jsData.data[i].sub_group[j].value,",
+									"                    \"sub_group_description\":jsData.data[i].sub_group[j].description,",
+									"                    \"accounts\":accounts_j",
+									"                }",
+									"            }",
+									"",
+									"            coa[coa.length] = {",
+									"                \"group_name\":jsData.data[i].name,",
+									"                \"value\":jsData.data[i].value,",
+									"                \"index\":jsData.data[i].index,",
+									"                \"sub_group\":sub_group_i",
+									"            }",
+									"        }",
+									"    } catch {",
+									"        console.log(\"can't get all account in coa\");",
+									"    }",
+									"",
+									"    pm.test(\"Got coa of this user's business\", function () {",
+									"        pm.expect(coa.length > 0).to.be.true;",
+									"    });",
+									"",
+									"    if(coa.length > 0){",
+									"        // console.log(\"coa: \", coa);",
+									"        pm.environment.set(\"C-coa\",coa);",
+									"        let list_debit_account = [];",
+									"        let list_credit_account = [];",
+									"        /**",
+									"         * lấy những account_id và phân loại thành debit/credit",
+									"         * - credit: tài khoản (only cash & bank)",
+									"         * - debit: phân loại (all)",
+									"         */ ",
+									"        for(let i in coa){",
+									"            for(let j in coa[i].sub_group){",
+									"                for(let k in coa[i].sub_group[j].accounts){",
+									"                    // if(coa[i].group_name == \"income\" || coa[i].group_name == \"expense\"){ // mở điều kiện này khi cần debug tạo tnx có report cassh-flow",
+									"                        list_debit_account[list_debit_account.length] = coa[i].sub_group[j].accounts[k];",
+									"                    // }",
+									"                    if(coa[i].sub_group[j].sub_group_value == \"cash_and_bank\"){ ",
+									"                        // console.log(\"debug: \", coa[i].sub_group[j].accounts[k]);",
+									"                        if(coa[i].sub_group[j].accounts[k].account_name.includes(\"[API]\")){ // do 1 số name bị null (dev chưa validation dẫn đến report sẽ không biết của account nào - report ko trả về id)",
+									"                            list_credit_account[list_credit_account.length] = coa[i].sub_group[j].accounts[k];",
+									"                        }",
+									"                    }",
+									"                }",
+									"            }",
+									"        }",
+									"",
+									"        // console.log(\"list_debit_account: \", list_debit_account);",
+									"        // console.log(\"list_credit_account: \", list_credit_account);",
+									"",
+									"        pm.environment.set(\"C-list_debit_account\",list_debit_account);",
+									"        pm.environment.set(\"C-list_credit_account\",list_credit_account);",
+									"        ",
+									"        postman.setNextRequest(\"get_list_payment_account\"); // get_list_payment_account",
+									"    } else {",
+									"        console.log(\"Can't get list internal account, end test \");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list internal account, end test \", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{finan_base_url}}​/finan-ledger/api/v1/account/list?branch_id={{C-business_id}}&coa_type=",
+							"host": [
+								"{{finan_base_url}}​"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"account",
+								"list"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "coa_type",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_internal_account_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * Only check credit_account",
+									" */",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let list_internal_account = pm.environment.get(\"C-list_internal_account\");",
+									"let pos = pm.environment.get(\"C-pos\");",
+									"if(!pos){",
+									"    pos = 0;",
+									"    pm.environment.set(\"C-pos\",pos);",
+									"}",
+									"",
+									"let internal_account_id = list_internal_account[pos].account_id;",
+									"console.log(\"view detail account: \" + account_id);",
+									"",
+									"pm.environment.set(\"C-internal_account_id\",internal_account_id);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    const jsData = pm.response.json();",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"",
+									"    let list_internal_account = pm.environment.get(\"C-list_internal_account\");",
+									"    let pos = pm.environment.get(\"C-pos\");",
+									"",
+									"    if(pos >= list_internal_account.length - 1){",
+									"        pm.environment.unset(\"C-pos\");",
+									"",
+									"        postman.setNextRequest(\"get_list_tax\"); // get_list_tax",
+									"    } else {",
+									"        pos++;",
+									"        pm.environment.set(\"C-pos\",pos);",
+									"",
+									"        postman.setNextRequest(\"get_internal_account_detail\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get internal account detail, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}​​/finan-ledger/api/v1/account/detail/{{C-internal_account_id}}",
+							"host": [
+								"{{finan_base_url}}​​"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"account",
+								"detail",
+								"{{C-internal_account_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.request.headers.add({",
+							" key: \"authorization\",",
+							" value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"});",
+							"",
+							"pm.request.headers.add({",
+							" key: \"Content-Type\",",
+							" value: \"application/json\"",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "account cash_n_bank",
+			"item": [
+				{
+					"name": "get_list_payment_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let list_bank_account = [];",
+									"    for(let j in jsData.data.accounts){",
+									"        if(jsData.data.accounts[j].provider_id != \"\"){ // remove va bank account out list",
+									"            list_bank_account[list_bank_account.length] = {",
+									"                \"account_id\":jsData.data.accounts[j].id,",
+									"                \"account_name\":jsData.data.accounts[j].name,",
+									"                \"status\":jsData.data.accounts[j].status,",
+									"                \"external_account_id\":jsData.data.accounts[j].external_account_id,",
+									"                \"provider_id\":jsData.data.accounts[j].provider_id,",
+									"                \"total_balance_amount\":jsData.data.accounts[j].total_balance_amount",
+									"            }",
+									"        }",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got list bank account\", function () {",
+									"                pm.expect(list_bank_account.length > 0).to.be.true;",
+									"            });",
+									"",
+									"            pm.environment.set(\"C-list_bank_account\",list_bank_account);",
+									"",
+									"            postman.setNextRequest(\"get_list_invoice\"); // get_list_invoice",
+									"            break;",
+									"        case 4:",
+									"            let old_list_bank_account = pm.environment.get(\"C-list_bank_account\");",
+									"            let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"            let isFound = false;",
+									"",
+									"            let expected_balance_amout;",
+									"            for(let j in old_list_bank_account){",
+									"                if(tnx_obj.account_debit == old_list_bank_account[j].account_id){",
+									"                    expected_balance_amout = old_list_bank_account[j].total_balance_amount + tnx_obj.amount;",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            let actual_balance_amout;",
+									"            for(let j in jsData.data.accounts){",
+									"                if(tnx_obj.account_debit == jsData.data.accounts[j].id){",
+									"                    actual_balance_amout = jsData.data.accounts[j].total_balance_amount;",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"total_balance_amount increase \" + tnx_obj.amount, function () {",
+									"                console.log(\"act: \" + actual_balance_amout);",
+									"                console.log(\"exp: \" + expected_balance_amout);",
+									"                pm.expect(actual_balance_amout == expected_balance_amout).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_list_invoice\"); // get_list_invoice",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list payment account, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/account/list-by-key?branch_id={{C-business_id}}&key=cash_and_bank",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"account",
+								"list-by-key"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "key",
+									"value": "cash_and_bank"
+								},
+								{
+									"key": "option",
+									"value": "bank",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "invoice",
+			"item": [
+				{
+					"name": "get_list_invoice",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = 1;",
+									"    try {",
+									"        total_pages = jsData.meta.total_pages;",
+									"    } catch {",
+									"        console.log(\"currently, this branch with null data\");",
+									"    }",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_invoice, new_invoice_obj;",
+									"    let isFound = false;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_invoice = pm.environment.get(\"C-list_invoice\");",
+									"            if(!list_invoice){",
+									"                list_invoice = [];",
+									"            }",
+									"",
+									"            for(let item in jsData.data){",
+									"                if(jsData.data[item].status == \"active\" && jsData.data[item].total_amount != 0 && jsData.data[item].payment_account_id != 0){",
+									"                    /** ",
+									"                     * Status docs: https://sobanhang.larksuite.com/wiki/K42mwQN7hifMjxktLQVuu2Kqszg",
+									"                     * include:",
+									"                     *  - General status: status (draft, active => approved, overdue if current > due_at)",
+									"                     *  - Email status: send_at (!= null => sent, other is unsent)",
+									"                     *  - Payment status: payment_status (unpaid - un_paid, partial_paid, paid - fully_paid)",
+									"                    */",
+									"",
+									"                    // get list invoice create after \"2024-03-15T09:00:00.000Z\"",
+									"                    if(jsData.data[item].created_at > \"2024-03-24T16:00:00.000Z\" && jsData.data[item].payment_status != \"fully_paid\" && jsData.data[item].payment_account_id == 1000531){ // tạm handle gen QR vs invoice còn nợ, fix payment account đang thanh toán dc (1000531, 1001914)",
+									"                        list_invoice[list_invoice.length] = {",
+									"                            \"invoice_id\":jsData.data[item].id,",
+									"                            \"entry_code\":jsData.data[item].entry_code,",
+									"                            \"system_code\":jsData.data[item].system_code,",
+									"                            \"created_at\":jsData.data[item].created_at,",
+									"                            \"status\":jsData.data[item].status,",
+									"                            \"payment_status\":jsData.data[item].payment_status,",
+									"                            \"sub_total_amount\":jsData.data[item].sub_total_amount,",
+									"                            \"total_amount\":jsData.data[item].total_amount,",
+									"                            \"discount_amount\":jsData.data[item].discount_amount,",
+									"                            \"total_tax_amount\":jsData.data[item].total_tax_amount,",
+									"                            \"due_amount\":jsData.data[item].due_amount,",
+									"                            \"paid_amount\":jsData.data[item].paid_amount,",
+									"                            \"entry_type\":jsData.data[item].entry_type,",
+									"                            \"description\":jsData.data[item].description,",
+									"                            \"value_at\":jsData.data[item].value_at,",
+									"                            \"due_at\":jsData.data[item].due_at,",
+									"                            // \"send_at\":jsData.data[item].send_at,",
+									"                            \"account_id\":jsData.data[item].account_id,",
+									"                            \"tax_type\":jsData.data[item].tax_type,",
+									"                            \"email\":jsData.data[item].email,",
+									"                            \"payment_info\":jsData.data[item].payment_info,",
+									"                            \"contact_id\":jsData.data[item].contact_id,",
+									"                            \"contact_name\":jsData.data[item].contact_info.contact_name,",
+									"                            \"contact_phone\":jsData.data[item].contact_info.contact_phone,",
+									"                            \"payment_account_id\":jsData.data[item].payment_account_id",
+									"                        }",
+									"                    }",
+									"                }",
+									"            }",
+									"            pm.environment.set(\"C-list_invoice\",list_invoice);",
+									"            break;",
+									"        case 4:",
+									"        let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"            for(let item in jsData.data){",
+									"                if(jsData.data[item].id == tnx_obj.object_key){",
+									"                    isFound = true;",
+									"                    new_invoice_obj = jsData.data[item];",
+									"                    break;",
+									"                }",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    if(page >= total_pages || isFound){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        let invoice_obj;",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all invoice! \" + list_invoice.length, function () {",
+									"                    pm.expect(list_invoice.length > 0).to.be.true;",
+									"                });",
+									"                invoice_obj = list_invoice[getRandomInt(0,list_invoice.length - 1)];",
+									"",
+									"                // thêm lọc random invoice dc gen QR (partial_paid - had bank tnx, partial_paid - had manual tnx, un_paid)",
+									"",
+									"                pm.environment.set(\"C-invoice_obj\",invoice_obj);",
+									"                console.log(\"=============================================\");",
+									"                console.log(\"Will create QR transaction with invoice \",invoice_obj);",
+									"                // console.log(\"--- value_at: \" + invoice_obj.value_at);",
+									"                // console.log(\"--- due_at: \" + invoice_obj.due_at);",
+									"                // console.log(\"--- total_amount: \" + invoice_obj.total_amount);",
+									"                // console.log(\"--- paid_amount: \" + invoice_obj.paid_amount);",
+									"                console.log(\"=============================================\");",
+									"",
+									"                if(list_invoice.length > 0){",
+									"                    postman.setNextRequest(\"get_list_posting\"); // get_list_posting",
+									"                } else {",
+									"                    pm.test(\"DON'T HAVE INVOICE TO PAYMENT\", function () {",
+									"                        pm.expect(true).to.be.false;",
+									"                    });",
+									"                    postman.setNextRequest(null);",
+									"                }",
+									"                break;",
+									"            case 4:",
+									"                invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"                let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"                ",
+									"                pm.test(\"Update paid_amount \" + tnx_obj.amount, function () {",
+									"                    console.log(\"old: \", invoice_obj);",
+									"                    console.log(\"new: \", new_invoice_obj);",
+									"                    pm.expect((invoice_obj.paid_amount + tnx_obj.amount).toFixed(2) == new_invoice_obj.paid_amount.toFixed(2)).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"Update due_amount (số tiền còn nợ) - decrease \" + tnx_obj.amount, function () {",
+									"                    console.log(\"act: \" + new_invoice_obj.due_amount);",
+									"                    console.log(\"exp: \" + (invoice_obj.due_amount - tnx_obj.amount));",
+									"                    pm.expect((invoice_obj.due_amount - tnx_obj.amount).toFixed(2) == new_invoice_obj.due_amount.toFixed(2)).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"Update payment_status to fully_paid\", function () {",
+									"                    pm.expect(\"fully_paid\" == new_invoice_obj.payment_status).to.be.true;",
+									"                })",
+									"",
+									"                pm.test(\"Found invoice\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_invoice_detail\"); // get_invoice_detail",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more invoice\");",
+									"        postman.setNextRequest(\"get_list_invoice\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list invoice, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 300;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/invoice/list?branch_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"invoice",
+								"list"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_invoice_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"let invoice_id = invoice_obj.invoice_id;",
+									"console.log(\"view detail invoice: \" + invoice_id);",
+									"",
+									"pm.environment.set(\"C-invoice_id\",invoice_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"",
+									"    let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"    let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"    ",
+									"    pm.test(\"Update paid_amount \" + tnx_obj.amount, function () {",
+									"        // console.log(\"old: \", invoice_obj);",
+									"        // console.log(\"new: \", jsData.data);",
+									"        pm.expect((invoice_obj.paid_amount + tnx_obj.amount).toFixed(2) == jsData.data.paid_amount.toFixed(2)).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"Update due_amount (số tiền còn nợ) - decrease \" + tnx_obj.amount, function () {",
+									"        console.log(\"old: \", invoice_obj);",
+									"        console.log(\"new: \", jsData.data);",
+									"        pm.expect((invoice_obj.due_amount - tnx_obj.amount).toFixed(2) == jsData.data.due_amount.toFixed(2)).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"Update payment_status \", function () {",
+									"        pm.expect(\"fully_paid\" == jsData.data.payment_status).to.be.true;",
+									"    });",
+									"",
+									"    postman.setNextRequest(\"get_list_posting\"); // get_list_posting",
+									"} else {",
+									"    console.log(\"Can't get invoice detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/invoice/detail/{{C-invoice_id}}?branch_id={{C-business_id}}",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"invoice",
+								"detail",
+								"{{C-invoice_id}}"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "transaction",
+			"item": [
+				{
+					"name": "get_list_transaction",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"if(testcase == 4){",
+									"    setTimeout(function(){}, 11000);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_tnx = null;",
+									"    try {",
+									"        total_tnx = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Can't get total tnx\");",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got total tnx! \" + total_tnx, function () {",
+									"                pm.expect(total_tnx != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-total_tnx\",total_tnx);",
+									"            console.log(\"total_tnx: \" + total_tnx);",
+									"",
+									"            testcase++;",
+									"            pm.environment.set(\"C-testcase\",testcase);",
+									"            postman.setNextRequest(\"gen_buyer_payment_via_qr\"); // gen_buyer_payment_via_qr",
+									"            break;",
+									"        case 4:",
+									"            let old_total_tnx = pm.environment.get(\"C-total_tnx\");",
+									"            let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"",
+									"            pm.test(\"Total tnx increase 1\", function () {",
+									"                console.log(\"Actual: \" + total_tnx);",
+									"                console.log(\"Expected: \" + (old_total_tnx + 1));",
+									"                pm.expect(total_tnx == old_total_tnx + 1).to.be.true;",
+									"            });",
+									"",
+									"            let isFound = false;",
+									"            for(let i in jsData.data){",
+									"                if(tnx_obj.object_key == jsData.data[i].object_key && jsData.data[i].is_txn_bank){ // jsData.data[i].description == tnx_obj.description => hiện tại ko ghi discription cho tnx bank nữa",
+									"                    tnx_obj.tnx_id = jsData.data[i].id;",
+									"                    tnx_obj.payment_id = jsData.data[i].payment_id;",
+									"                    pm.environment.set(\"C-tnx_obj\",tnx_obj);",
+									"                    isFound = true;",
+									"                    pm.test(\"amount of tnx correctly! \" + tnx_obj.amount, function () {",
+									"                        pm.expect(tnx_obj.amount == jsData.data[i].amount).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"txn_type of tnx correctly! \" + tnx_obj.txn_type, function () {",
+									"                        pm.expect(tnx_obj.txn_type == jsData.data[i].txn_type).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"account_id of tnx correctly! \" + tnx_obj.account_debit, function () {",
+									"                        pm.expect(tnx_obj.account_debit == jsData.data[i].account_id).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"category_id of tnx correctly! \" + tnx_obj.account_credit, function () {",
+									"                        pm.expect(tnx_obj.account_credit == jsData.data[i].category_id).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"value_at of tnx correctly! \" + tnx_obj.value_at, function () {",
+									"                        let act_value_at = new Date(jsData.data[i].value_at);",
+									"                        console.log(\"actual value_at: \" + act_value_at.toISOString());",
+									"                        pm.expect(tnx_obj.value_at.substring(0,17) == act_value_at.toISOString().substring(0,17)).to.be.true; // tạm thời lấy mốc giờ +7 nên fix cứng, sau này sẽ dùng biến",
+									"                    });",
+									"",
+									"                    pm.test(\"object_key of tnx correctly! \" + tnx_obj.object_key, function () {",
+									"                        pm.expect(tnx_obj.object_type).to.eql(jsData.data[i].object_type);",
+									"                    });",
+									"",
+									"                    pm.test(\"payment_method of tnx is ! `bank_transfer`\", function () {",
+									"                        pm.expect(\"bank_transfer\").to.eql(jsData.data[i].payment_method);",
+									"                    });",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Found new tnx\", function () {",
+									"                pm.expect(isFound).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_transaction_detail\"); // get_transaction_detail (get tnx detail đang lỗi nên tạm thời skip) get_report_cash_flow",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list tnx, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/transaction/list?branch_id={{C-business_id}}&page=1&page_size=100&sort",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"transaction",
+								"list"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "100"
+								},
+								{
+									"key": "sort",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_transaction_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"let tnx_id = tnx_obj.tnx_id;",
+									"console.log(\"view detail tnx: \" + tnx_id);",
+									"",
+									"pm.environment.set(\"C-tnx_id\",tnx_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"",
+									"    let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"",
+									"    pm.test(\"amount of tnx correctly! \" + tnx_obj.amount, function () {",
+									"        pm.expect(tnx_obj.amount == jsData.data.amount).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"txn_type of tnx correctly! \" + tnx_obj.txn_type, function () {",
+									"        pm.expect(tnx_obj.txn_type == jsData.data.txn_type).to.be.true;",
+									"    });",
+									"",
+									"    // dev ko lưu description ở tnx nữa => chuyển qua payment",
+									"    // pm.test(\"description of tnx correctly! \" + tnx_obj.description, function () {",
+									"    //     pm.expect(tnx_obj.description == jsData.data.description).to.be.true;",
+									"    // });",
+									"",
+									"    pm.test(\"value_at of tnx correctly! \" + tnx_obj.value_at, function () {",
+									"        let act_value_at = new Date(jsData.data.value_at);",
+									"        console.log(\"actual value_at: \" + act_value_at.toISOString());",
+									"        pm.expect(tnx_obj.value_at.substring(0,17) == act_value_at.toISOString().substring(0,17)).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"object_type of tnx correctly! \" + tnx_obj.object_type, function () {",
+									"        pm.expect(tnx_obj.object_type).to.eql(jsData.data.object_type);",
+									"    });",
+									"",
+									"    pm.test(\"object_key of tnx correctly! \" + tnx_obj.object_key, function () {",
+									"        pm.expect(tnx_obj.object_key).to.eql(jsData.data.object_key);",
+									"    });",
+									"",
+									"    postman.setNextRequest(\"get_list_payment\"); // get_list_payment",
+									"} else {",
+									"    console.log(\"Can't get internal contact detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/transaction/detail/{{C-tnx_id}}?branch_id={{C-business_id}}",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"transaction",
+								"detail",
+								"{{C-tnx_id}}"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.request.headers.add({",
+							" key: \"authorization\",",
+							" value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"});",
+							"",
+							"pm.request.headers.add({",
+							" key: \"Content-Type\",",
+							" value: \"application/json\"",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "posting",
+			"item": [
+				{
+					"name": "get_list_posting",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 500;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"/**",
+									" * object_type: transaction, invoice",
+									" * object_id => id respective with object_type (tnx_id, invoice_id)",
+									" * object_id_ref => use for invoice with product/item (product_id, item_id)",
+									" * is_credit",
+									" * created_at",
+									" * value_at",
+									" */",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = 1;",
+									"    try {",
+									"        total_pages = jsData.meta.total_pages;",
+									"    } catch {",
+									"        console.log(\"currently, this branch with null data\");",
+									"    }",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_posting, old_list_posting;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_posting = pm.environment.get(\"C-list_posting\");",
+									"            if(!list_posting){",
+									"                list_posting = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_posting = pm.environment.get(\"C-old_list_posting\");",
+									"            if(!old_list_posting){",
+									"                old_list_posting = pm.environment.get(\"C-list_posting\");",
+									"                pm.environment.unset(\"C-list_posting\");",
+									"                pm.environment.set(\"C-old_list_posting\",old_list_posting);",
+									"            }",
+									"",
+									"            list_posting = pm.environment.get(\"C-list_posting\");",
+									"            if(!list_posting){",
+									"                list_posting = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_posting[list_posting.length] = {",
+									"            \"posting_id\":jsData.data[item].id,",
+									"            \"account_id\":jsData.data[item].account_id,",
+									"            \"amount\":jsData.data[item].amount,",
+									"            \"branch_id\":jsData.data[item].branch_id,",
+									"            \"created_at\":jsData.data[item].created_at,",
+									"            \"currency\":jsData.data[item].currency,",
+									"            \"deleted_at\":jsData.data[item].deleted_at,",
+									"            \"is_credit\":jsData.data[item].is_credit,",
+									"            \"is_final_status\":jsData.data[item].is_final_status,",
+									"            \"object_id_ref\":jsData.data[item].object_id_ref,",
+									"            \"object_id\":jsData.data[item].object_id,",
+									"            \"object_type\":jsData.data[item].object_type,",
+									"            // \"value_at\":jsData.data[item].value_at,",
+									"            \"short_desc\":jsData.data[item].short_desc",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_posting\",list_posting);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all posting! \" + list_posting.length, function () {",
+									"                    pm.expect(list_posting.length > 0).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_report_cash_flow\"); // get_report_cash_flow",
+									"                break;",
+									"            case 4:",
+									"                pm.test(\"Have 2 new records\", function () {",
+									"                    pm.expect(list_posting.length == old_list_posting.length + 2).to.be.true;",
+									"                });",
+									"",
+									"                let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"                let account_receivable = pm.environment.get(\"C-account_receivable\");",
+									"                // console.log(\"account_receivable: \",account_receivable);",
+									"                let count = 0;",
+									"                let foundAll = false;",
+									"                for(let i in list_posting){",
+									"                    if(list_posting[i].object_type == \"transaction\" && list_posting[i].object_id == tnx_obj.tnx_id){",
+									"                        // console.log(\"list_posting[i]: \", list_posting[i]);",
+									"                        if(list_posting[i].is_credit){",
+									"                            count++;",
+									"                            pm.test(\"Found account_receivable for credit\", function () {",
+									"                                pm.expect(list_posting[i].account_id == account_receivable.id).to.be.true;",
+									"                            });",
+									"",
+									"                            pm.test(\"--- amount correctly \" + tnx_obj.amount, function () {",
+									"                                console.log(\"actual: \" + list_posting[i].amount);",
+									"                                pm.expect(list_posting[i].amount.toFixed(2) == tnx_obj.amount.toFixed(2)).to.be.true;",
+									"                            });",
+									"                        } else {",
+									"                            count++;",
+									"                            pm.test(\"Found account_debit for debit\", function () {",
+									"                                // console.log(\"account_debit: \" + tnx_obj.account_debit);",
+									"                                pm.expect(list_posting[i].account_id == tnx_obj.account_debit).to.be.true;",
+									"                            });",
+									"",
+									"                            pm.test(\"--- amount correctly \" + tnx_obj.amount, function () {",
+									"                                console.log(\"actual: \" + list_posting[i].amount);",
+									"                                pm.expect(list_posting[i].amount.toFixed(2) == tnx_obj.amount.toFixed(2)).to.be.true;",
+									"                            });",
+									"                        }",
+									"",
+									"                        if(count == 2){",
+									"                            foundAll = true;",
+									"                            break;",
+									"                        }",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found all posting\", function () {",
+									"                    pm.expect(foundAll).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_report_cash_flow\"); // get_report_cash_flow",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more posting\");",
+									"        postman.setNextRequest(\"get_list_posting\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list posting, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}​/finan-ledger/api/v1/posting/list?branch_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&search=&sort=",
+							"host": [
+								"{{finan_base_url}}​"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"posting",
+								"list"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.request.headers.add({",
+							" key: \"authorization\",",
+							" value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"});",
+							"",
+							"pm.request.headers.add({",
+							" key: \"Content-Type\",",
+							" value: \"application/json\"",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "payment",
+			"item": [
+				{
+					"name": "get_list_payment",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_payment = null;",
+									"    try {",
+									"        total_payment = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Can't get total payment\");",
+									"    }",
+									"",
+									"    let tnx_edit_obj = pm.environment.get(\"C-tnx_edit_obj\");",
+									"    switch(testcase){",
+									"        case 2:",
+									"           pm.test(\"Got total payment! \" + total_payment, function () {",
+									"                pm.expect(total_payment != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-total_payment\",total_payment);",
+									"            console.log(\"total_payment: \" + total_payment);",
+									"",
+									"            postman.setNextRequest(\"get_list_transaction\"); // get_list_transaction",
+									"            break;",
+									"        case 4:",
+									"            let old_total_payment = pm.environment.get(\"C-total_payment\");",
+									"            let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"",
+									"            pm.test(\"Total tnx increase 1\", function () {",
+									"                console.log(\"Actual: \" + total_payment);",
+									"                console.log(\"Expected: \" + (old_total_payment + 1));",
+									"                pm.expect(total_payment == old_total_payment + 1).to.be.true;",
+									"            });",
+									"",
+									"            let isFound = false;",
+									"            for(let i in jsData.data){",
+									"                if(tnx_obj.payment_id == jsData.data[i].id){",
+									"                    isFound = true;",
+									"                    console.log(\"debug: \", jsData.data[i]);",
+									"",
+									"                    pm.test(\"net_amount of payment correctly! \" + tnx_obj.amount, function () {",
+									"                        console.log(\"act: \" + jsData.data[i].net_amount);",
+									"                        pm.expect(tnx_obj.amount.toFixed(2) == jsData.data[i].net_amount).to.be.true;",
+									"                    });",
+									"                    // tnx_obj.net_amount = jsData.data[i].net_amount;",
+									"",
+									"                    pm.test(\"total_fee of payment is 0\", function () { // sẽ handle total_fee ở va",
+									"                        pm.expect(0 == jsData.data[i].total_fee).to.be.true;",
+									"                    });",
+									"                    tnx_obj.total_fee = jsData.data[i].total_fee;",
+									"",
+									"                    pm.test(\"description of payment correctly! \" + tnx_obj.description, function () {",
+									"                        console.log(\"act: \" + jsData.data[i].description);",
+									"                        pm.expect(tnx_obj.description == jsData.data[i].description).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"status of payment is success! \", function () {",
+									"                        console.log(\"act: \" + jsData.data[i].status);",
+									"                        pm.expect(\"success\" == jsData.data[i].status).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"account_id of payment is: \" + tnx_obj.account_debit, function () {",
+									"                        console.log(\"act: \" + jsData.data[i].account_id);",
+									"                        pm.expect(tnx_obj.account_debit == jsData.data[i].account_id).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"category_id of payment is: \" + tnx_obj.account_credit, function () {",
+									"                        console.log(\"act: \" + jsData.data[i].category_id);",
+									"                        pm.expect(tnx_obj.account_credit == jsData.data[i].category_id).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"value_at of payment correctly! \" + tnx_obj.value_at, function () {",
+									"                        let act_value_at = new Date(jsData.data[i].value_at);",
+									"                        console.log(\"actual value_at: \" + act_value_at.toISOString());",
+									"                        pm.expect(tnx_obj.value_at.substring(0,17) == act_value_at.toISOString().substring(0,17)).to.be.true; // tạm thời lấy mốc giờ +7 nên fix cứng, sau này sẽ dùng biến",
+									"                    });",
+									"",
+									"                    pm.test(\"object_type of payment correctly! \" + tnx_obj.object_type, function () {",
+									"                        pm.expect(tnx_obj.object_type).to.eql(jsData.data[i].object_type);",
+									"                    });",
+									"",
+									"                    pm.test(\"object_key of payment correctly! \" + tnx_obj.object_key, function () {",
+									"                        pm.expect(tnx_obj.object_key).to.eql(jsData.data[i].object_key);",
+									"                    });",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Found new payment\", function () {",
+									"                pm.expect(isFound).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-tnx_obj\",tnx_obj);",
+									"",
+									"            postman.setNextRequest(\"get_payment_detail\"); // get_payment_detail",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list payment, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/payment/list?branch_id={{C-business_id}}&page=1&page_size=100&sort",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"payment",
+								"list"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "100"
+								},
+								{
+									"key": "sort",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_payment_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"let payment_id = tnx_obj.payment_id;",
+									"console.log(\"view detail payment: \" + payment_id);",
+									"",
+									"pm.environment.set(\"C-payment_id\",payment_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"",
+									"    let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"",
+									"    pm.test(\"net_amount of payment correctly! \" + tnx_obj.amount, function () {",
+									"        pm.expect(tnx_obj.amount.toFixed(2) == jsData.data.net_amount).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"total_fee of payment is 0\", function () { // sẽ handle total_fee ở va",
+									"        pm.expect(0 == jsData.data.total_fee).to.be.true;",
+									"    });",
+									"",
+									"    // pm.test(\"description of payment correctly! \" + tnx_obj.description, function () {",
+									"    //     pm.expect(tnx_obj.description == jsData.data.description).to.be.true;",
+									"    // });",
+									"",
+									"    pm.test(\"value_at of payment correctly! \" + tnx_obj.value_at, function () {",
+									"        let act_value_at = new Date(jsData.data.value_at);",
+									"        console.log(\"actual value_at: \" + act_value_at.toISOString());",
+									"        pm.expect(tnx_obj.value_at.substring(0,17) == act_value_at.toISOString().substring(0,17)).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"status of payment is success! \", function () {",
+									"        console.log(\"act: \" + jsData.data.status);",
+									"        pm.expect(\"success\" == jsData.data.status).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"account_id of payment is: \" + tnx_obj.account_debit, function () {",
+									"        console.log(\"act: \" + jsData.data.account_id);",
+									"        pm.expect(tnx_obj.account_debit == jsData.data.account_id).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"category_id of payment is: \" + tnx_obj.account_credit, function () {",
+									"        console.log(\"act: \" + jsData.data.category_id);",
+									"        pm.expect(tnx_obj.account_credit == jsData.data.category_id).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"object_type of payment correctly! \" + tnx_obj.object_type, function () {",
+									"        pm.expect(tnx_obj.object_type).to.eql(jsData.data.object_type);",
+									"    });",
+									"",
+									"    pm.test(\"object_key of payment correctly! \" + tnx_obj.object_key, function () {",
+									"        pm.expect(tnx_obj.object_key).to.eql(jsData.data.object_key);",
+									"    });",
+									"",
+									"    postman.setNextRequest(\"get_list_payment_account\"); // get_list_payment_account",
+									"} else {",
+									"    console.log(\"Can't get internal contact detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/payment/detail/{{C-payment_id}}?branch_id={{C-business_id}}",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"payment",
+								"detail",
+								"{{C-payment_id}}"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "gen_buyer_payment_via_qr",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * encryptString",
+									" */",
+									"function encryptString(keyHex, plaintext) {",
+									"    const key = CryptoJS.enc.Utf8.parse(keyHex);",
+									"    const iv = CryptoJS.lib.WordArray.random(128 / 8);",
+									"",
+									"    const encrypted = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(plaintext), key, {",
+									"        iv: iv,",
+									"        mode: CryptoJS.mode.CFB,",
+									"        padding: CryptoJS.pad.NoPadding",
+									"    });",
+									"",
+									"    const ciphertextWithIVHex = iv.toString() + encrypted.ciphertext.toString();",
+									"    return ciphertextWithIVHex;",
+									"}",
+									"",
+									"const key = pm.environment.get(\"secret_key\"); // Make sure your key is 32 bytes long",
+									"console.log(\"key: \" + key);",
+									"",
+									"let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"const payload_data = {",
+									"    \"object_code\": invoice_obj.system_code,",
+									"    \"object_type\": \"invoice\",",
+									"    \"branch_id\": pm.environment.get(\"C-business_id\"),",
+									"    \"payment_account_id\": invoice_obj.payment_account_id",
+									"};",
+									"console.log(\"payload_data:\", payload_data);",
+									"",
+									"const raw_data = JSON.stringify(payload_data);",
+									"",
+									"const encryptedText = encryptString(key, raw_data);",
+									"// console.log(\"Encrypted:\" + encryptedText);",
+									"let payload = {",
+									"    \"payload\":encryptedText",
+									"}",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ====================================== parser cURL",
+									"function parseCURL(request_api){",
+									"    let curl = \"\";",
+									"    if(request_api.method == \"PUT\"){",
+									"        curl = \"curl --location --request PUT \";",
+									"    } else if(request_api.method == \"DELETE\"){",
+									"        curl = \"curl --location --request DELETE \";",
+									"    } else {",
+									"        curl = \"curl --location \";",
+									"    }",
+									"    curl += \"'\" + request_api.url.protocol + \"://\"",
+									"    // host",
+									"    for(let i in request_api.url.host){",
+									"        if(i >= request_api.url.host.length - 1){",
+									"            curl += request_api.url.host[i] + \"/\";",
+									"        } else {",
+									"            curl += request_api.url.host[i] + \".\";",
+									"        }",
+									"    }",
+									"    // path",
+									"    for(let i in request_api.url.path){",
+									"        if(i >= request_api.url.path.length - 1){",
+									"            curl += request_api.url.path[i];",
+									"        } else {",
+									"            curl += request_api.url.path[i] + \"/\";",
+									"        }",
+									"    }",
+									"    // query (if have)",
+									"    if(\"query\" in request_api.url){",
+									"        if(request_api.url.length > 0){",
+									"            curl += \"? \";",
+									"            for(let i in request_api.url.query){",
+									"                if(i >= request_api.url.query.length - 1){",
+									"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+									"                } else {",
+									"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+									"                }",
+									"            }",
+									"        } else {",
+									"            curl += \"' \";",
+									"        }",
+									"    } else {",
+									"        curl += \"' \";",
+									"    }",
+									"    // header",
+									"    for(let i in request_api.header){",
+									"        if(i >= request_api.header.length - 1){",
+									"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+									"        } else {",
+									"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+									"        }",
+									"    }",
+									"    switch(request_api.method){",
+									"        case \"POST\":",
+									"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+									"            break;",
+									"        case \"PUT\":",
+									"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+									"            break;",
+									"        default:",
+									"            break;",
+									"    }",
+									"    console.log(curl);",
+									"    return curl;",
+									"}",
+									"const request_api = pm.request.toJSON();",
+									"parseCURL(request_api);",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    console.log(\"debug: \", jsData); // hook",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"    let list_bank_account = pm.environment.get(\"C-list_bank_account\");",
+									"",
+									"    let expected_amount;",
+									"    if(invoice_obj.total_amount > invoice_obj.paid_amount){",
+									"        expected_amount = Math.ceil(invoice_obj.total_amount - invoice_obj.paid_amount);",
+									"    } else {",
+									"        expected_amount = 0;",
+									"    }",
+									"",
+									"    pm.test(\"amount correctly \" + expected_amount, function () {",
+									"        console.log(\"act: \" + jsData.data.amount);",
+									"        pm.expect(expected_amount == jsData.data.amount).to.be.true;",
+									"    });",
+									"",
+									"    let expected_account = null;",
+									"    for(let i in list_bank_account){",
+									"        if(list_bank_account[i].account_id == invoice_obj.payment_account_id){",
+									"            expected_account = list_bank_account[i].account_name;",
+									"            break;",
+									"        }",
+									"    }",
+									"",
+									"    let bank_holder_name = null;",
+									"    try {",
+									"        bank_holder_name = jsData.data.bank_holder_name;",
+									"    } catch {",
+									"        console.log(\"Nothing data response\");",
+									"    }",
+									"    pm.test(\"bank_holder_name correctly \" + expected_account, function () {",
+									"        console.log(\"act: \" + bank_holder_name);",
+									"        pm.expect(expected_account == bank_holder_name).to.be.true;",
+									"    });",
+									"",
+									"    let today = new Date();",
+									"    let account_receivable = pm.environment.get(\"C-account_receivable\");",
+									"    let tnx_obj = {",
+									"        \"object_key\":invoice_obj.invoice_id,",
+									"        \"object_type\":\"invoice\",",
+									"        \"account_credit\":account_receivable.id,",
+									"        \"account_debit\":invoice_obj.payment_account_id,",
+									"        \"amount\":expected_amount,",
+									"        \"branch_id\":parseInt(pm.environment.get(\"C-business_id\")),",
+									"        \"txn_type\":\"in\",",
+									"        // \"description\":\"TTINV \" + invoice_obj.system_code,",
+									"        \"value_at\":today.toISOString()",
+									"    }",
+									"    pm.environment.set(\"C-tnx_obj\",tnx_obj);",
+									"    console.log(\"tnx_obj\",tnx_obj);",
+									"",
+									"    if(bank_holder_name != null){",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"get_list_transaction\"); // get_list_transaction",
+									"    } else {",
+									"        console.log(\"Can't get banking QR, end test\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list posting, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/payment/create-payment-buyer",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"payment",
+								"create-payment-buyer"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "hook",
+			"item": []
+		},
+		{
+			"name": "report",
+			"item": [
+				{
+					"name": "get_report_cash_flow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= sort by key",
+									"function sortByKey(array, key, type) {",
+									"    if(type == \"asc\"){",
+									"        return array.sort(function(a, b) {",
+									"            var x = a[key]; var y = b[key];",
+									"            return ((x > y) ? -1 : ((x < y) ? 1 : 0));",
+									"        });",
+									"    } else {",
+									"        return array.sort(function(a, b) {",
+									"            var x = a[key]; var y = b[key];",
+									"            return ((x < y) ? -1 : ((x > y) ? 1 : 0));",
+									"        });",
+									"    }",
+									"}",
+									"",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let report_cash_flow = null;",
+									"    try {",
+									"        report_cash_flow = jsData.data;",
+									"        /**",
+									"         * db_data",
+									"         * sum_card_data",
+									"         * top_income_categories_data",
+									"         * full_income_categories_data",
+									"         * top_expense_categories_data",
+									"         * full_expense_categories_data",
+									"         */",
+									"    } catch {",
+									"        console.log(\"Can't get report cash_flow data\");",
+									"    }",
+									"",
+									"    let total_income = 0, total_expense = 0;",
+									"    let income_list = [], expense_list = [];",
+									"    let exp_sum_card_data;",
+									"    let full_income_categories_data;",
+									"    if(\"full_income_categories_data\" in jsData.data){",
+									"        full_income_categories_data = JSON.parse(JSON.stringify(jsData.data.full_income_categories_data));",
+									"    } else {",
+									"        full_income_categories_data = [];",
+									"    }",
+									"    let full_expense_categories_data;",
+									"    if(\"full_expense_categories_data\" in jsData.data){",
+									"        full_expense_categories_data = JSON.parse(JSON.stringify(jsData.data.full_expense_categories_data));",
+									"    } else {",
+									"        full_expense_categories_data = [];",
+									"    }",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.environment.set(\"C-report_cash_flow\",report_cash_flow);",
+									"            // console.log(\"report_cash_flow: \",report_cash_flow);",
+									"",
+									"            // ================================================ bonus check current data",
+									"            // try {",
+									"            //     for(let i in jsData.data.db_data){",
+									"            //         if(jsData.data.db_data[i].coa_type == \"income\"){",
+									"            //             income_list[income_list.length] = JSON.parse(JSON.stringify(jsData.data.db_data[i]));",
+									"            //             total_income += jsData.data.db_data[i].current_income;",
+									"            //         } else if (jsData.data.db_data[i].coa_type == \"expense\"){",
+									"            //             expense_list[expense_list.length] = JSON.parse(JSON.stringify(jsData.data.db_data[i]));",
+									"            //             total_expense += jsData.data.db_data[i].current_expense;",
+									"            //         }",
+									"            //     }",
+									"            //     exp_sum_card_data = {",
+									"            //         \"total_current_income\": total_income,",
+									"            //         \"total_current_expense\": total_expense,",
+									"            //         \"total_current_gap\": (total_income - total_expense)",
+									"            //     }",
+									"            //     console.log(\"exp_sum_card_data: \", exp_sum_card_data);",
+									"",
+									"            //     for(let i in income_list){",
+									"            //         income_list[i].percentage = parseFloat((income_list[i].current_income/total_income*100).toFixed(2));",
+									"            //         delete income_list[i]['coa_type'];",
+									"            //         delete income_list[i]['current_income'];",
+									"            //     }",
+									"            //     console.log(\"income_list: \", sortByKey(income_list,\"percentage\",\"asc\"));",
+									"",
+									"            //     for(let i in expense_list){",
+									"            //         expense_list[i].percentage = parseFloat((expense_list[i].current_expense/total_expense*100).toFixed(2));",
+									"            //         delete expense_list[i]['coa_type'];",
+									"            //         delete expense_list[i]['current_expense'];",
+									"            //     }",
+									"            //     console.log(\"expense_list: \", sortByKey(expense_list,\"percentage\",\"asc\"));",
+									"",
+									"            //     pm.test(\"sum_card_data correctly\", function () {",
+									"            //         console.log(\"act data: \",JSON.stringify(jsData.data.sum_card_data));",
+									"            //         console.log(\"exp data: \",JSON.stringify(exp_sum_card_data));",
+									"            //         pm.expect(JSON.stringify(jsData.data.sum_card_data) == JSON.stringify(exp_sum_card_data)).to.be.true;",
+									"            //     });",
+									"",
+									"            //     for(let i in full_income_categories_data){",
+									"            //         delete full_income_categories_data[i]['current_amount'];",
+									"            //     }",
+									"            //     pm.test(\"full_income_categories_data correctly\", function () {",
+									"            //         console.log(\"act data: \",JSON.stringify(full_income_categories_data));",
+									"            //         console.log(\"exp data: \",JSON.stringify(income_list));",
+									"            //         pm.expect(JSON.stringify(full_income_categories_data) == JSON.stringify(income_list)).to.be.true;",
+									"            //     });",
+									"",
+									"            //     for(let i in full_expense_categories_data){",
+									"            //         delete full_expense_categories_data[i]['current_amount'];",
+									"            //     }",
+									"            //     pm.test(\"full_expense_categories_data correctly\", function () {",
+									"            //         console.log(\"act data: \",JSON.stringify(full_expense_categories_data));",
+									"            //         console.log(\"exp data: \",JSON.stringify(expense_list));",
+									"            //         pm.expect(JSON.stringify(full_expense_categories_data) == JSON.stringify(expense_list)).to.be.true;",
+									"            //         // pm.expect(jsData.data.full_expense_categories_data).to.deep.include(expense_list);",
+									"            //     });",
+									"            // } catch {",
+									"            //     console.log(\"Null data\");",
+									"            // }",
+									"            // ================================================ ",
+									"",
+									"            postman.setNextRequest(\"get_report_account\"); // get_list_transaction, get_report_account",
+									"            break;",
+									"        case 4:",
+									"            let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"            let old_report_cash_flow = pm.environment.get(\"C-report_cash_flow\");",
+									"",
+									"            pm.test(\"Nothing happen!!!\", function () {",
+									"                pm.expect(JSON.stringify(report_cash_flow) == JSON.stringify(old_report_cash_flow)).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_report_account\"); // get_report_account",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get report cash_flow, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"// lấy full tháng hiện tại",
+									"let today = new Date();",
+									"let start_current_month = new Date(today.getFullYear(), today.getMonth(), 1);",
+									"let end_current_month = new Date(today.getFullYear(), today.getMonth() + 1, 1);",
+									"",
+									"// lấy full tháng trước",
+									"let start_last_month = new Date(today.getFullYear(), today.getMonth() - 1, 1);",
+									"let end_last_month = new Date(today.getFullYear(), today.getMonth(), 1);",
+									"",
+									"// lấy full ngày hiện tại",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0 ,0, 0);",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59 ,59, 0);",
+									"",
+									"// lấy n ngày đến hiện tại",
+									"// let firstDayTimestamp = Math.floor(firstDay.getTime()/1000) - 2*24*60*60;",
+									"// let start_day_ago = new Date(firstDayTimestamp*1000);",
+									"",
+									"let current_period_start = start_current_month.toISOString();",
+									"let current_period_end = end_current_month.toISOString();",
+									"let previous_period_start = start_last_month.toISOString();",
+									"let previous_period_end = end_last_month.toISOString();",
+									"",
+									"/**",
+									" * currently, display error if missing previous_period_start & previous_period_end or them = \"\";",
+									" */",
+									"let payload = {",
+									"    \"branch_id\": parseInt(pm.environment.get(\"C-business_id\")),",
+									"    \"current_period_start\": current_period_start,",
+									"    \"current_period_end\": current_period_end,",
+									"    \"previous_period_start\": previous_period_start,",
+									"    \"previous_period_end\": previous_period_end",
+									"    // \"timezone\": \"Asia/Ho_Chi_Minh\" // UTC, Asia/Ho_Chi_Minh == UTC+07:00",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"",
+									"pm.environment.set(\"C-current_period_start\",current_period_start);",
+									"pm.environment.set(\"C-current_period_end\",current_period_end);",
+									"pm.environment.set(\"C-previous_period_start\",previous_period_start);",
+									"pm.environment.set(\"C-previous_period_end\",previous_period_end);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/report/cash-flow",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"report",
+								"cash-flow"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_report_account",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= sort by key",
+									"function sortByKey(array, key, type) {",
+									"    if(type == \"asc\"){",
+									"        return array.sort(function(a, b) {",
+									"            var x = a[key]; var y = b[key];",
+									"            return ((x > y) ? -1 : ((x < y) ? 1 : 0));",
+									"        });",
+									"    } else {",
+									"        return array.sort(function(a, b) {",
+									"            var x = a[key]; var y = b[key];",
+									"            return ((x < y) ? -1 : ((x > y) ? 1 : 0));",
+									"        });",
+									"    }",
+									"}",
+									"",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let report_account = null;",
+									"    try {",
+									"        report_account = jsData.data;",
+									"        /**",
+									"         * list account in sub_group_value = cash_and_bank",
+									"         */",
+									"    } catch {",
+									"        console.log(\"Can't get report cash_flow data\");",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.environment.set(\"C-report_account\",report_account);",
+									"",
+									"            // ================================================ bonus check current data",
+									"            let coa = pm.environment.get(\"C-coa\");",
+									"            let cash_n_bank = [];",
+									"            loop:",
+									"            for(let i in coa){",
+									"                for(let j in coa[i].sub_group){",
+									"                    if(coa[i].sub_group[j].sub_group_value == \"cash_and_bank\"){",
+									"                        cash_n_bank = coa[i].sub_group[j];",
+									"                        break loop;",
+									"                    }",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Show all account in cash_and_bank\", function () {",
+									"                pm.expect(cash_n_bank.accounts.length == report_account.length).to.be.true;",
+									"            });",
+									"            // console.log(\"cash_n_bank: \" + JSON.stringify(cash_n_bank));",
+									"            // console.log(\"report_account: \" + JSON.stringify(report_account));",
+									"            ",
+									"            // ================================================ ",
+									"",
+									"            postman.setNextRequest(\"get_report_account_receivable_paid\"); // get_report_account_receivable_paid",
+									"            break;",
+									"        case 4:",
+									"            let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"            let list_credit_account = pm.environment.get(\"C-list_credit_account\");",
+									"            let old_report_account = pm.environment.get(\"C-report_account\");",
+									"            ",
+									"            for(let i in list_credit_account){",
+									"                if(list_credit_account[i].account_id == tnx_obj.account_debit){",
+									"                    tnx_obj.account_debit_name = list_credit_account[i].account_name;",
+									"                    break;",
+									"                }",
+									"            }",
+									"            // console.log(\"debug old_report_account: \", old_report_account);",
+									"            // console.log(\"debug report_account: \", report_account);",
+									"",
+									"            let isFound = false;",
+									"            loop:",
+									"            for(let j in report_account){",
+									"                for(let k in old_report_account){",
+									"                    if(report_account[j].id == old_report_account[k].id && report_account[j].id == tnx_obj.account_debit){",
+									"                        isFound = true;",
+									"",
+									"                        pm.test(\"Account \" + tnx_obj.account_debit_name + \" increase debit_amount \" + tnx_obj.amount, function () {",
+									"                            console.log(\"old debit_amount: \" + old_report_account[k].debit_amount);",
+									"                            console.log(\"amount: \" + tnx_obj.amount);",
+									"                            console.log(\"expected: \" + (old_report_account[k].debit_amount + tnx_obj.amount));",
+									"                            console.log(\"new debit_amount: \" + report_account[j].debit_amount);",
+									"                            pm.expect(report_account[j].debit_amount.toFixed(2) == (old_report_account[k].debit_amount + tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                        });",
+									"                        break loop;",
+									"                    }",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Found account \" + tnx_obj.account_debit_name, function () {",
+									"                pm.expect(isFound).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_report_account_receivable_paid\"); // get_report_account_receivable_paid",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get report cash_flow, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"// lấy full tháng hiện tại",
+									"let today = new Date();",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);",
+									"let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);",
+									"",
+									"// lấy full n tháng trước",
+									"let firstDay = new Date(today.getFullYear(), today.getMonth() - 3, 1);",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth(), 1);",
+									"",
+									"// lấy full ngày hiện tại",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0 ,0, 0);",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59 ,59, 0);",
+									"",
+									"// lấy n ngày đến hiện tại",
+									"// let firstDayTimestamp = Math.floor(firstDay.getTime()/1000) - 2*24*60*60;",
+									"// let start_day_ago = new Date(firstDayTimestamp*1000);",
+									"",
+									"let start_time = firstDay.toISOString();",
+									"let end_time = lastDay.toISOString();",
+									"",
+									"console.log(\"start_time: \" + start_time);",
+									"console.log(\"end_time: \" + end_time);",
+									"",
+									"pm.environment.set(\"C-start_time\",start_time);",
+									"pm.environment.set(\"C-end_time\",end_time);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"branch_id\": {{C-business_id}},\n    \"current_period_start\": \"{{C-current_period_start}}\",\n    \"current_period_end\": \"{{C-current_period_end}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/report/account",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"report",
+								"account"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_report_account_receivable_paid",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let start_time = pm.environment.get(\"C-start_time\");",
+									"let end_time = pm.environment.get(\"C-end_time\");",
+									"",
+									"console.log(\"start_time: \" + start_time);",
+									"console.log(\"end_time: \" + end_time);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let paid_account_receivable = null;",
+									"    try {",
+									"        paid_account_receivable = jsData.data.paid_amount_by_time_range;",
+									"    } catch {",
+									"        console.log(\"Can't get data\");",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got paid_account_receivable data\", function () {",
+									"                pm.expect(paid_account_receivable != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-paid_account_receivable\",paid_account_receivable);",
+									"            console.log(\"paid_account_receivable: \",paid_account_receivable);",
+									"",
+									"            postman.setNextRequest(\"get_report_account_receivable_unpaid\"); //get_report_account_receivable_unpaid",
+									"            break;",
+									"        case 4:",
+									"            let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"            let old_data = pm.environment.get(\"C-paid_account_receivable\");",
+									"            let paid_amount = parseFloat(tnx_obj.amount);",
+									"            console.log(\"paid_amount: \" + (paid_amount + old_data));",
+									"",
+									"            // unpaid_total",
+									"            pm.test(\"Total paid increase \" + paid_amount, function () {",
+									"                console.log(\"old: \" + old_data);",
+									"                console.log(\"new: \" + paid_account_receivable);",
+									"                pm.expect(paid_account_receivable.toFixed(2) == (paid_amount + old_data).toFixed(2)).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_report_account_receivable_unpaid\"); //get_report_account_receivable_unpaid",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get report account receivable unpaid, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"branch_id\": {{C-business_id}},\n    \"current_period_start\": \"{{C-start_time}}\",\n    \"current_period_end\": \"{{C-end_time}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/report/account-receivable-card-paid",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"report",
+								"account-receivable-card-paid"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_report_account_receivable_unpaid",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let unpaid_account_receivable = null;",
+									"    try {",
+									"        unpaid_account_receivable = jsData.data.unpaid_amount_lifetime_categories;",
+									"    } catch {",
+									"        console.log(\"Can't get data\");",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got unpaid_account_receivable data\", function () {",
+									"                pm.expect(unpaid_account_receivable != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-unpaid_account_receivable\",unpaid_account_receivable);",
+									"            console.log(\"unpaid_account_receivable: \",unpaid_account_receivable);",
+									"",
+									"            postman.setNextRequest(\"get_report_account_receivable_customer\"); //get_report_account_receivable_customer",
+									"            break;",
+									"        case 4:",
+									"            let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"            let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"            let old_data = pm.environment.get(\"C-unpaid_account_receivable\");",
+									"            let paid_amount = parseFloat(tnx_obj.amount);",
+									"",
+									"            // unpaid_total",
+									"            pm.test(\"Total unpaid decrease \" + paid_amount, function () {",
+									"                console.log(\"old: \" + old_data.unpaid_total);",
+									"                console.log(\"new: \" + unpaid_account_receivable.unpaid_total);",
+									"                pm.expect(unpaid_account_receivable.unpaid_total.toFixed(2) == (old_data.unpaid_total - paid_amount).toFixed(2)).to.be.true;",
+									"            });",
+									"",
+									"            let due_date = new Date(invoice_obj.due_at);",
+									"            let due_date_timestamp = Math.floor(due_date.getTime()/1000);",
+									"            let today = new Date();",
+									"            let today_timestamp = Math.floor(today.getTime()/1000);",
+									"            let due_type;",
+									"            // console.log(\"debug: \" + (due_date_timestamp - today_timestamp));",
+									"            if(due_date_timestamp > today_timestamp){",
+									"                due_type = \"undue\";",
+									"            } else {",
+									"                if(today_timestamp - due_date_timestamp > 60*24*60*60){",
+									"                    due_type = \"overdue_over\";",
+									"                } else if (today_timestamp - due_date_timestamp > 30*24*60*60){",
+									"                    due_type = \"overdue_between\";",
+									"                } else {",
+									"                    due_type = \"overdue_less\";",
+									"                }",
+									"            }",
+									"            pm.environment.set(\"C-due_type\",due_type);",
+									"",
+									"            console.log(\"old: \",old_data);",
+									"            console.log(\"new: \",unpaid_account_receivable);",
+									"            switch(due_type){",
+									"                case \"undue\":",
+									"                    // unpaid_due",
+									"                    pm.test(\"unpaid_due decrease \" + paid_amount, function () {",
+									"                        console.log(\"old: \" + old_data.unpaid_due);",
+									"                        console.log(\"expected: \" + (old_data.unpaid_due - paid_amount));",
+									"                        console.log(\"new: \" + unpaid_account_receivable.unpaid_due);",
+									"                        pm.expect(unpaid_account_receivable.unpaid_due.toFixed(2) == (old_data.unpaid_due - paid_amount).toFixed(2)).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_less",
+									"                    pm.test(\"nothing happen unpaid_overdue_less\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_less == old_data.unpaid_overdue_less).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_between",
+									"                    pm.test(\"nothing happen unpaid_overdue_between\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_between == old_data.unpaid_overdue_between).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_over",
+									"                    pm.test(\"nothing happen unpaid_overdue_over\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_over == old_data.unpaid_overdue_over).to.be.true;",
+									"                    });",
+									"                    break;",
+									"                case \"overdue_less\":",
+									"                    // unpaid_due",
+									"                    pm.test(\"nothing happen unpaid_due\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_due == old_data.unpaid_due).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_less",
+									"                    pm.test(\"unpaid_overdue_less decrease \" + paid_amount, function () {",
+									"                        console.log(\"old: \" + old_data.unpaid_overdue_less);",
+									"                        console.log(\"new: \" + unpaid_account_receivable.unpaid_overdue_less);",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_less.toFixed(2) == (old_data.unpaid_overdue_less - paid_amount).toFixed(2)).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_between",
+									"                    pm.test(\"nothing happen unpaid_overdue_between\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_between == old_data.unpaid_overdue_between).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_over",
+									"                    pm.test(\"nothing happen unpaid_overdue_over\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_over == old_data.unpaid_overdue_over).to.be.true;",
+									"                    });",
+									"                    break;",
+									"                case \"overdue_between\":",
+									"                    // unpaid_due",
+									"                    pm.test(\"nothing happen unpaid_due\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_due == old_data.unpaid_due).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_less",
+									"                    pm.test(\"nothing happen unpaid_overdue_less\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_less == old_data.unpaid_overdue_less).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_between",
+									"                    pm.test(\"unpaid_overdue_between decrease \" + paid_amount, function () {",
+									"                        console.log(\"old: \" + old_data.unpaid_overdue_between);",
+									"                        console.log(\"new: \" + unpaid_account_receivable.unpaid_overdue_between);",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_between.toFixed(2) == (old_data.unpaid_overdue_between - paid_amount).toFixed(2)).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_over",
+									"                    pm.test(\"nothing happen unpaid_overdue_over\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_over == old_data.unpaid_overdue_over).to.be.true;",
+									"                    });",
+									"                    break;",
+									"                case \"overdue_over\":",
+									"                    // unpaid_due",
+									"                    pm.test(\"nothing happen unpaid_due\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_due == old_data.unpaid_due).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_less",
+									"                    pm.test(\"nothing happen unpaid_overdue_less\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_less == old_data.unpaid_overdue_less).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_between",
+									"                    pm.test(\"unpaid_overdue_between decrease\", function () {",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_between == old_data.unpaid_overdue_between).to.be.true;",
+									"                    });",
+									"",
+									"                    // unpaid_overdue_over",
+									"                    pm.test(\"unpaid_overdue_over decrease \" + paid_amount, function () {",
+									"                        console.log(\"old: \" + old_data.unpaid_overdue_over);",
+									"                        console.log(\"new: \" + unpaid_account_receivable.unpaid_overdue_over);",
+									"                        pm.expect(unpaid_account_receivable.unpaid_overdue_over.toFixed(2) == (old_data.unpaid_overdue_over - paid_amount).toFixed(2)).to.be.true;",
+									"                    });",
+									"                    break;",
+									"                default:",
+									"                    pm.test(\"Missing due type\", function () {",
+									"                        pm.expect(false).to.be.true;",
+									"                    });",
+									"                    break;",
+									"            }",
+									"",
+									"            postman.setNextRequest(\"get_report_account_receivable_customer\"); //get_report_account_receivable_customer",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get report account receivable unpaid, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"branch_id\": {{C-business_id}},\n    \"due_days\": 30\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/report/account-receivable-card-unpaid",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"report",
+								"account-receivable-card-unpaid"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_report_account_receivable_customer",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"if(testcase != 2){",
+									"    // timeout 2s to sync elastic search",
+									"    setTimeout(function(){}, 2000);",
+									"}",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_report_customer, old_list_report_customer;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_report_customer = pm.environment.get(\"C-list_report_customer\");",
+									"            if(!list_report_customer){",
+									"                list_report_customer = [];",
+									"            }",
+									"            break;",
+									"        case 4: case 6:",
+									"            old_list_report_customer = pm.environment.get(\"C-old_list_report_customer\");",
+									"            if(!old_list_report_customer){",
+									"                old_list_report_customer = pm.environment.get(\"C-list_report_customer\");",
+									"                pm.environment.unset(\"C-list_report_customer\");",
+									"                pm.environment.set(\"C-old_list_report_customer\",old_list_report_customer);",
+									"            }",
+									"",
+									"            list_report_customer = pm.environment.get(\"C-list_report_customer\");",
+									"            if(!list_report_customer){",
+									"                list_report_customer = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_report_customer[list_report_customer.length] = {",
+									"            \"contact_id\":jsData.data[item].contact_id,",
+									"            \"unpaid_total\":jsData.data[item].unpaid_total,",
+									"            \"unpaid_due\":jsData.data[item].unpaid_due,",
+									"            \"unpaid_overdue_less\":jsData.data[item].unpaid_overdue_less,",
+									"            \"unpaid_overdue_between\":jsData.data[item].unpaid_overdue_between,",
+									"            \"unpaid_overdue_over\":jsData.data[item].unpaid_overdue_over,",
+									"            \"full_count\":jsData.data[item].full_count,",
+									"            \"contact_name\":jsData.data[item].contact_info.contact_name,",
+									"            \"contact_phone\":jsData.data[item].contact_info.contact_phone",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_report_customer\",list_report_customer);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"        let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"        let isFound = false, hasRecord = false;",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all record! \" + list_report_customer.length, function () {",
+									"                    pm.expect(list_report_customer.length > 0).to.be.true;",
+									"                });",
+									"",
+									"                // console.log(\"list_report_customer: \",list_report_customer);",
+									"",
+									"                postman.setNextRequest(\"get_report_account_receivable_invoice\"); // get_report_account_receivable_invoice",
+									"                break;",
+									"            case 4:",
+									"                let record_obj = null;",
+									"                console.log(\"contact_id: \" + invoice_obj.contact_id);",
+									"                for(let i in old_list_report_customer){",
+									"                    if(old_list_report_customer[i].contact_id == invoice_obj.contact_id){",
+									"                        record_obj = old_list_report_customer[i];",
+									"                        break;",
+									"                    }",
+									"                }",
+									"                // console.log(\"old_list_report_customer: \", old_list_report_customer);",
+									"",
+									"                pm.test(\"Nothing happen with total record\", function () {",
+									"                    pm.expect(list_report_customer.length == old_list_report_customer.length).to.be.true;",
+									"                });",
+									"",
+									"                let due_type = pm.environment.get(\"C-due_type\");",
+									"                for(let i in list_report_customer){",
+									"                    if(list_report_customer[i].contact_id == invoice_obj.contact_id){",
+									"                        isFound = true;",
+									"                        console.log(\"Found \" + list_report_customer[i].contact_name + ' - ' + list_report_customer[i].contact_phone);",
+									"                        ",
+									"                        pm.test(\"unpaid_total decrease \" + tnx_obj.amount, function () {",
+									"                            console.log(\"old: \" + record_obj.unpaid_total);",
+									"                            console.log(\"new: \" + list_report_customer[i].unpaid_total);",
+									"                            pm.expect(list_report_customer[i].unpaid_total == (record_obj.unpaid_total - tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                        });",
+									"",
+									"                        switch(due_type){",
+									"                            case \"undue\":",
+									"                                // unpaid_due",
+									"                                pm.test(\"unpaid_due decrease \" + tnx_obj.amount, function () {",
+									"                                    console.log(\"old: \" + record_obj.unpaid_due);",
+									"                                    console.log(\"new: \" + list_report_customer[i].unpaid_due);",
+									"                                    pm.expect(list_report_customer[i].unpaid_due == (record_obj.unpaid_due - tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_less",
+									"                                pm.test(\"nothing happen unpaid_overdue_less\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_less == record_obj.unpaid_overdue_less).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_between",
+									"                                pm.test(\"nothing happen unpaid_overdue_between\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_between == record_obj.unpaid_overdue_between).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_over",
+									"                                pm.test(\"nothing happen unpaid_overdue_over\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_over == record_obj.unpaid_overdue_over).to.be.true;",
+									"                                });",
+									"                                break;",
+									"                            case \"overdue_less\":",
+									"                                // unpaid_due",
+									"                                pm.test(\"nothing happen unpaid_due\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_due == record_obj.unpaid_due).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_less",
+									"                                pm.test(\"unpaid_overdue_less decrease \" + tnx_obj.amount, function () {",
+									"                                    console.log(\"old: \" + record_obj.unpaid_overdue_less);",
+									"                                    console.log(\"new: \" + list_report_customer[i].unpaid_overdue_less);",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_less == (record_obj.unpaid_overdue_less - tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_between",
+									"                                pm.test(\"nothing happen unpaid_overdue_between\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_between == record_obj.unpaid_overdue_between).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_over",
+									"                                pm.test(\"nothing happen unpaid_overdue_over\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_over == record_obj.unpaid_overdue_over).to.be.true;",
+									"                                });",
+									"                                break;",
+									"                            case \"overdue_between\":",
+									"                                // unpaid_due",
+									"                                pm.test(\"nothing happen unpaid_due\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_due == record_obj.unpaid_due).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_less",
+									"                                pm.test(\"nothing happen unpaid_overdue_less\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_less == record_obj.unpaid_overdue_less).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_between",
+									"                                pm.test(\"unpaid_overdue_between decrease \" + tnx_obj.amount, function () {",
+									"                                    console.log(\"old: \" + record_obj.unpaid_overdue_between);",
+									"                                    console.log(\"new: \" + list_report_customer[i].unpaid_overdue_between);",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_between == (record_obj.unpaid_overdue_between - tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_over",
+									"                                pm.test(\"nothing happen unpaid_overdue_over\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_over == record_obj.unpaid_overdue_over).to.be.true;",
+									"                                });",
+									"                                break;",
+									"                            case \"overdue_over\":",
+									"                                // unpaid_due",
+									"                                pm.test(\"nothing happen unpaid_due\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_due == record_obj.unpaid_due).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_less",
+									"                                pm.test(\"nothing happen unpaid_overdue_less\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_less == record_obj.unpaid_overdue_less).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_between",
+									"                                pm.test(\"nothing happen unpaid_overdue_between\", function () {",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_between == record_obj.unpaid_overdue_between).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_over",
+									"                                pm.test(\"unpaid_overdue_over decrease \" + tnx_obj.amount, function () {",
+									"                                    console.log(\"old: \" + record_obj.unpaid_overdue_over);",
+									"                                    console.log(\"new: \" + list_report_customer[i].unpaid_overdue_over);",
+									"                                    pm.expect(list_report_customer[i].unpaid_overdue_over == (record_obj.unpaid_overdue_over - tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                                });",
+									"                                break;",
+									"                            default:",
+									"                                pm.test(\"Missing due type\", function () {",
+									"                                    pm.expect(false).to.be.true;",
+									"                                });",
+									"                                break;",
+									"                        }",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found new product\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_report_account_receivable_invoice\"); // get_report_account_receivable_invoice",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more product\");",
+									"        postman.setNextRequest(\"get_report_account_receivable_customer\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list product, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"branch_id\": {{C-business_id}},\n    \"due_days\": 30,\n    \"page\":{{C-page}},\n    \"page_size\":{{C-page_size}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/report/account-receivable-customer-unpaid",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"report",
+								"account-receivable-customer-unpaid"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_report_account_receivable_invoice",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 300;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_report_invoice, old_list_report_invoice;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_report_invoice = pm.environment.get(\"C-list_report_invoice\");",
+									"            if(!list_report_invoice){",
+									"                list_report_invoice = [];",
+									"            }",
+									"            break;",
+									"        case 4: case 6:",
+									"            old_list_report_invoice = pm.environment.get(\"C-old_list_report_invoice\");",
+									"            if(!old_list_report_invoice){",
+									"                old_list_report_invoice = pm.environment.get(\"C-list_report_invoice\");",
+									"                pm.environment.unset(\"C-list_report_invoice\");",
+									"                pm.environment.set(\"C-old_list_report_invoice\",old_list_report_invoice);",
+									"            }",
+									"",
+									"            list_report_invoice = pm.environment.get(\"C-list_report_invoice\");",
+									"            if(!list_report_invoice){",
+									"                list_report_invoice = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_report_invoice[list_report_invoice.length] = {",
+									"            \"invoice_id\":jsData.data[item].id,",
+									"            \"entry_code\":jsData.data[item].entry_code,",
+									"            \"contact_id\":jsData.data[item].contact_id,",
+									"            \"contact_name\":jsData.data[item].contact_info.contact_name,",
+									"            \"contact_phone\":jsData.data[item].contact_info.contact_phone,",
+									"            \"invoice_created_date\":jsData.data[item].invoice_created_date,",
+									"            \"invoice_due_date\":jsData.data[item].invoice_due_date,",
+									"            \"unpaid_total\":jsData.data[item].unpaid_total,",
+									"            \"unpaid_due\":jsData.data[item].unpaid_due,",
+									"            \"unpaid_overdue_less\":jsData.data[item].unpaid_overdue_less,",
+									"            \"unpaid_overdue_between\":jsData.data[item].unpaid_overdue_between,",
+									"            \"unpaid_overdue_over\":jsData.data[item].unpaid_overdue_over",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_report_invoice\",list_report_invoice);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all record! \" + list_report_invoice.length, function () {",
+									"                    pm.expect(list_report_invoice.length > 0).to.be.true;",
+									"                });",
+									"",
+									"                // console.log(\"list_report_invoice: \",list_report_invoice);",
+									"",
+									"                postman.setNextRequest(\"get_list_payment\"); // get_list_payment",
+									"                break;",
+									"            case 4:",
+									"                let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"                let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"",
+									"                // console.log(\"old: \" + list_report_invoice.length);",
+									"                // console.log(\"new: \" + old_list_report_invoice.length);",
+									"",
+									"                let record_obj = null;",
+									"                for(let i in old_list_report_invoice){",
+									"                    if(old_list_report_invoice[i].invoice_id == invoice_obj.invoice_id){",
+									"                        record_obj = old_list_report_invoice[i];",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                let isFound = false;",
+									"                let due_type = pm.environment.get(\"C-due_type\");",
+									"                for(let i in list_report_invoice){",
+									"                    if(list_report_invoice[i].invoice_id == invoice_obj.invoice_id){",
+									"                        isFound = true;",
+									"                        console.log(\"Found \" + list_report_invoice[i].entry_code + ' of ' + list_report_invoice[i].contact_name);",
+									"                        ",
+									"                        pm.test(\"unpaid_total decrease \" + tnx_obj.amount, function () {",
+									"                            console.log(\"act: \" + list_report_invoice[i].unpaid_total);",
+									"                            pm.expect(list_report_invoice[i].unpaid_total == (record_obj.unpaid_total - tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                        });",
+									"",
+									"                        // pm.test(\"invoice_created_date correctly \" + tnx_obj.amount, function () {",
+									"                        //     pm.expect(list_report_invoice[i].unpaid_total == tnx_obj.amount).to.be.true;",
+									"                        // });",
+									"",
+									"                        // pm.test(\"invoice_due_date correctly \" + tnx_obj.amount, function () {",
+									"                        //     pm.expect(list_report_invoice[i].unpaid_total == tnx_obj.amount).to.be.true;",
+									"                        // });",
+									"",
+									"                        switch(due_type){",
+									"                            case \"undue\":",
+									"                                // unpaid_due",
+									"                                pm.test(\"unpaid_due decrease \" + tnx_obj.amount, function () {",
+									"                                    console.log(\"old: \" + record_obj.unpaid_due);",
+									"                                    console.log(\"act: \" + list_report_invoice[i].unpaid_due);",
+									"                                    pm.expect(list_report_invoice[i].unpaid_due == (record_obj.unpaid_due - tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_less",
+									"                                pm.test(\"unpaid_overdue_less == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_less == 0).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_between",
+									"                                pm.test(\"unpaid_overdue_between == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_between == 0).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_over",
+									"                                pm.test(\"unpaid_overdue_over == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_over == 0).to.be.true;",
+									"                                });",
+									"                                break;",
+									"                            case \"overdue_less\":",
+									"                                // unpaid_due",
+									"                                pm.test(\"unpaid_due == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_due == 0).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_less",
+									"                                pm.test(\"unpaid_overdue_less decrease \" + tnx_obj.amount, function () {",
+									"                                    console.log(\"old: \" + record_obj.unpaid_overdue_less);",
+									"                                    console.log(\"act: \" + list_report_invoice[i].unpaid_overdue_less);",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_less == (record_obj.unpaid_overdue_less - tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_between",
+									"                                pm.test(\"unpaid_overdue_between == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_between == 0).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_over",
+									"                                pm.test(\"unpaid_overdue_over == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_over == 0).to.be.true;",
+									"                                });",
+									"                                break;",
+									"                            case \"overdue_between\":",
+									"                                // unpaid_due",
+									"                                pm.test(\"unpaid_due == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_due == 0).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_less",
+									"                                pm.test(\"unpaid_overdue_less == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_less == 0).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_between",
+									"                                pm.test(\"unpaid_overdue_between decrease \" + tnx_obj.amount, function () {",
+									"                                    console.log(\"old: \" + record_obj.unpaid_overdue_between);",
+									"                                    console.log(\"act: \" + list_report_invoice[i].unpaid_overdue_between);",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_between == (record_obj.unpaid_overdue_between - tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_over",
+									"                                pm.test(\"unpaid_overdue_over == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_over == 0).to.be.true;",
+									"                                });",
+									"                                break;",
+									"                            case \"overdue_over\":",
+									"                                // unpaid_due",
+									"                                pm.test(\"unpaid_due == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_due == 0).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_less",
+									"                                pm.test(\"unpaid_overdue_less == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_less == 0).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_between",
+									"                                pm.test(\"unpaid_overdue_between == 0\", function () {",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_between == 0).to.be.true;",
+									"                                });",
+									"",
+									"                                // unpaid_overdue_over",
+									"                                pm.test(\"unpaid_overdue_over decrease \" + tnx_obj.amount, function () {",
+									"                                    console.log(\"old: \" + record_obj.unpaid_overdue_over);",
+									"                                    console.log(\"act: \" + list_report_invoice[i].unpaid_overdue_over);",
+									"                                    pm.expect(list_report_invoice[i].unpaid_overdue_over == (record_obj.unpaid_overdue_over - tnx_obj.amount).toFixed(2)).to.be.true;",
+									"                                });",
+									"                                break;",
+									"                            default:",
+									"                                pm.test(\"Missing due type\", function () {",
+									"                                    pm.expect(false).to.be.true;",
+									"                                });",
+									"                                break;",
+									"                        }",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found new invoice\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                console.log(\"--- End Testsuite 60 ---\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more product\");",
+									"        postman.setNextRequest(\"get_report_account_receivable_invoice\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list product, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"branch_id\": {{C-business_id}},\n    \"due_days\": 30,\n    \"page\": {{C-page}},\n    \"page_size\": {{C-page_size}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/report/account-receivable-invoice-unpaid",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"report",
+								"account-receivable-invoice-unpaid"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.request.headers.add({",
+							" key: \"authorization\",",
+							" value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"});",
+							"",
+							"pm.request.headers.add({",
+							" key: \"Content-Type\",",
+							" value: \"application/json\"",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	]
+}

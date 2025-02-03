@@ -1,0 +1,605 @@
+{
+	"info": {
+		"_postman_id": "de66db6e-78fa-4761-a3b0-eac147f5b919",
+		"name": "fo_119_manual_kyc_galaxy_pay",
+		"description": "1. Login\n    \n2. Get list bank merchant -> check account kyc or not\n    \n3. Onboard galaxy pay\n    \n4. Login operator account\n    \n5. Approve KYC",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32564955"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let payload = {",
+									"    \"app_version\": \"1.0.0\",",
+									"    \"device_info\": {",
+									"        \"id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",",
+									"        \"name\": \"IP name\",",
+									"        \"os\": \"iphone\"",
+									"    },",
+									"    \"email\": pm.environment.get(\"SER-email\"),",
+									"    \"phone_number\": \"\", //pm.environment.get(\"SER-phone_number\"),",
+									"    \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"    \"platform_key\": platform[0]",
+									"}",
+									"",
+									"console.log(payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102001\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\", jsData.data.business_info.id);",
+									"        console.log(\"business info =\" + jsData.data.business_info.id );",
+									"        postman.setNextRequest(\"get_list_bank_merchant\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-locale",
+								"value": "<string>",
+								"description": "locale",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "galaxy_pay",
+			"item": [
+				{
+					"name": "get_list_bank_merchant",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let testcase = pm.environment.get(\"C-testcase\");",
+									"// console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let isFound = false;",
+									"    let galaxyPay_obj = null;",
+									"    for(let i in jsData.data){",
+									"        if(jsData.data[i].usage_type == \"galaxy_pay\"){",
+									"            isFound = true;",
+									"            galaxyPay_obj = jsData.data[i];",
+									"            break;",
+									"        }",
+									"    }",
+									"    if(isFound == false){",
+									"        console.log(\"Tài khoản chưa liên kết GP pay, liên kết ngay\");",
+									"        postman.setNextRequest(\"onboard_glx_pay\");",
+									"    }else{",
+									"        console.log(\"Account của bạn đã liên kết với Galaxy Pay, Không thể liên kết lần nữa\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't call DB to get bank merchant, please recheck local server\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-database",
+								"value": "banking"
+							},
+							{
+								"key": "base-url",
+								"value": "{{finone_url}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{local_url}}/bank-merchant/get-list?business_id={{C-business_id}}",
+							"host": [
+								"{{local_url}}"
+							],
+							"path": [
+								"bank-merchant",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "onboard_glx_pay",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();",
+									"pm.environment.set(\"C-business_kyc_number\", jsData.data.business_kyc_number)",
+									"console.log(\"kyc_number is: \" + jsData.data.business_kyc_number);",
+									"postman.setNextRequest(\"login_operator\");"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let taxcode = Math.random().toString(10).substring(2,8);",
+									"let id_card = Math.random().toString(10).substring(2,14);",
+									"let payload = {",
+									"    \"name\": \"QC test Shinhan\",",
+									"    \"tax_code\": taxcode,",
+									"    \"phone_number\": \"+84384133417\",",
+									"    \"email\": \"hieuit275@gmail.com\",",
+									"    \"description\": \"Công ty Sổ Bán Hàng\",",
+									"    \"address_info\": {",
+									"        \"detail_address\": \"184 Điện Biên Phủ, Phường 15, Bình Thạnh, Hồ Chí Minh\",",
+									"        \"area_level3_name\": \"10\",",
+									"        \"area_level2_name\": \"30\",",
+									"        \"area_level1_name\": \"211\",",
+									"        \"country_id\": \"VN\"",
+									"    },",
+									"    \"registration_certificate\": [",
+									"        \"https://sobanhang.buynow.vn/_next/image?url=https%3A%2F%2Fd3hr4eej8cfgwy.cloudfront.net%2Fv2%2F2000x2000%2Ffinan-prd%2Ff40c4ab9-a1b5-4f22-8c2a-d153e2b2ca69%2Fimage%2F6d3bdcfd-5d95-47a1-9aca-ed26d6a37458.jpg&w=1920&q=75\"",
+									"    ],",
+									"    \"sme_owner\": {",
+									"        \"name\": \"Bùi Hải Nam\",",
+									"        \"sex\": \"male\",",
+									"        \"dob\": \"2022-02-09T00:00:00.0000Z\",",
+									"        \"id_card\": id_card,",
+									"        \"front_identification\": \"https://sobanhang.buynow.vn/_next/image?url=https%3A%2F%2Fd3hr4eej8cfgwy.cloudfront.net%2Fv2%2F2000x2000%2Ffinan-prd%2Ff40c4ab9-a1b5-4f22-8c2a-d153e2b2ca69%2Fimage%2F6d3bdcfd-5d95-47a1-9aca-ed26d6a37458.jpg&w=1920&q=75\",",
+									"        \"back_identification\": \"https://sobanhang.buynow.vn/_next/image?url=https%3A%2F%2Fd3hr4eej8cfgwy.cloudfront.net%2Fv2%2F2000x2000%2Ffinan-prd%2Ff40c4ab9-a1b5-4f22-8c2a-d153e2b2ca69%2Fimage%2F6d3bdcfd-5d95-47a1-9aca-ed26d6a37458.jpg&w=1920&q=75\",",
+									"        \"address_info\": {",
+									"            \"detail_address\": \"184 Điện Biên Phủ, Phường 15, Bình Thạnh, Hồ Chí Minh\",",
+									"            \"area_level3_name\": \"10\",",
+									"            \"area_level2_name\": \"30\",",
+									"            \"area_level1_name\": \"211\",",
+									"            \"country_id\": \"VN\"",
+									"        },",
+									"        \"phone_number\": \"+84384133196\",",
+									"        \"email\": \"tranvy991020@gmail.com\"",
+									"    },",
+									"    \"beneficiary_accounts\": [",
+									"        {",
+									"            \"bank_id\": \"311\",",
+									"            \"account_number\": \"1232132\",",
+									"            \"account_name\": \"NGUYEN MINH HIEU\"",
+									"        }",
+									"        // {",
+									"        //     \"bank_id\": \"311\",",
+									"        //     \"account_number\": \"907470430\",",
+									"        //     \"account_name\": \"CHAU LE\"",
+									"        // }",
+									"    ],",
+									"    \"va_name\": \"Ví Galaxy Pay\"",
+									"};",
+									"// console.log(\"payload: \" + JSON.stringify(payload));",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-onboard_glx_Pay\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}"
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-banking/api/v1/galaxy-pay/onboard",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-banking",
+								"api",
+								"v1",
+								"galaxy-pay",
+								"onboard"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "finesys",
+			"item": [
+				{
+					"name": "login_operator",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200 && jsData.status == 200){",
+									"    pm.environment.set(\"C-Finesys_token\", jsData.results[0].access_token);",
+									"    console.log(\"status of login as a operator\" + jsData.message);",
+									"    postman.setNextRequest(\"approve_kyc_business\");",
+									"}else{",
+									"    console.log(\"Can't login operator\" + jsData);",
+									"    postman.setNextRequest(null);",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let payload = {",
+									"    \"username\": \"operator@sobanhang.com\",",
+									"    \"password\": \"JYSrE6sawEDVzfnX\"",
+									"}",
+									"pm.environment.set(\"C-payload\", JSON.stringify(payload));",
+									"console.log(\"Login operator\", payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}"
+						},
+						"url": {
+							"raw": "https://stg-finesys.finan.vn/api/v1/tenant/bo/auth",
+							"protocol": "https",
+							"host": [
+								"stg-finesys",
+								"finan",
+								"vn"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tenant",
+								"bo",
+								"auth"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "approve_kyc_business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"let jsData = pm.response.json();\r",
+									"if(pm.response.code == 200){\r",
+									"    console.log(\"Approve successful:\", jsData),\r",
+									"    postman.setNextRequest(null)\r",
+									"}else{\r",
+									"    console.log(\"Approve fail:\", jsData.errors[0].message);\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let business_kyc_number = pm.environment.get(\"C-business_kyc_number\");",
+									"let payload = {",
+									"    \"business_kyc_number\": business_kyc_number,",
+									"    \"approval_note\": \"Approved, Test!\",",
+									"    \"is_forced\": false",
+									"}",
+									"pm.environment.set(\"C-payload\", JSON.stringify(payload));",
+									"console.log(\"payload\", payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-Finesys_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"business_kyc_number\": {{C-business_kyc_number}},\n    \"approval_note\": \"Approved, Test!\",\n    \"is_forced\": false\n}"
+						},
+						"url": {
+							"raw": "https://stg-finesys.finan.vn/api/v1/banking/bo/kyc/biz/approve",
+							"protocol": "https",
+							"host": [
+								"stg-finesys",
+								"finan",
+								"vn"
+							],
+							"path": [
+								"api",
+								"v1",
+								"banking",
+								"bo",
+								"kyc",
+								"biz",
+								"approve"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":false,",
+					"    \"limit_page\":5,",
+					"    \"timeout\":12000, // miliseconds => timeout to call API",
+					"    // \"is_create_va\":true,",
+					"    \"is_topup\":true",
+					"    // \"is_buyer_gen\":false,",
+					"    // \"is_use_the_same_product_price\":false,",
+					"    // \"sku_type\":\"batch_product\", // physical, imei_product, batch_product, book_product, mix",
+					"    // \"track_inventory\":true, // true: có tồn kho",
+					"    // \"total_sku\":3,",
+					"    // \"none_uuid\":\"00000000-0000-0000-0000-000000000000\", // 8-4-4-4-12",
+					"    // \"is_the_same_branch\":true, // true: branch tạo po và branch check là giống nhau, false: khác nhau",
+					"    // \"test_payment_method\":\"va_galaxy\" // bank_transfer, viet_qr_pro_mb, v a_galaxy",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    switch(request_api.method){",
+					"        case \"PUT\":",
+					"            curl = \"curl --location --request PUT \";",
+					"            break;",
+					"        case \"PATCH\":",
+					"            curl = \"curl --location --request PATCH \";",
+					"            break;",
+					"        case \"DELETE\":",
+					"            curl = \"curl --location --request DELETE \";",
+					"            break;",
+					"        default:",
+					"            curl = \"curl --location \";",
+					"            break;",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.length > 0){",
+					"            curl += \"? \";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\": case \"PATCH\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,1139 @@
+{
+	"info": {
+		"_postman_id": "fc008c20-a848-4135-8b8a-684818cb7f29",
+		"name": "fo_69_verify_to_create_new_tax",
+		"description": "### Test suite: Verify to create new tax\n\n###### Testcase:\n\n1. Login with owner account\n2. Get data\n    1. COA Account / Get coa => focus on Liabilities/Current Liabilities (get list tax)\n    2. Tax / Get list tax => save total tax & double check with coa's tax if needed\n3. Create new tax\n    1. Unhappy case: rate = null\n    2. Unhappy case: name = \"\"\n    3. Unhappy case: name is existed\n    4. Unhappy case: rate < 0\n    5. Unhappy case: rate > 100\n    6. Unhappy case: had more 4 decimal digits after point (xx.yyyy)\n    7. Happy case (0.0000 \\~ 100.0000)\n4. Check data\n    \n    1. Tax / Get list tax => total increase 1, data correctly\n    2. Tax / Get detail tax => data correctly\n    3. COA Account / Get coa => had new tax's account in Liabilities/Current Liabilities & is_edit = false\n        \n\n###### Note:\n\n- 2.b khi check list tax from coa, những account có is_edit = false chính là những account được tạo = API create tax, còn lại dc tạo bằng API create account\n- API create tax sẽ có data tương ứng bên COA, còn API create account chỉ effect trên COA không effect vào list Tax\n- FinOne: khi đang đợi chốt COA, tạm thời sẽ ko sinh record trong COA",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 69 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        postman.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-locale",
+								"value": "<string>",
+								"description": "locale",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id); // business_id => hiện tại hard code để lấy đủ 3 tầng coa , 100000",
+									"",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_internal_account\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "coa account",
+			"item": [
+				{
+					"name": "get_list_internal_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"/**",
+									" * trong sub_group \"Current Liabilities\" chứa tất cả account",
+									" *  - tạo từ coa => có thể edit và delete",
+									" *  - tạo từ tax config => ko cho edit và delete",
+									" */",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let coa_tax = null;",
+									"    try {",
+									"        for(let i in jsData.data){",
+									"            let sub_group_i;",
+									"            if(jsData.data[i].value == \"liabilities\"){",
+									"                for(let j in jsData.data[i].sub_group){",
+									"                    let accounts_j = [];",
+									"                    if(jsData.data[i].sub_group[j].value == \"B2\"){",
+									"                        for(let k in jsData.data[i].sub_group[j].accounts){",
+									"                            accounts_j[accounts_j.length] = {",
+									"                                \"account_name\":jsData.data[i].sub_group[j].accounts[k].account_name,",
+									"                                \"account_name_custom\":jsData.data[i].sub_group[j].accounts[k].account_name_custom,",
+									"                                \"account_id\":jsData.data[i].sub_group[j].accounts[k].id,",
+									"                                \"group_name\":jsData.data[i].sub_group[j].accounts[k].group_name,",
+									"                                \"sub_group_name\":jsData.data[i].sub_group[j].accounts[k].sub_name,",
+									"                                \"business_id\":jsData.data[i].sub_group[j].accounts[k].business_id,",
+									"                                \"account_key\":jsData.data[i].sub_group[j].accounts[k].account_key,",
+									"                                \"account_type\":jsData.data[i].sub_group[j].accounts[k].account_type,",
+									"                                \"coa_type\":jsData.data[i].sub_group[j].accounts[k].coa_type,",
+									"                                \"status\":jsData.data[i].sub_group[j].accounts[k].status,",
+									"                                \"parent_account_id\":jsData.data[i].sub_group[j].accounts[k].parent_account_id,",
+									"                                \"description\":jsData.data[i].sub_group[j].accounts[k].description,",
+									"                                \"open_amount\":jsData.data[i].sub_group[j].accounts[k].open_amount,",
+									"                                \"total_balance_amount\":jsData.data[i].sub_group[j].accounts[k].total_balance_amount,",
+									"                                \"is_edit\":jsData.data[i].sub_group[j].accounts[k].is_edit,",
+									"                                \"is_delete\":jsData.data[i].sub_group[j].accounts[k].is_delete",
+									"                                // \"opening_at\":jsData.data[i].sub_group[j].accounts[k].opening_at",
+									"                                // \"closing_at\":jsData.data[i].sub_group[j].accounts[k].closing_at",
+									"                            }",
+									"                        }",
+									"",
+									"                        sub_group_i = {",
+									"                            \"sub_group_name\":jsData.data[i].sub_group[j].name,",
+									"                            \"sub_group_id\":jsData.data[i].sub_group[j].id,",
+									"                            \"sub_group_description\":jsData.data[i].sub_group[j].description,",
+									"                            \"accounts\":accounts_j",
+									"                        }",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                coa_tax = {",
+									"                    \"group_name\":jsData.data[i].name,",
+									"                    \"value\":jsData.data[i].value,",
+									"                    \"index\":jsData.data[i].index,",
+									"                    \"sub_group\":sub_group_i",
+									"                }",
+									"                break;",
+									"            }",
+									"        }",
+									"    } catch {",
+									"        console.log(\"can't get all account in coa_tax\");",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got coa_tax of this user's branch\", function () {",
+									"                pm.expect(coa_tax != null).to.be.true;",
+									"            });",
+									"",
+									"            if(coa_tax != null){",
+									"                console.log(\"coa_tax: \", coa_tax);",
+									"                pm.environment.set(\"C-coa_tax\",coa_tax);",
+									"",
+									"                postman.setNextRequest(\"get_list_tax\"); // get_list_tax",
+									"            } else {",
+									"                console.log(\"Can't get list internal account, end test \");",
+									"                postman.setNextRequest(null);",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            let old_coa_tax = pm.environment.get(\"C-coa_tax\");",
+									"            pm.test(\"Total account in Liabilities/Current Liabilities increase 1\", function () {",
+									"                pm.expect(old_coa_tax.sub_group.accounts.length + 1 == coa_tax.sub_group.accounts.length).to.be.true;",
+									"            });",
+									"",
+									"            let tax_obj = pm.environment.get(\"C-tax_obj\");",
+									"            let isFound = false;",
+									"            // console.log(\"debug: \",coa_tax);",
+									"            // console.log(\"tax_obj.name: \" + tax_obj.name);",
+									"            for(let i in coa_tax.sub_group.accounts){",
+									"                // console.log(\"coa_tax.sub_group.accounts[i].account_name: \" + coa_tax.sub_group.accounts[i].name);",
+									"                if(coa_tax.sub_group.accounts[i].account_name == tax_obj.name){",
+									"                    isFound = true;",
+									"                    pm.test(\"Tax \" + tax_obj.name + \" can't edit in coa\", function () {",
+									"                        pm.expect(\"is_edit\" in coa_tax.sub_group.accounts[i] && coa_tax.sub_group.accounts[i].is_edit).to.be.false;",
+									"                    });",
+									"                    break;",
+									"                }",
+									"            }",
+									"            pm.test(\"Found correctly tax \" + tax_obj.name + \" in Liabilities/Current Liabilities\", function () {",
+									"                pm.expect(isFound).to.be.true;",
+									"            });",
+									"",
+									"            console.log(\"--- End Testsuite 69 ---\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list internal account, end test \", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/account/get-list-setting?business_id={{C-business_id}}&coa_type=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"account",
+								"get-list-setting"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "coa_type",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "tax",
+			"item": [
+				{
+					"name": "get_list_tax",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_page = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_tax, old_list_tax;",
+									"    let total_tax = null;",
+									"    try {",
+									"        total_tax = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"missing meta\");",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_tax = pm.environment.get(\"C-list_tax\");",
+									"            if(!list_tax){",
+									"                list_tax = [];",
+									"            }",
+									"",
+									"            let existed_tax = pm.environment.get(\"C-existed_tax\");",
+									"            if(!existed_tax){",
+									"                for(let i in jsData.data){",
+									"                    if(jsData.data[i].name.includes(\"[API]\")){",
+									"                        existed_tax = jsData.data[i].name;",
+									"                        pm.environment.set(\"C-existed_tax_name\",existed_tax);",
+									"                        break;",
+									"                    }",
+									"                }",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_tax = pm.environment.get(\"C-old_list_tax\");",
+									"            if(!old_list_tax){",
+									"                old_list_tax = pm.environment.get(\"C-list_tax\");",
+									"                pm.environment.unset(\"C-list_tax\");",
+									"                pm.environment.set(\"C-old_list_tax\",old_list_tax);",
+									"            }",
+									"",
+									"            list_tax = pm.environment.get(\"C-list_tax\");",
+									"            if(!list_tax){",
+									"                list_tax = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_tax[list_tax.length] = {",
+									"            \"tax_id\":jsData.data[item].id,",
+									"            \"name\":jsData.data[item].name,",
+									"            \"rate\":jsData.data[item].rate,",
+									"            \"description\":jsData.data[item].description,",
+									"            \"account_id\":jsData.data[item].account_id",
+									"            // \"displays_id\":jsData.data[item].displays_id",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_tax\",list_tax);",
+									"",
+									"    if(page >= total_page){",
+									"        pm.environment.unset(\"C-page\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got total_tax \" + total_tax, function () {",
+									"                    pm.environment.set(\"C-total_tax\",total_tax);",
+									"                    pm.expect(total_tax != null).to.be.true;",
+									"                });",
+									"",
+									"                // check list tax from coa & list tax from tax config",
+									"                let coa_tax = pm.environment.get(\"C-coa_tax\");",
+									"                // console.log(\"list_tax: \", list_tax);",
+									"                // console.log(\"=====================================\");",
+									"                // console.log(\"coa_tax: \", coa_tax.sub_group);",
+									"",
+									"                // let count_coa_tax = 0; => bonus check nhưng hiện tại delete tax thì coa vẫn còn để giữ tnx",
+									"                // // let isNotTax = true;",
+									"                // for(let i in coa_tax.sub_group.accounts){",
+									"                //     // console.log(coa_tax.sub_group.accounts[i].account_name);",
+									"                //     if(coa_tax.sub_group.accounts[i].account_type != \"default\" && (coa_tax.sub_group.accounts[i].account_name.includes(\"tax\") || coa_tax.sub_group.accounts[i].account_name == \"\")){ // tạm thời count luôn tax_name = \"\"",
+									"                //         count_coa_tax++;",
+									"                    ",
+									"                //         let isFound_i = false;",
+									"                //         for(let j in list_tax){",
+									"                //             if(list_tax[j].account_id == coa_tax.sub_group.accounts[i].account_id){",
+									"                //                 isFound_i = true;",
+									"                //                 break;",
+									"                //             }",
+									"                //         }",
+									"                //         if(!isFound_i){",
+									"                //             // isNotTax = false;",
+									"                //             pm.test(\"Tax \" + coa_tax.sub_group.accounts[i].account_name + \" is not existed in tax list\", function () {",
+									"                //                 pm.expect(false).to.be.true;",
+									"                //             });",
+									"                //         }",
+									"                //     }",
+									"                // }",
+									"",
+									"                // pm.test(\"total_tax correctly with coa's tax \" + total_tax, function () {",
+									"                //     console.log(\"count_coa_tax: \" + count_coa_tax);",
+									"                //     pm.expect(total_tax == count_coa_tax).to.be.true;",
+									"                // });",
+									"",
+									"                testcase++;",
+									"                pm.environment.set(\"C-testcase\",testcase);",
+									"                postman.setNextRequest(\"create_tax\"); // create_tax",
+									"                break;",
+									"            case 4:",
+									"                let old_total_tax = pm.environment.get(\"C-total_tax\");",
+									"                pm.test(\"total_tax increase 1\", function () {",
+									"                    console.log(\"total_tax: \" + total_tax);",
+									"                    console.log(\"old_total_tax: \" + old_total_tax);",
+									"                    pm.expect(total_tax == old_total_tax + 1).to.be.true;",
+									"                });",
+									"                // console.log(\"debug: \", jsData.data);",
+									"",
+									"                let tax_obj = pm.environment.get(\"C-tax_obj\");",
+									"                let isFound = false;",
+									"                let act_name, act_rate, act_des;",
+									"                for(let item in jsData.data){",
+									"                    if(jsData.data[item].id == tax_obj.tax_id){",
+									"                        isFound = true;",
+									"                        act_name = jsData.data[item].name;",
+									"                        act_rate = jsData.data[item].rate;",
+									"                        act_des = jsData.data[item].description;",
+									"                        break;",
+									"                    }",
+									"                }",
+									"                ",
+									"                pm.test(\"Found new order\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"name of tax correctly! \" + tax_obj.name, function () {",
+									"                    pm.expect(tax_obj.name == act_name).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"rate of tax correctly! \" + tax_obj.rate, function () {",
+									"                    pm.expect(tax_obj.rate == act_rate).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"description of tax correctly! \" + tax_obj.description, function () {",
+									"                    pm.expect(tax_obj.description == act_des).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_tax_detail\"); // get_tax_detail",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more tax\");",
+									"        postman.setNextRequest(\"get_list_tax\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list tax, end test \", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// timeout 2s to sync elastic search",
+									"setTimeout(function(){}, 1000);",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/tax/get-list?page={{C-page}}&page_size={{C-page_size}}&option=&status=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"tax",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "option",
+									"value": ""
+								},
+								{
+									"key": "status",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_tax_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let tax_obj = pm.environment.get(\"C-tax_obj\");",
+									"let tax_id = tax_obj.tax_id;",
+									"pm.environment.set(\"C-tax_id\",tax_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let tax_obj = pm.environment.get(\"C-tax_obj\");",
+									"",
+									"    // check data",
+									"    pm.test(\"name of tax correctly! \" + tax_obj.name, function () {",
+									"        pm.expect(tax_obj.name == jsData.data.name).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"rate of tax correctly! \" + tax_obj.rate, function () {",
+									"        pm.expect(tax_obj.rate == jsData.data.rate).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"description of tax correctly! \" + tax_obj.description, function () {",
+									"        pm.expect(tax_obj.description == jsData.data.description).to.be.true;",
+									"    });",
+									"",
+									"    postman.setNextRequest(\"get_list_internal_account\"); // get_list_internal_account",
+									"} else {",
+									"    console.log(\"Can't get tax detail - \" + JSON.stringify(jsData));",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/tax/get-one/{{C-tax_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"tax",
+								"get-one",
+								"{{C-tax_id}}"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_tax",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// const clRandom = pm.require('@chaule2906/cl-random'); => newman chưa update phần package",
+									"",
+									"// random number between min and max",
+									"function getRandomInt(min, max) {",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"if(!case_){",
+									"    case_ = 7;",
+									"    pm.environment.set(\"C-case_\",case_);",
+									"}",
+									"console.log(\"Testcase: \" + testcase + \".\" + case_);",
+									"",
+									"let tax, rate, description, name;",
+									"switch(case_){",
+									"    case 1:",
+									"        console.log(\"create tax with rate = ''\");",
+									"        tax = randomChars(8);",
+									"        rate = \"\";",
+									"        description = \"[API] create tax \" + tax;",
+									"        name = \"[API] tax \" + tax;",
+									"        break;",
+									"    case 2:",
+									"        console.log(\"create tax with name = ''\");",
+									"        rate = 10;",
+									"        description = \"\";",
+									"        name = \"\";",
+									"        break;",
+									"    case 3:",
+									"        console.log(\"create tax with name is existed\");",
+									"        rate = 10;",
+									"        description = \"[API] new existed tax \" + tax;",
+									"        name = pm.environment.get(\"C-existed_tax_name\");",
+									"        break;",
+									"    case 4:",
+									"        console.log(\"create tax with rate < 0\");",
+									"        tax = randomChars(8);",
+									"        rate = -1;",
+									"        description = \"[API] new tax \" + tax;",
+									"        name = \"[API] tax \" + tax;",
+									"        break;",
+									"    case 5:",
+									"        console.log(\"create tax with rate > 100\");",
+									"        tax = randomChars(8);",
+									"        rate = 101;",
+									"        description = \"[API] new tax \" + tax;",
+									"        name = \"[API] tax \" + tax;",
+									"        break;",
+									"    case 6:",
+									"        console.log(\"create tax with rate = 5.12345\");",
+									"        tax = randomChars(8);",
+									"        rate = 5.12345;",
+									"        description = \"[API] new tax \" + tax;",
+									"        name = \"[API] tax \" + tax;",
+									"        break;",
+									"    case 7:",
+									"        console.log(\"create tax with valid data\");",
+									"        tax = randomChars(8);",
+									"        rate = getRandomInt(100,1000)/100;",
+									"        description = \"[API] new tax \" + tax;",
+									"        name = \"[API] tax \" + rate + \" - \" + tax;",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow\");",
+									"        break;",
+									"}",
+									"",
+									"let payload = {",
+									"    \"business_id\": parseInt(pm.environment.get(\"C-business_id\")),",
+									"    \"description\": description,",
+									"    // \"displays_id\": \"string\",",
+									"    // \"id\": \"string\",",
+									"    \"name\": name,",
+									"    \"rate\": rate",
+									"}",
+									"",
+									"console.log(\"payload: \" + JSON.stringify(payload));",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-tax_obj\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"/** ",
+									" * only work with postman, don't work with newman yet",
+									" * const clLib = pm.require('@chaule2906/cl-parsecurl');",
+									" */",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"",
+									"let jsData = pm.response.json();",
+									"switch(case_){",
+									"    case 1: case 2: case 3: case 4: case 5: case 6:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"",
+									"        pm.test(\"System code is 104000\", function () {",
+									"            pm.expect(jsData.code).to.eql(104000);",
+									"        });",
+									"",
+									"        console.log(\"Error: \", jsData);",
+									"",
+									"        // case_ = 7;",
+									"        case_++;",
+									"        pm.environment.set(\"C-case_\",case_);",
+									"        postman.setNextRequest(\"create_tax\");",
+									"        break;",
+									"    case 7:",
+									"        // clLib.parseCURL(request_api);",
+									"",
+									"        // console.log(\"debug: \" + JSON.stringify(jsData));",
+									"        pm.test(\"Status code is 200\", function () {",
+									"            pm.response.to.have.status(200);",
+									"        });",
+									"",
+									"        pm.test(\"System code is 102001\", function () {",
+									"            pm.expect(jsData.code).to.eql(102001);",
+									"        });",
+									"",
+									"        pm.environment.unset(\"C-case_\");",
+									"        let tax_obj = pm.environment.get(\"C-tax_obj\");",
+									"",
+									"        // update tax_id for tax_obj",
+									"        tax_obj.tax_id = jsData.data.id;",
+									"",
+									"        pm.test(\"name of tax correctly! \" + tax_obj.name, function () {",
+									"            pm.expect(tax_obj.name == jsData.data.name).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"rate of tax correctly! \" + tax_obj.rate, function () {",
+									"            pm.expect(tax_obj.rate == jsData.data.rate).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"description of tax correctly! \" + tax_obj.description, function () {",
+									"            pm.expect(tax_obj.description == jsData.data.description).to.be.true;",
+									"        });",
+									"",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        pm.environment.set(\"C-tax_obj\",tax_obj);",
+									"        postman.setNextRequest(\"get_list_tax\"); // get_list_tax",
+									"        break;",
+									"    default:",
+									"        console.log(\"missing flow, end test\");",
+									"        postman.setNextRequest(null);",
+									"        break;",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/tax/create",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"tax",
+								"create"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":true,",
+					"    \"limit_page\":5,",
+					"    \"timeout\":12000, // miliseconds => timeout to call API",
+					"    \"is_buyer_gen\":false,",
+					"    \"test_payment_method\":\"va_galaxy\" // bank_transfer, viet_qr_pro_mb, va_galaxy",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    switch(request_api.method){",
+					"        case \"PUT\":",
+					"            curl = \"curl --location --request PUT \";",
+					"            break;",
+					"        case \"PATCH\":",
+					"            curl = \"curl --location --request PATCH \";",
+					"            break;",
+					"        case \"DELETE\":",
+					"            curl = \"curl --location --request DELETE \";",
+					"            break;",
+					"        default:",
+					"            curl = \"curl --location \";",
+					"            break;",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.length > 0){",
+					"            curl += \"? \";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\": case \"PATCH\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,3261 @@
+{
+	"info": {
+		"_postman_id": "2136d0a4-be44-4a4b-8b7b-81ad06b2f95e",
+		"name": "fo_52_verify_to_create_withdraw_transaction_via_va",
+		"description": "### Testsuite: Verify to create cash out (withdraw) transaction via va\n\n###### Testcase:\n\n1. Login with owner account\n    \n2. Get data\n    \n    1. account coa / get list account\n        \n    2. account bank / get list bank account\n        \n    3. Payment / get list payment => get total\n        \n    4. Transaction / Get list transaction => get total transaction\n        \n    5. Posting / Get list posting => get total posting\n        \n3. Hook Success from finesys - Success: tạo đầy đủ transaction/posting/payment\n    \n4. Check data\n    \n    1. Transaction / Get list transaction => increase 2, got data (có thể handle dạng array, thêm type để support case tạo ra nhiều hơn 2 tnx sau này)\n        \n    2. Transaction / Get transaction detail => data correctly\n        \n    3. Payment / get list payment => update status, nothing else happen\n        \n    4. Payment / get payment detail => data correctly\n        \n    5. account bank / get list bank account => update data\n        \n    6. Posting / Get list posting => increase records & data correctly\n        \n5. Hook Failed from finesys - Fail: tạo transaction/posting, update lại status payment\n    \n6. Check data\n    \n    1. Transaction / Get list transaction => increase 2, got data (có thể handle dạng array, thêm type để support case tạo ra nhiều hơn 2 tnx sau này)\n        \n    2. Transaction / Get transaction detail => data correctly\n        \n    3. Payment / get list payment => update status, nothing else happen\n        \n    4. Payment / get payment detail => data correctly\n        \n    5. account bank / get list bank account => update data\n        \n    6. Posting / Get list posting => increase records & data correctly\n        \n\n###### Note:\n\n- _Step 1: run flow 1-4_\n    \n- Step 2: run flow 5-6 => Pending đợi PO finalize rule\n    \n- _Ghi nhận COA và data GP có thể rút sẽ khác nhau_",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 52 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        postman.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"    postman.setNextRequest(\"get_current_business\"); // get_business_detail",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "get_business_detail",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"Current business info: \", jsData.data);",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.current_business.list_branch[0].id;",
+									"        pm.environment.set(\"C-branch_id\",branch_id);",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    let payment_method = null;",
+									"    let list_payment_method = [];",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let test_payment_method = configs.test_payment_method;",
+									"    try {",
+									"        switch(test_payment_method){",
+									"            case \"viet_qr_pro_mb\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].key == test_payment_method){ ",
+									"                        payment_method = jsData.data.list_payment_method[i];",
+									"                        break;",
+									"                    }",
+									"                }",
+									"                break;",
+									"            case \"va_galaxy\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].bank_account.account_number.includes(\"SBB\")){ ",
+									"                        list_payment_method[list_payment_method.length] = jsData.data.list_payment_method[i];",
+									"                    }",
+									"                }",
+									"                payment_method = list_payment_method[getRandomInt(0,list_payment_method.length -1)];",
+									"                break;",
+									"            case \"bank_transfer\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].key == test_payment_method){ ",
+									"                        list_payment_method[list_payment_method.length] = jsData.data.list_payment_method[i];",
+									"                    }",
+									"                }",
+									"                payment_method = list_payment_method[getRandomInt(0,list_payment_method.length -1)];",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow\");",
+									"                break;",
+									"        }",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"    pm.environment.set(\"C-viet_qr_payment\",payment_method);",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"    ",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_internal_account\");",
+									"} else {",
+									"    console.log(\"Can't get business detail, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/business/get-one/{{C-business_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"business",
+								"get-one",
+								"{{C-business_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_current_business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"Current business info: \", jsData.data);",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.current_business.list_branch[0].id;",
+									"        pm.environment.set(\"C-branch_id\",branch_id);",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    let payment_method = null;",
+									"    let list_payment_method = [];",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let test_payment_method = configs.test_payment_method;",
+									"    try {",
+									"        switch(test_payment_method){",
+									"            case \"viet_qr_pro_mb\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].key == test_payment_method){ ",
+									"                        payment_method = jsData.data.list_payment_method[i];",
+									"                        break;",
+									"                    }",
+									"                }",
+									"                break;",
+									"            case \"va_galaxy\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].bank_account.account_number.includes(\"SBB\")){ ",
+									"                        list_payment_method[list_payment_method.length] = jsData.data.list_payment_method[i];",
+									"                    }",
+									"                }",
+									"                payment_method = list_payment_method[getRandomInt(0,list_payment_method.length -1)];",
+									"                break;",
+									"            case \"bank_transfer\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].key == test_payment_method){ ",
+									"                        list_payment_method[list_payment_method.length] = jsData.data.list_payment_method[i];",
+									"                    }",
+									"                }",
+									"                payment_method = list_payment_method[getRandomInt(0,list_payment_method.length -1)];",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow\");",
+									"                break;",
+									"        }",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"    pm.environment.set(\"C-viet_qr_payment\",payment_method);",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"    ",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_internal_account\");",
+									"} else {",
+									"    console.log(\"Can't get business detail, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/business/get-current",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"business",
+								"get-current"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "account coa",
+			"item": [
+				{
+					"name": "get_list_internal_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"/**",
+									" * cần lấy processing cash-in, processing cash-out và payment processing fee",
+									" * key: processing_cash_in, processing_cash_out, payment_processing_fee",
+									" */"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let coa = [];",
+									"    try {",
+									"        for(let i in jsData.data){",
+									"            let sub_group_i = [];",
+									"            for(let j in jsData.data[i].sub_group){",
+									"                let accounts_j = [];",
+									"                for(let k in jsData.data[i].sub_group[j].accounts){",
+									"                    accounts_j[accounts_j.length] = {",
+									"                        \"account_name\":jsData.data[i].sub_group[j].accounts[k].account_name,",
+									"                        \"account_id\":jsData.data[i].sub_group[j].accounts[k].id,",
+									"                        \"business_id\":jsData.data[i].sub_group[j].accounts[k].business_id,",
+									"                        \"account_source\":jsData.data[i].sub_group[j].accounts[k].account_source,",
+									"                        \"account_type\":jsData.data[i].sub_group[j].accounts[k].account_type,",
+									"                        \"account_number\":jsData.data[i].sub_group[j].accounts[k].account_number,",
+									"                        \"coa_type\":jsData.data[i].sub_group[j].accounts[k].coa_type,",
+									"                        \"status\":jsData.data[i].sub_group[j].accounts[k].status,",
+									"                        \"parent_account_id\":jsData.data[i].sub_group[j].accounts[k].parent_account_id,",
+									"                        \"description\":jsData.data[i].sub_group[j].accounts[k].description,",
+									"                        \"open_amount\":jsData.data[i].sub_group[j].accounts[k].open_amount,",
+									"                        \"currency\":jsData.data[i].sub_group[j].accounts[k].currency",
+									"                    }",
+									"",
+									"                    if(jsData.data[i].sub_group[j].accounts[k].account_key == \"A3001\"){",
+									"                        pm.environment.set(\"C-account_receivable\",jsData.data[i].sub_group[j].accounts[k]);",
+									"                    } else if(jsData.data[i].sub_group[j].accounts[k].account_key == \"D4001\"){",
+									"                        pm.environment.set(\"C-uncategorized_expense\",jsData.data[i].sub_group[j].accounts[k]); ",
+									"                    } else if(jsData.data[i].sub_group[j].accounts[k].account_key == \"D1004\"){",
+									"                        pm.environment.set(\"C-account_fee\",jsData.data[i].sub_group[j].accounts[k]); ",
+									"                    } ",
+									"                    // else if(jsData.data[i].sub_group[j].accounts[k].key == \"processing_cash_out\"){",
+									"                    //     pm.environment.set(\"C-processing_cash_out\",jsData.data[i].sub_group[j].accounts[k]);",
+									"                    // } else if(jsData.data[i].sub_group[j].accounts[k].key == \"payment_processing_fee\"){",
+									"                    //     pm.environment.set(\"C-payment_processing_fee\",jsData.data[i].sub_group[j].accounts[k]);",
+									"                    // }",
+									"                }",
+									"",
+									"                sub_group_i[sub_group_i.length] = {",
+									"                    \"sub_group_name\":jsData.data[i].sub_group[j].name,",
+									"                    \"sub_group_id\":jsData.data[i].sub_group[j].id,",
+									"                    \"sub_group_value\":jsData.data[i].sub_group[j].value,",
+									"                    \"sub_group_description\":jsData.data[i].sub_group[j].description,",
+									"                    \"accounts\":accounts_j",
+									"                }",
+									"            }",
+									"",
+									"            coa[coa.length] = {",
+									"                \"group_name\":jsData.data[i].name,",
+									"                \"value\":jsData.data[i].value,",
+									"                \"index\":jsData.data[i].index,",
+									"                \"sub_group\":sub_group_i",
+									"            }",
+									"        }",
+									"    } catch {",
+									"        console.log(\"can't get all account in coa\");",
+									"    }",
+									"",
+									"    pm.test(\"Got coa of this user's business\", function () {",
+									"        pm.expect(coa.length > 0).to.be.true;",
+									"    });",
+									"",
+									"    if(coa.length > 0){",
+									"        // console.log(\"coa: \", coa);",
+									"        pm.environment.set(\"C-coa\",coa);",
+									"        let list_debit_account = [];",
+									"        let list_credit_account = [];",
+									"        /**",
+									"         * lấy những account_id và phân loại thành debit/credit",
+									"         * - credit: tài khoản (only cash & bank)",
+									"         * - debit: phân loại (all)",
+									"         */ ",
+									"        for(let i in coa){",
+									"            for(let j in coa[i].sub_group){",
+									"                for(let k in coa[i].sub_group[j].accounts){",
+									"                    // if(coa[i].group_name == \"income\" || coa[i].group_name == \"expense\"){ // mở điều kiện này khi cần debug tạo tnx có report cassh-flow",
+									"                        list_debit_account[list_debit_account.length] = coa[i].sub_group[j].accounts[k];",
+									"                    // }",
+									"                    if(coa[i].sub_group[j].sub_group_value == \"cash_and_bank\"){ ",
+									"                        // console.log(\"debug: \", coa[i].sub_group[j].accounts[k]);",
+									"                        if(coa[i].sub_group[j].accounts[k].account_name.includes(\"[API]\")){ // do 1 số name bị null (dev chưa validation dẫn đến report sẽ không biết của account nào - report ko trả về id)",
+									"                            list_credit_account[list_credit_account.length] = coa[i].sub_group[j].accounts[k];",
+									"                        }",
+									"                    }",
+									"                }",
+									"            }",
+									"        }",
+									"",
+									"        // console.log(\"list_debit_account: \", list_debit_account);",
+									"        // console.log(\"list_credit_account: \", list_credit_account);",
+									"",
+									"        pm.environment.set(\"C-list_debit_account\",list_debit_account);",
+									"        pm.environment.set(\"C-list_credit_account\",list_credit_account);",
+									"        ",
+									"        postman.setNextRequest(\"get_list_payment_account\"); // get_list_payment_account",
+									"    } else {",
+									"        console.log(\"Can't get list internal account, end test \");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list internal account, end test \", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{finone_url}}​/fo-ledger/api/v1/account/get-list-setting?business_id={{C-business_id}}&coa_type=",
+							"host": [
+								"{{finone_url}}​"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"account",
+								"get-list-setting"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "coa_type",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_internal_account_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * Only check credit_account",
+									" */",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let list_internal_account = pm.environment.get(\"C-list_internal_account\");",
+									"let pos = pm.environment.get(\"C-pos\");",
+									"if(!pos){",
+									"    pos = 0;",
+									"    pm.environment.set(\"C-pos\",pos);",
+									"}",
+									"",
+									"let internal_account_id = list_internal_account[pos].account_id;",
+									"console.log(\"view detail account: \" + account_id);",
+									"",
+									"pm.environment.set(\"C-internal_account_id\",internal_account_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    const jsData = pm.response.json();",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"",
+									"    let list_internal_account = pm.environment.get(\"C-list_internal_account\");",
+									"    let pos = pm.environment.get(\"C-pos\");",
+									"",
+									"    if(pos >= list_internal_account.length - 1){",
+									"        pm.environment.unset(\"C-pos\");",
+									"",
+									"        postman.setNextRequest(\"get_list_tax\"); // get_list_tax",
+									"    } else {",
+									"        pos++;",
+									"        pm.environment.set(\"C-pos\",pos);",
+									"",
+									"        postman.setNextRequest(\"get_internal_account_detail\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get internal account detail, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}​​/fo-ledger/api/v1/account/get-one/{{C-internal_account_id}}",
+							"host": [
+								"{{finone_url}}​​"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"account",
+								"get-one",
+								"{{C-internal_account_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.request.headers.add({",
+							" key: \"authorization\",",
+							" value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"});",
+							"",
+							"pm.request.headers.add({",
+							" key: \"Content-Type\",",
+							" value: \"application/json\"",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "account cash_n_bank",
+			"item": [
+				{
+					"name": "get_list_payment_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let account_type = \"\";",
+									"if(testcase == 4){",
+									"    account_type = \"link_bank,va_bank\";",
+									"}",
+									"pm.environment.set(\"C-account_type\",account_type);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let isFoundRoot = false, isFoundReceive = false;",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let payment_account_obj = pm.environment.get(\"C-payment_account_obj\");",
+									"    let receive_account_obj = pm.environment.get(\"C-receive_account_obj\");",
+									"    let hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"    switch(testcase){",
+									"        case 2:",
+									"            let list_shinhan_account = [], list_mb_account = [];",
+									"            for(let j in jsData.data[0].accounts){",
+									"                if(jsData.data[0].accounts[j].account_key == \"bank_transfer\"){",
+									"                    switch(jsData.data[0].accounts[j].account_type){",
+									"                        case \"galaxy_pay\":",
+									"                            payment_account_obj = jsData.data[0].accounts[j];",
+									"                            break;",
+									"                        case \"va_bank\":",
+									"                            list_shinhan_account[list_shinhan_account.length] = jsData.data[0].accounts[j];",
+									"                            break;",
+									"                        case \"link_bank\":",
+									"                        default:",
+									"                            list_mb_account[list_mb_account.length] = jsData.data[0].accounts[j];",
+									"                            break;",
+									"                    }",
+									"                } ",
+									"            }",
+									"            pm.environment.set(\"C-payment_account_obj\",payment_account_obj);",
+									"",
+									"            if(configs.withdraw_to == \"viet_qr_pro_mb\"){",
+									"                receive_account_obj = list_mb_account[getRandomInt(0,list_mb_account.length-1)];",
+									"            } else {",
+									"                receive_account_obj = list_shinhan_account[getRandomInt(0,list_shinhan_account.length-1)];",
+									"            }",
+									"            pm.environment.set(\"C-receive_account_obj\",receive_account_obj);",
+									"            ",
+									"            console.log(\"withdraw from: \",payment_account_obj);",
+									"            console.log(\"receive_account_obj: \",receive_account_obj);",
+									"",
+									"            postman.setNextRequest(\"get_list_payment\"); // get_list_payment",
+									"            break;",
+									"        // case 6:",
+									"        //     for(let j in jsData.data[0].accounts){",
+									"        //         // receive_account",
+									"        //         if(jsData.data[0].accounts[j].id == receive_account_obj.id){",
+									"        //             isFoundReceive = true;",
+									"        //             pm.test(\"nothing happen with total_balance_amount of \" + receive_account_obj.name, function () {",
+									"        //                 console.log(\"old: \" + receive_account_obj.total_balance_amount);",
+									"        //                 console.log(\"act: \" + jsData.data[0].accounts[j].total_balance_amount);",
+									"        //                 pm.expect(jsData.data[0].accounts[j].total_balance_amount == receive_account_obj.total_balance_amount).to.be.true;",
+									"        //             });",
+									"        //         }",
+									"        //         //payment_account",
+									"        //         if(jsData.data[0].accounts[j].id == payment_account_obj.id){",
+									"        //             isFoundRoot = true;",
+									"        //             pm.test(\"nothing happen with total_balance_amount of \" + payment_account_obj.name, function () {",
+									"        //                 console.log(\"old: \" + payment_account_obj.total_balance_amount);",
+									"        //                 console.log(\"act: \" + jsData.data[0].accounts[j].total_balance_amount);",
+									"        //                 pm.expect(jsData.data[0].accounts[j].total_balance_amount == payment_account_obj.total_balance_amount).to.be.true;",
+									"        //             });",
+									"        //         }",
+									"        //     }",
+									"",
+									"        //     pm.test(\"Found account \" + payment_account_obj.name, function () {",
+									"        //         pm.expect(isFoundRoot).to.be.true;",
+									"        //     });",
+									"",
+									"        //     pm.test(\"Found account \" + receive_account_obj.name, function () {",
+									"        //         pm.expect(isFoundReceive).to.be.true;",
+									"        //     });",
+									"",
+									"        //     postman.setNextRequest(\"get_list_posting\"); // get_list_posting",
+									"        //     break;",
+									"        case 4:",
+									"            for(let j in jsData.data[0].accounts){",
+									"                // receive_account",
+									"                if(jsData.data[0].accounts[j].id == receive_account_obj.id){",
+									"                    isFoundReceive = true;",
+									"                    if(hook_obj.data.status == \"success\"){",
+									"                        pm.test(\"total_balance_amount of \" + receive_account_obj.account_name + \" increase \" + hook_obj.data.amount, function () {",
+									"                            console.log(\"old: \" + receive_account_obj.total_balance_amount);",
+									"                            console.log(\"act: \" + jsData.data[0].accounts[j].total_balance_amount);",
+									"                            pm.expect(jsData.data[0].accounts[j].total_balance_amount == receive_account_obj.total_balance_amount + hook_obj.data.amount).to.be.true;",
+									"                        });",
+									"                    } else {",
+									"                        pm.test(\"nothing happen with total_balance_amount of \" + receive_account_obj.account_name, function () {",
+									"                            console.log(\"old: \" + receive_account_obj.total_balance_amount);",
+									"                            console.log(\"act: \" + jsData.data[0].accounts[j].total_balance_amount);",
+									"                            pm.expect(jsData.data[0].accounts[j].total_balance_amount == receive_account_obj.total_balance_amount).to.be.true;",
+									"                        });",
+									"                    }",
+									"                }",
+									"                //payment_account",
+									"                if(jsData.data[0].accounts[j].id == payment_account_obj.id){",
+									"                    isFoundRoot = true;",
+									"                    if(hook_obj.data.status == \"success\"){",
+									"                        pm.test(\"total_balance_amount of \" + payment_account_obj.account_name + \" decrease \" + (hook_obj.data.amount + hook_obj.data.total_fee), function () {",
+									"                            console.log(\"old: \" + payment_account_obj.total_balance_amount);",
+									"                            console.log(\"act: \" + jsData.data[0].accounts[j].total_balance_amount);",
+									"                            pm.expect(jsData.data[0].accounts[j].total_balance_amount == payment_account_obj.total_balance_amount - (hook_obj.data.amount + hook_obj.data.total_fee)).to.be.true;",
+									"                        });",
+									"                    } else {",
+									"                        pm.test(\"nothing happen with total_balance_amount of \" + payment_account_obj.account_name, function () {",
+									"                            console.log(\"old: \" + payment_account_obj.total_balance_amount);",
+									"                            console.log(\"act: \" + jsData.data[0].accounts[j].total_balance_amount);",
+									"                            pm.expect(jsData.data[0].accounts[j].total_balance_amount == payment_account_obj.total_balance_amount).to.be.true;",
+									"                        });",
+									"                    }",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Found account \" + receive_account_obj.account_name, function () {",
+									"                pm.expect(isFoundReceive).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"Found account \" + payment_account_obj.account_name, function () {",
+									"                pm.expect(isFoundRoot).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_list_posting\"); // get_list_posting",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list payment account, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/account/get-list-sub?business_id={{C-business_id}}&sub_account_key=A1",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"account",
+								"get-list-sub"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "sub_account_key",
+									"value": "A1"
+								},
+								{
+									"key": "account_type",
+									"value": "{{C-account_type}}",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "payment",
+			"item": [
+				{
+					"name": "get_list_payment",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_payment = null;",
+									"    try {",
+									"        total_payment = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Can't get total payment\");",
+									"    }",
+									"",
+									"    let old_total_payment, hook_obj;",
+									"    let isFound = false;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got total payment! \" + total_payment, function () {",
+									"                pm.expect(total_payment != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-total_payment\",total_payment);",
+									"            // console.log(\"total_payment: \" + total_payment);",
+									"",
+									"            postman.setNextRequest(\"get_list_transaction\"); // get_list_transaction",
+									"            break;",
+									"        case 4:",
+									"            old_total_payment = pm.environment.get(\"C-total_payment\");",
+									"            hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"",
+									"            pm.test(\"Total payment increase 1\", function () {",
+									"                console.log(\"old: \" + old_total_payment);",
+									"                console.log(\"act: \" + total_payment);",
+									"                pm.expect(total_payment == old_total_payment + 1).to.be.true;",
+									"            });",
+									"",
+									"            for(let i in jsData.data){",
+									"                if(jsData.data[i].bank_transaction_id == hook_obj.data.provider_payment_number && jsData.data[i].is_txn_bank){",
+									"                    isFound = true;",
+									"                    console.log(\"debug: \", jsData.data[i]);",
+									"                    hook_obj.payment_id = jsData.data[i].id;",
+									"                    pm.environment.set(\"C-payment_obj\",jsData.data[i]);",
+									"                    pm.environment.set(\"C-payment_id\",jsData.data[i].id);",
+									"",
+									"                    pm.test(\"before_fee_amount of payment correctly! \" + hook_obj.data.amount, function () {",
+									"                        console.log(\"act: \" + jsData.data[i].before_fee_amount);",
+									"                        pm.expect(hook_obj.data.amount == jsData.data[i].before_fee_amount).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"after_fee_amount of payment correctly! \" + hook_obj.data.net_amount, function () {",
+									"                        console.log(\"act: \" + jsData.data[i].after_fee_amount);",
+									"                        pm.expect(hook_obj.data.net_amount == jsData.data[i].after_fee_amount).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"fee_amount of payment is \" + hook_obj.data.total_fee, function () { // sẽ handle total_fee ở va",
+									"                        pm.expect(hook_obj.data.total_fee == jsData.data[i].fee_amount).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"value_at of payment correctly! \" + hook_obj.data.value_at, function () {",
+									"                        let act_value_at = new Date(jsData.data[i].value_at);",
+									"                        console.log(\"actual value_at: \" + act_value_at.toISOString());",
+									"                        pm.expect(hook_obj.data.created_at.substring(0,17) == act_value_at.toISOString().substring(0,17)).to.be.true; // tạm thời lấy mốc giờ +7 nên fix cứng, sau này sẽ dùng biến",
+									"                    });",
+									"",
+									"                    pm.test(\"status of payment is success!\", function () {",
+									"                        pm.expect(jsData.data[i].status).to.eql(\"success\");",
+									"                    });",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Found new payment (withdraw)\", function () {",
+									"                pm.expect(isFound).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-hook_obj\",hook_obj);",
+									"",
+									"            // lưu lại data",
+									"            pm.environment.set(\"C-total_payment\",total_payment);",
+									"",
+									"            postman.setNextRequest(\"get_list_payment_account\"); // get_payment_detail, get_list_payment_account => payment detail đang lỗi",
+									"            break;",
+									"        case 6:",
+									"            old_total_payment = pm.environment.get(\"C-total_payment\");",
+									"            hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"            let payment_obj = pm.environment.get(\"C-payment_obj\");",
+									"",
+									"            pm.test(\"Nothing happen with total payment\", function () {",
+									"                console.log(\"old: \" + old_total_payment);",
+									"                console.log(\"act: \" + total_payment);",
+									"                pm.expect(total_payment == old_total_payment).to.be.true;",
+									"            });",
+									"",
+									"            for(let i in jsData.data){",
+									"                // if(jsData.data[i].bank_transaction_id == hook_obj.data.provider_payment_number && jsData.data[i].is_txn_bank){",
+									"                if(jsData.data[i].id == payment_obj.id){",
+									"                    isFound = true;",
+									"                    console.log(\"debug: \", jsData.data[i]);",
+									"                    // hook_obj.payment_id = jsData.data[i].id;",
+									"                    // pm.environment.set(\"C-payment_obj\",jsData.data[i]);",
+									"",
+									"                    pm.test(\"total_amount of payment correctly! \" + hook_obj.data.amount, function () {",
+									"                        console.log(\"act: \" + jsData.data[i].total_amount);",
+									"                        pm.expect(hook_obj.data.amount.toFixed(2) == jsData.data[i].total_amount).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"net_amount of payment correctly! \" + hook_obj.data.net_amount, function () {",
+									"                        console.log(\"act: \" + jsData.data[i].net_amount);",
+									"                        pm.expect(hook_obj.data.net_amount.toFixed(2) == jsData.data[i].net_amount).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"total_fee of payment is \" + hook_obj.data.total_fee, function () { // sẽ handle total_fee ở va",
+									"                        pm.expect(hook_obj.data.total_fee == jsData.data[i].total_fee).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"bank_transaction_id of payment is \" + hook_obj.data.provider_payment_number, function () { // sẽ handle total_fee ở va",
+									"                        pm.expect(hook_obj.data.provider_payment_number == jsData.data[i].bank_transaction_id).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"is_txn_bank of payment is true\", function () { // sẽ handle total_fee ở va",
+									"                        pm.expect(jsData.data[i].is_txn_bank).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"value_at of payment correctly! \" + hook_obj.data.value_at, function () {",
+									"                        let act_value_at = new Date(jsData.data[i].value_at);",
+									"                        console.log(\"actual value_at: \" + act_value_at.toISOString());",
+									"                        pm.expect(hook_obj.data.created_at.substring(0,17) == act_value_at.toISOString().substring(0,17)).to.be.true; // tạm thời lấy mốc giờ +7 nên fix cứng, sau này sẽ dùng biến",
+									"                    });",
+									"",
+									"                    if(hook_obj.data.status == \"success\"){",
+									"                        pm.test(\"status of payment is success!\", function () {",
+									"                            pm.expect(jsData.data[i].status).to.eql(\"success\");",
+									"                        });",
+									"                    } else {",
+									"                        pm.test(\"status of payment is failed!\", function () {",
+									"                            pm.expect(jsData.data[i].status).to.eql(\"failed\");",
+									"                        });",
+									"                    }",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Found withdraw payment\", function () {",
+									"                pm.expect(isFound).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-hook_obj\",hook_obj);",
+									"",
+									"            postman.setNextRequest(\"get_payment_detail\"); // get_payment_detail",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list payment, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/payment/get-list?business_id={{C-business_id}}&page=1&page_size=50&sort",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"payment",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "sort",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_payment_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"if(testcase == 6){",
+									"    let hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"    let payment_id = hook_obj.payment_id;",
+									"    console.log(\"view detail payment: \" + payment_id);",
+									"",
+									"    pm.environment.set(\"C-payment_id\",payment_id);",
+									"} else {",
+									"    console.log(\"view detail payment: \" + pm.environment.get(\"C-payment_id\"));",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"",
+									"    let hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"",
+									"    pm.test(\"total_amount of payment correctly! \" + hook_obj.data.amount, function () {",
+									"        pm.expect(hook_obj.data.amount.toFixed(2) == jsData.data.total_amount).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"net_amount of payment correctly! \" + hook_obj.data.net_amount, function () {",
+									"        pm.expect(hook_obj.data.net_amount.toFixed(2) == jsData.data.net_amount).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"total_fee of payment is \"  + hook_obj.data.total_fee, function () { // sẽ handle total_fee ở va",
+									"        pm.expect(hook_obj.data.total_fee == jsData.data.total_fee).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"value_at of payment correctly! \" + hook_obj.data.created_at, function () {",
+									"        let act_value_at = new Date(jsData.data.value_at);",
+									"        console.log(\"actual value_at: \" + act_value_at.toISOString());",
+									"        pm.expect(hook_obj.data.created_at.substring(0,17) == act_value_at.toISOString().substring(0,17)).to.be.true;",
+									"    });",
+									"",
+									"    switch(testcase){",
+									"        case 4:",
+									"            pm.test(\"status of payment is requested!\", function () {",
+									"                pm.expect(jsData.data.status).to.eql(\"requested\");",
+									"            });",
+									"            break;",
+									"        case 6:",
+									"            if(hook_obj.data.status == \"success\"){",
+									"                pm.test(\"status of payment is success!\", function () {",
+									"                    pm.expect(jsData.data.status).to.eql(\"success\");",
+									"                });",
+									"            } else {",
+									"                pm.test(\"status of payment is failed!\", function () {",
+									"                    pm.expect(jsData.data.status).to.eql(\"failed\");",
+									"                });",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    postman.setNextRequest(\"get_list_payment_account\"); // get_list_payment_account",
+									"} else {",
+									"    console.log(\"Can't get internal contact detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/payment/get-one/{{C-payment_id}}?business_id={{C-business_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"payment",
+								"get-one",
+								"{{C-payment_id}}"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "transaction",
+			"item": [
+				{
+					"name": "get_list_transaction",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"/**",
+									" * nếu category = null => sẽ đưa vào chi phí chưa phân loại",
+									" */",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    // console.log(\"testcase: \" + testcase);",
+									"    let total_tnx = null;",
+									"    try {",
+									"        total_tnx = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Can't get total tnx\");",
+									"    }",
+									"",
+									"    let old_total_tnx;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got total tnx: \" + total_tnx, function () {",
+									"                pm.expect(total_tnx != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-total_tnx\",total_tnx);",
+									"",
+									"            postman.setNextRequest(\"get_list_posting\"); // get_list_posting",
+									"            break;",
+									"        case 4:",
+									"            old_total_tnx = pm.environment.get(\"C-total_tnx\");",
+									"            let payment_account_obj = pm.environment.get(\"C-payment_account_obj\");",
+									"            let receive_account_obj = pm.environment.get(\"C-receive_account_obj\"); // => tài khoản thụ hưởng theo rule GP cũ => phân loại được nhận",
+									"            // let payment_obj = pm.environment.get(\"C-payment_obj\");",
+									"            let account_fee = pm.environment.get(\"C-account_fee\");",
+									"            hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"            hook_obj.list_tnx = [];",
+									"",
+									"            if(hook_obj.data.status == \"success\"){",
+									"                // hiện tại luôn luôn tạo ra 3 vì có dính 1 transaction về phí",
+									"                pm.test(\"Total tnx increase (3) \" + old_total_tnx, function () {",
+									"                    console.log(\"Actual: \" + total_tnx);",
+									"                    pm.expect(total_tnx == old_total_tnx + 3).to.be.true;",
+									"                });",
+									"",
+									"                let cash_out_tnx = null, cash_in_tnx = null, fee_tnx = null;",
+									"                let count_tnx = 0;",
+									"                for(let i in jsData.data){",
+									"                    // hiện tại hook sẽ lấy current time => mặc định lấy 3 tnx đầu tiên, nếu có issue sẽ handle sau",
+									"                    if(jsData.data[i].object_type == \"transaction\" && jsData.data[i].is_txn_bank){",
+									"                        count_tnx++;",
+									"                        if(jsData.data[i].txn_type == \"in\"){",
+									"                            cash_in_tnx = jsData.data[i];",
+									"                            // console.log(\"cash_in_tnx:\",cash_in_tnx);",
+									"                        } else {",
+									"                            if(jsData.data[i].category_id == account_fee.id){",
+									"                                fee_tnx = jsData.data[i];",
+									"                            } else {",
+									"                                cash_out_tnx = jsData.data[i];",
+									"                            }",
+									"                            // console.log(\"fee_tnx:\",fee_tnx);",
+									"                        }",
+									"                    }",
+									"",
+									"                    if(count_tnx == 3){",
+									"                        isFound = true;",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                hook_obj.cash_out_id = cash_out_tnx.id;",
+									"                hook_obj.cash_in_id = cash_in_tnx.id;",
+									"                hook_obj.tnx_fee_id = fee_tnx.id;",
+									"                hook_obj.payment_id = cash_out_tnx.payment_id;",
+									"                pm.environment.set(\"C-hook_obj\",hook_obj);",
+									"",
+									"                pm.test(\"Found correct 3 tnx because mapping the same payment_id \" + hook_obj.cash_in_id, function () {",
+									"                    pm.expect(cash_out_tnx.payment_id == cash_in_tnx.payment_id && cash_out_tnx.payment_id == fee_tnx.payment_id).to.be.true;",
+									"                });",
+									"                ",
+									"                pm.test(\"amount of cash_out_tnx correctly! \" + hook_obj.data.amount, function () {",
+									"                    pm.expect(hook_obj.data.amount == cash_out_tnx.amount).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"amount of cash_in_tnx correctly! \" + hook_obj.data.amount, function () {",
+									"                    pm.expect(hook_obj.data.amount == cash_in_tnx.amount).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"base_fee_amount of fee_tnx correctly! \" + hook_obj.data.total_fee, function () {",
+									"                    pm.expect(hook_obj.data.total_fee == fee_tnx.amount).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"account_id of cash_out_tnx correctly! \" + hook_obj.account_coa_id, function () {",
+									"                    pm.expect(hook_obj.account_coa_id == cash_out_tnx.account_id).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"category_id of cash_out_tnx correctly! \" + hook_obj.data.category_id, function () {",
+									"                    pm.expect(hook_obj.data.category_id == cash_out_tnx.category_id).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"account_id of cash_in_tnx correctly! \" + hook_obj.data.category_id, function () {",
+									"                    pm.expect(hook_obj.data.category_id == cash_in_tnx.account_id).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"category_id of cash_in_tnx correctly! \" + hook_obj.account_coa_id, function () {",
+									"                    pm.expect(hook_obj.account_coa_id == cash_in_tnx.category_id).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"account_id of fee_tnx correctly! \" + hook_obj.account_coa_id, function () {",
+									"                    pm.expect(hook_obj.account_coa_id == fee_tnx.account_id).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"category_id of fee_tnx correctly! \" + account_fee.id, function () {",
+									"                    pm.expect(account_fee.id == fee_tnx.category_id).to.be.true;",
+									"                });",
+									"",
+									"                pm.test(\"value_at of tnx correctly! \" + hook_obj.value_at.substring(0,19), function () {",
+									"                    let act_value_at = cash_out_tnx.value_at.substring(0,19);",
+									"                    console.log(\"actual value_at: \" + act_value_at);",
+									"                    pm.expect(hook_obj.value_at.substring(0,16) == act_value_at.substring(0,16)).to.be.true; // tạm thời lấy mốc giờ +7 nên fix cứng, sau này sẽ dùng biến",
+									"                });",
+									"",
+									"                // object_id of cash_out_tnx is id of cash_in_tnx",
+									"                pm.test(\"object_id of cash_out_tnx is id of cash_in_tnx! \" + hook_obj.cash_in_id, function () {",
+									"                    pm.expect(hook_obj.cash_in_id).to.eql(cash_out_tnx.object_id);",
+									"                });",
+									"",
+									"                // object_id of cash_in_tnx is id of cash_out_tnx",
+									"                pm.test(\"object_id of cash_in_tnx is id of cash_out_id! \" + hook_obj.cash_out_id, function () {",
+									"                    pm.expect(hook_obj.cash_out_id).to.eql(cash_in_tnx.object_id);",
+									"                });",
+									"",
+									"                // object_id of fee_tnx is id of cash_out_tnx => tính phí đầu cash out",
+									"                pm.test(\"object_id of fee_tnx is id of cash_out_tnx! \" + hook_obj.cash_out_id, function () {",
+									"                    pm.expect(hook_obj.cash_out_id).to.eql(fee_tnx.object_id);",
+									"                });",
+									"",
+									"                pm.test(\"Found all new transactions\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"                pm.environment.set(\"C-hook_obj\",hook_obj);",
+									"                // console.log(\"hook_obj include tnx: \",hook_obj);",
+									"",
+									"                postman.setNextRequest(\"get_transaction_detail\"); // get_transaction_detail",
+									"            } else {",
+									"                // pm.test(\"Nothing happen with total tnx \" + old_total_tnx, function () {",
+									"                //     console.log(\"Actual: \" + total_tnx);",
+									"                //     pm.expect(total_tnx == old_total_tnx).to.be.true;",
+									"                // });",
+									"",
+									"                postman.setNextRequest(\"get_list_payment\"); // get_list_payment",
+									"            }",
+									"            break;",
+									"        case 6:",
+									"            old_total_tnx = pm.environment.get(\"C-total_tnx\");",
+									"            hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"",
+									"            /**",
+									"             * khi tạo request sẽ ko tạo tnx",
+									"             */",
+									"            pm.test(\"Nothing happen with total tnx \" + old_total_tnx, function () {",
+									"                console.log(\"Actual: \" + total_tnx);",
+									"                pm.expect(total_tnx == old_total_tnx).to.be.true;",
+									"            });",
+									"",
+									"            // không có data mới không cần lưu lại",
+									"",
+									"            postman.setNextRequest(\"get_list_payment\"); // get_transaction_detail, get_list_payment",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test!!!\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list tnx, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/transaction/get-list?branch_id={{C-business_id}}&page=1&page_size=50&sort",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"transaction",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "sort",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_transaction_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"let tnx_id;",
+									"",
+									"let count_check = pm.environment.get(\"C-count_check\");",
+									"if(!count_check){",
+									"    count_check = 1;",
+									"    pm.environment.set(\"C-count_check\",count_check);",
+									"",
+									"    tnx_id = hook_obj.cash_out_id;",
+									"    console.log(\"Check detail cash_out tnx\");",
+									"} else {",
+									"    if(count_check == 2){",
+									"        tnx_id = hook_obj.cash_in_id;",
+									"        console.log(\"Check detail cash_in tnx\");",
+									"    } else {",
+									"        tnx_id = hook_obj.tnx_fee_id;",
+									"        console.log(\"Check detail fee tnx\");",
+									"    }",
+									"}",
+									"console.log(\"view detail tnx: \" + tnx_id);",
+									"",
+									"pm.environment.set(\"C-tnx_id\",tnx_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"    let hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"    let count_check = pm.environment.get(\"C-count_check\");",
+									"",
+									"    if(count_check == 1){",
+									"        count_check++;",
+									"        pm.test(\"amount of tnx correctly! \" + hook_obj.data.amount, function () {",
+									"            pm.expect(hook_obj.data.amount == jsData.data.amount).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"value_at of tnx correctly! \" + hook_obj.value_at.substring(0,19), function () {",
+									"            let act_value_at = jsData.data.value_at.substring(0,19);",
+									"            console.log(\"actual value_at: \" + act_value_at);",
+									"            pm.expect(hook_obj.value_at.substring(0,16) == act_value_at.substring(0,16)).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"object_id of tnx correctly! \" + hook_obj.cash_in_id, function () {",
+									"            pm.expect(hook_obj.cash_in_id).to.eql(jsData.data.object_id);",
+									"        });",
+									"",
+									"        pm.environment.set(\"C-count_check\",count_check);",
+									"        postman.setNextRequest(\"get_transaction_detail\"); // get_transaction_detail",
+									"    } else if (count_check == 2){",
+									"        count_check++;",
+									"        pm.test(\"amount of tnx correctly! \" + hook_obj.data.amount, function () {",
+									"            pm.expect(hook_obj.data.amount == jsData.data.amount).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"value_at of tnx correctly! \" + hook_obj.value_at.substring(0,19), function () {",
+									"            let act_value_at = jsData.data.value_at.substring(0,19);",
+									"            console.log(\"actual value_at: \" + act_value_at);",
+									"            pm.expect(hook_obj.value_at.substring(0,16) == act_value_at.substring(0,16)).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"object_id of tnx correctly! \" + hook_obj.cash_out_id, function () {",
+									"            pm.expect(hook_obj.cash_out_id).to.eql(jsData.data.object_id);",
+									"        });",
+									"",
+									"        pm.environment.set(\"C-count_check\",count_check);",
+									"        postman.setNextRequest(\"get_transaction_detail\"); // get_transaction_detail",
+									"    } else {",
+									"        pm.environment.unset(\"C-count_check\");",
+									"        pm.test(\"amount of tnx correctly! \" + hook_obj.data.total_fee, function () {",
+									"            pm.expect(hook_obj.data.total_fee == jsData.data.amount).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"value_at of tnx correctly! \" + hook_obj.value_at.substring(0,19), function () {",
+									"            let act_value_at = jsData.data.value_at.substring(0,19);",
+									"            console.log(\"actual value_at: \" + act_value_at);",
+									"            pm.expect(hook_obj.value_at.substring(0,16) == act_value_at.substring(0,16)).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"object_id of tnx correctly! \" + hook_obj.cash_out_id, function () {",
+									"            pm.expect(hook_obj.cash_out_id).to.eql(jsData.data.object_id);",
+									"        });",
+									"",
+									"        postman.setNextRequest(\"get_list_payment\"); // get_list_payment",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get internal contact detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/transaction/get-one/{{C-tnx_id}}?business_id={{C-business_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"transaction",
+								"get-one",
+								"{{C-tnx_id}}"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// pm.request.headers.add({",
+							"//  key: \"authorization\",",
+							"//  value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"// });",
+							"",
+							"// pm.request.headers.add({",
+							"//  key: \"Content-Type\",",
+							"//  value: \"application/json\"",
+							"// });"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "posting",
+			"item": [
+				{
+					"name": "get_list_posting",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_posting = null;",
+									"    try {",
+									"        total_posting = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"currently, this branch with null data\");",
+									"    }",
+									"",
+									"    let old_total_posting;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got all posting! \" + total_posting, function () {",
+									"                pm.expect(total_posting != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-total_posting\", total_posting);",
+									"",
+									"            testcase++;",
+									"            pm.environment.set(\"C-testcase\",testcase);",
+									"            postman.setNextRequest(\"hook_receive_payment_status\"); // hook_receive_payment_status",
+									"            break;",
+									"        case 4:",
+									"            old_total_posting = pm.environment.get(\"C-total_posting\");",
+									"            // rule mới ngày 16Jun - không ghi nhận posting cho transaction cash-in trong trường hợp internal_transfer",
+									"            if(hook_obj.data.status == \"success\"){",
+									"                pm.test(\"Total record increase 6\", function () {",
+									"                    pm.expect(total_posting == old_total_posting + 6 - 2).to.be.true;",
+									"                });",
+									"",
+									"                let hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"                console.log(\"hook_obj: \",hook_obj);",
+									"                let payment_account_obj = pm.environment.get(\"C-payment_account_obj\");",
+									"                let receive_account_obj = pm.environment.get(\"C-receive_account_obj\");",
+									"                let account_fee = pm.environment.get(\"C-account_fee\");",
+									"                // console.log(\"account_receivable: \",account_receivable);",
+									"                let isFoundCashOut = 0, isFoundCashIn = 0, isFoundFee = 0;",
+									"                for(let i in jsData.data){",
+									"                    if(jsData.data[i].object_type == \"transaction\" && jsData.data[i].object_id == hook_obj.cash_out_id){",
+									"                        console.log(\"cash out posting\");",
+									"                        isFoundCashOut++;",
+									"                        if(receive_account_obj.id == jsData.data[i].account_id){",
+									"                            pm.test(receive_account_obj.account_name + \" amount correctly \" + hook_obj.data.amount, function () {",
+									"                                pm.expect(hook_obj.data.amount == jsData.data[i].amount).to.be.true;",
+									"                            });",
+									"",
+									"                            pm.test(\"is_credit must be false\", function () {",
+									"                                pm.expect(jsData.data[i].is_credit).to.be.false;",
+									"                            });",
+									"                        } else if(payment_account_obj.id == jsData.data[i].account_id){",
+									"                            pm.test(payment_account_obj.account_name + \" amount correctly \" + hook_obj.data.amount, function () {",
+									"                                pm.expect(hook_obj.data.amount == jsData.data[i].amount).to.be.true;",
+									"                            });",
+									"",
+									"                            pm.test(\"is_credit must be true\", function () {",
+									"                                pm.expect(jsData.data[i].is_credit).to.be.true;",
+									"                            });",
+									"                        }",
+									"                    } ",
+									"                    // else if(jsData.data[i].object_type == \"transaction\" && jsData.data[i].object_id == hook_obj.cash_in_id){",
+									"                    //     console.log(\"cash in posting\");",
+									"                    //     isFoundCashIn++;",
+									"                    //     if(receive_account_obj.id == jsData.data[i].account_id){",
+									"                    //         pm.test(receive_account_obj.account_name + \" amount correctly \" + hook_obj.data.amount, function () {",
+									"                    //             pm.expect(hook_obj.data.amount == jsData.data[i].amount).to.be.true;",
+									"                    //         });",
+									"",
+									"                    //         pm.test(\"is_credit must be true\", function () {",
+									"                    //             pm.expect(jsData.data[i].is_credit).to.be.true;",
+									"                    //         });",
+									"                    //     } else if(payment_account_obj.id == jsData.data[i].account_id){",
+									"                    //         pm.test(payment_account_obj.account_name + \" amount correctly \" + hook_obj.data.amount, function () {",
+									"                    //             pm.expect(hook_obj.data.amount == jsData.data[i].amount).to.be.true;",
+									"                    //         });",
+									"",
+									"                    //         pm.test(\"is_credit must be false\", function () {",
+									"                    //             pm.expect(jsData.data[i].is_credit).to.be.false;",
+									"                    //         });",
+									"                    //     }",
+									"                    // } ",
+									"                    else if(jsData.data[i].object_type == \"transaction\" && jsData.data[i].object_id == hook_obj.tnx_fee_id){",
+									"                        console.log(\"fee posting\");",
+									"                        isFoundFee++;",
+									"                        if(account_fee.id == jsData.data[i].account_id){",
+									"                            pm.test(account_fee.account_name + \" with amount correctly \" + hook_obj.data.total_fee, function () {",
+									"                                pm.expect(hook_obj.data.total_fee == jsData.data[i].amount).to.be.true;",
+									"                            });",
+									"",
+									"                            pm.test(\"is_credit must be false\", function () {",
+									"                                pm.expect(jsData.data[i].is_credit).to.be.false;",
+									"                            });",
+									"                        } else if(payment_account_obj.id == jsData.data[i].account_id){",
+									"                            pm.test(payment_account_obj.account_name + \" with amount correctly \" + hook_obj.data.total_fee, function () {",
+									"                                pm.expect(hook_obj.data.total_fee == jsData.data[i].amount).to.be.true;",
+									"                            });",
+									"",
+									"                            pm.test(\"is_credit must be true\", function () {",
+									"                                pm.expect(jsData.data[i].is_credit).to.be.true;",
+									"                            });",
+									"                        }",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found cash_out \", function () {",
+									"                    pm.expect(isFoundCashOut == 2).to.be.true;",
+									"                });",
+									"",
+									"                // pm.test(\"Found cash_in \", function () {",
+									"                //     pm.expect(isFoundCashIn == 2).to.be.true;",
+									"                // });",
+									"",
+									"                pm.test(\"Found fee \", function () {",
+									"                    pm.expect(isFoundFee == 2).to.be.true;",
+									"                });",
+									"            } else {",
+									"                pm.test(\"Nothing happen with total posting\", function () {",
+									"                    console.log(\"old: \" + old_total_posting);",
+									"                    console.log(\"act: \" + total_posting);",
+									"                    pm.expect(total_posting == old_total_posting).to.be.true;",
+									"                });",
+									"            }",
+									"",
+									"            testcase++;",
+									"            pm.environment.set(\"C-testcase\",testcase);",
+									"            postman.setNextRequest(\"\"); // hook_receive_payment_status",
+									"            break;",
+									"        case 6:",
+									"            old_total_posting = pm.environment.get(\"C-total_posting\");",
+									"            pm.test(\"Nothing happen with total posting\", function () {",
+									"                console.log(\"old: \" + old_total_posting);",
+									"                console.log(\"act: \" + total_posting);",
+									"                pm.expect(total_posting == old_total_posting).to.be.true;",
+									"            });",
+									"            ",
+									"            postman.setNextRequest(\"hook_receive_payment_status\"); // hook_receive_payment_status",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list posting, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/posting/get-list?search=&sort=&page=1&page_size=50",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"posting",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": ""
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.request.headers.add({",
+							" key: \"authorization\",",
+							" value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"});",
+							"",
+							"pm.request.headers.add({",
+							" key: \"Content-Type\",",
+							" value: \"application/json\"",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "withdraw",
+			"item": [
+				{
+					"name": "request_cash_out",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "content-type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-location-timezone",
+								"value": "UTC+07:00"
+							},
+							{
+								"key": "x-platform-key",
+								"value": "pro_web"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 10000,\n    \"homing_account_number\": \"SBB001210000088\",\n    \"beneficiary_account_name\": \"NGUYEN NGOC SON\",\n    \"beneficiary_account_number\": \"700071059955\",\n    \"beneficiary_bank_code\": \"616\",\n    \"note\": \"QC test\"\n}"
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-banking/api/v1/cash-out/request",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-banking",
+								"api",
+								"v1",
+								"cash-out",
+								"request"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "confirm_cash_out",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkZXZpY2VfaWQiOiIxMzM5MjY4Yi04ODY5LTRkNzMtOWZhMi1lMjIxMmVjYWM1OWQiLCJidXNpbmVzc19pZCI6IjdiMGVlOTc2LTk1MDctNDk0OS04MWQzLWVjZTNlZWY1YTY3OSIsInBlcm1pc3Npb25fa2V5cyI6InNob3Bfb3duZXIiLCJyZWZyZXNoX3Rva2VuX2lkIjoiZmZmZTA2YWItNDIyYS00ZTVmLWJiYzQtOGFmY2IzZmI5MjJkIiwic2VjdXJpdHlfcm9sZXMiOjAsImFwcF92ZXJzaW9uIjoiMS4xLjEiLCJ1c2VyX2lkIjoiOTExNmE0NDItNDMyOS00MzJmLWE0OGEtOWJiZDllM2UyNDlhIiwiZXhwIjoxNzE0ODgwNDE5LCJpc3MiOiJwcm9fd2ViIiwic3ViIjoiOTExNmE0NDItNDMyOS00MzJmLWE0OGEtOWJiZDllM2UyNDlhfDEzMzkyNjhiLTg4NjktNGQ3My05ZmEyLWUyMjEyZWNhYzU5ZHwxMzM5MjY4Yi04ODY5LTRkNzMtOWZhMi1lMjIxMmVjYWM1OWQifQ.G_OMxeXrJFw6_JBrGulOjC2JCmCJRXQZlePaMj15Qt0"
+							},
+							{
+								"key": "content-type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-location-timezone",
+								"value": "UTC+07:00"
+							},
+							{
+								"key": "x-platform-key",
+								"value": "pro_web"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"payment_number\": \"001P0220240405133956ZWGGHB\",\n    \"otp\": \"723004\"\n}"
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-banking/api/v1/cash-out/confirm",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-banking",
+								"api",
+								"v1",
+								"cash-out",
+								"confirm"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "gen_withdraw",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"function toISOStringWithTimezone(date, offset) {",
+									"    const tzOffset = offset * 60; // offset in minutes",
+									"    const localISOTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));",
+									"    const adjustedTime = new Date(localISOTime.getTime() + (tzOffset * 60000));",
+									"    const isoString = adjustedTime.toISOString().slice(0, -1); // remove the 'Z' at the end",
+									"    ",
+									"    const sign = offset >= 0 ? \"+\" : \"-\";",
+									"    const absOffset = Math.abs(offset);",
+									"    const hours = String(Math.floor(absOffset)).padStart(2, '0');",
+									"    const minutes = String(absOffset % 1 * 60).padStart(2, '0');",
+									"",
+									"    return `${isoString}${sign}${hours}:${minutes}`;",
+									"}",
+									"",
+									"// ====================================== parser cURL",
+									"function parseCURL(request_api){",
+									"    let curl = \"\";",
+									"    switch(request_api.method){",
+									"        case \"PUT\":",
+									"            curl = \"curl --location --request PUT \";",
+									"            break;",
+									"        case \"PATCH\":",
+									"            curl = \"curl --location --request PATCH \";",
+									"            break;",
+									"        case \"DELETE\":",
+									"            curl = \"curl --location --request DELETE \";",
+									"            break;",
+									"        default:",
+									"            curl = \"curl --location \";",
+									"            break;",
+									"    }",
+									"    curl += \"'\" + request_api.url.protocol + \"://\"",
+									"    // host",
+									"    for(let i in request_api.url.host){",
+									"        if(i >= request_api.url.host.length - 1){",
+									"            curl += request_api.url.host[i] + \"/\";",
+									"        } else {",
+									"            curl += request_api.url.host[i] + \".\";",
+									"        }",
+									"    }",
+									"    // path",
+									"    for(let i in request_api.url.path){",
+									"        if(i >= request_api.url.path.length - 1){",
+									"            curl += request_api.url.path[i];",
+									"        } else {",
+									"            curl += request_api.url.path[i] + \"/\";",
+									"        }",
+									"    }",
+									"    // query (if have)",
+									"    if(\"query\" in request_api.url){",
+									"        if(request_api.url.length > 0){",
+									"            curl += \"? \";",
+									"            for(let i in request_api.url.query){",
+									"                if(i >= request_api.url.query.length - 1){",
+									"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+									"                } else {",
+									"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+									"                }",
+									"            }",
+									"        } else {",
+									"            curl += \"' \";",
+									"        }",
+									"    } else {",
+									"        curl += \"' \";",
+									"    }",
+									"    // header",
+									"    for(let i in request_api.header){",
+									"        if(i >= request_api.header.length - 1){",
+									"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+									"        } else {",
+									"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+									"        }",
+									"    }",
+									"    switch(request_api.method){",
+									"        case \"POST\":",
+									"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+									"            break;",
+									"        case \"PUT\": case \"PATCH\":",
+									"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+									"            break;",
+									"        default:",
+									"            break;",
+									"    }",
+									"    console.log(curl);",
+									"    return curl;",
+									"}",
+									"const request_api = pm.request.toJSON();",
+									"parseCURL(request_api);",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    console.log(\"debug: \", jsData); // hook",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"",
+									"    let gen_qr_obj = pm.environment.get(\"C-gen_qr_obj\");",
+									"    let viet_qr_payment = pm.environment.get(\"C-viet_qr_payment\");",
+									"    let list_bank_account = pm.environment.get(\"C-list_bank_account\");",
+									"",
+									"    pm.test(\"request_amount correctly \" + gen_qr_obj.payment_info.request_amount, function () {",
+									"        console.log(\"act: \" + jsData.data.payment_info.request_amount);",
+									"        pm.expect(gen_qr_obj.payment_info.request_amount == jsData.data.payment_info.request_amount).to.be.true;",
+									"    });",
+									"",
+									"    // pm.test(\"account_number correctly \" + viet_qr_payment.bank_account.account_number, function () {",
+									"    //     console.log(\"act: \" + jsData.data.payment_info.qr_info.account_number);",
+									"    //     pm.expect(jsData.data.payment_info.qr_info.account_number == viet_qr_payment.bank_account.account_number).to.be.true;",
+									"    // });",
+									"",
+									"    // pm.test(\"account_name correctly \" + viet_qr_payment.bank_account.account_name, function () {",
+									"    //     console.log(\"act: \" + jsData.data.payment_info.qr_info.account_name);",
+									"    //     pm.expect(jsData.data.payment_info.qr_info.account_name == viet_qr_payment.bank_account.account_name).to.be.true;",
+									"    // });",
+									"",
+									"    pm.test(\"account_number correctly \" + viet_qr_payment.bank_account.account_number, function () {",
+									"        console.log(\"act: \" + jsData.data.linking_bank_account.account_number);",
+									"        pm.expect(jsData.data.linking_bank_account.account_number == viet_qr_payment.bank_account.account_number).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"account_name correctly \" + viet_qr_payment.bank_account.account_name, function () {",
+									"        console.log(\"act: \" + jsData.data.linking_bank_account.account_name);",
+									"        pm.expect(jsData.data.linking_bank_account.account_name == viet_qr_payment.bank_account.account_name).to.be.true;",
+									"    });",
+									"",
+									"    // pm.test(\"bank_account_id correctly \" + gen_qr_obj.bank_account_id, function () {",
+									"    //     console.log(\"act: \" + jsData.data.bank_account_id);",
+									"    //     pm.expect(jsData.data.bank_account_id == gen_qr_obj.bank_account_id).to.be.true;",
+									"    // });",
+									"",
+									"    let today = new Date();",
+									"    let account_receivable = pm.environment.get(\"C-account_receivable\");",
+									"    let account_debit_id;",
+									"    // console.log(\"viet_qr_payment:\",viet_qr_payment);",
+									"    // console.log(\"=======================\");",
+									"    // console.log(\"list_bank_account:\",list_bank_account);",
+									"    for(let i in list_bank_account){",
+									"        if(list_bank_account[i].account_name == viet_qr_payment.bank_account.account_name && list_bank_account[i].external_account_id == viet_qr_payment.bank_account.id){",
+									"            account_debit_id = list_bank_account[i].account_id;",
+									"            break;",
+									"        }",
+									"    }",
+									"    let tnx_obj = {",
+									"        \"object_id\":invoice_obj.invoice_id,",
+									"        \"object_type\":\"invoice\",",
+									"        \"account_credit\":account_receivable.id,",
+									"        \"account_debit\":account_debit_id, // đợi update API get list payment account",
+									"        \"amount\":gen_qr_obj.payment_info.request_amount,",
+									"        \"branch_id\":pm.environment.get(\"C-branch_id\"),",
+									"        \"txn_type\":\"in\",",
+									"        \"payment_request_code\":jsData.data.payment_request_code,",
+									"        \"payment_info\":jsData.data.payment_info,",
+									"        \"description\":\"TTINV \" + invoice_obj.system_code,",
+									"        \"payment_note\":jsData.data.payment_info.payment_note,",
+									"        \"payment_method\":viet_qr_payment.key,",
+									"        \"linking_bank_account\":jsData.data.linking_bank_account,",
+									"        \"value_at\":toISOStringWithTimezone(today,0)",
+									"    }",
+									"    pm.environment.set(\"C-tnx_obj\",tnx_obj);",
+									"    console.log(\"tnx_obj\",tnx_obj);",
+									"",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    if(configs.test_payment_method == \"bank_transfer\" || configs.test_payment_method == \"va_galaxy\"){",
+									"        postman.setNextRequest(\"hook_payment_via_finesys\"); // hook_payment_via_viet_qr, hook_payment_via_finesys",
+									"    } else {",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"get_list_transaction\"); // get_list_transaction",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't gen vietQR, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let viet_qr_payment = pm.environment.get(\"C-viet_qr_payment\");",
+									"let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"",
+									"let amount;",
+									"if(invoice_obj.total_amount > 100000){",
+									"    amount = Math.round(getRandomInt(invoice_obj.total_amount/3,invoice_obj.total_amount/2));",
+									"} else {",
+									"    if(invoice_obj.total_amount < 20000){",
+									"        amount = invoice_obj.total_amount; // rơi vào case này thì phải fully_paid;",
+									"        pm.environment.set(\"C-isFullyPaid\",true);",
+									"    } else {",
+									"        amount = getRandomInt(10,20)*1000;",
+									"    }",
+									"}",
+									"",
+									"let payload = {",
+									"    // \"provider_code\": viet_qr_payment.provider_code, // sẽ thay provider_code & payment_method => payment_method_id (lấy từ config invoice/contact)",
+									"    // \"payment_method\": viet_qr_payment.key,",
+									"    \"ref_id\": invoice_obj.system_code,",
+									"    \"ref_type\":\"invoice\",",
+									"    \"payment_method_id\": viet_qr_payment.id,",
+									"    // \"bank_account_id\": viet_qr_payment.bank_account.id,",
+									"    \"payment_info\": {",
+									"        \"payment_note\" : \"THANH TOÁN INVOICE \" + invoice_obj.system_code,",
+									"        \"request_amount\" : amount,",
+									"        \"currency_code\" : \"VND\"",
+									"    },",
+									"    \"success_redirect_url\" : \"https://book-dev.finan.one/overview\",",
+									"    \"failure_redirect_url\" : \"https://book-dev.finan.one/overview\",",
+									"    \"cancel_redirect_url\"  : \"https://book-dev.finan.one/overview\"",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-gen_qr_obj\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}"
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-banking/api/v1/payment-request/create",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-banking",
+								"api",
+								"v1",
+								"payment-request",
+								"create"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "hook",
+			"item": [
+				{
+					"name": "hook_receive_payment_status",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"// ============================= random characters (chữ hoa & số)",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"let payment_account_obj = pm.environment.get(\"C-payment_account_obj\");",
+									"let receive_account_obj = pm.environment.get(\"C-receive_account_obj\");",
+									"",
+									"let today = new Date();",
+									"let configs = pm.environment.get(\"C-configs\"); // ",
+									"",
+									"let account_number, account_id, created_at, net_amount, provider_payment_number, status, settled_at, total_fee, amount;",
+									"switch(testcase){",
+									"    case 3:",
+									"        let hasFee = 1//getRandomInt(0,1);",
+									"        account_number = payment_account_obj.account_number;",
+									"        account_id = payment_account_obj.external_account_id;",
+									"        created_at = today.toISOString();",
+									"        provider_payment_number = randomChars(26);",
+									"        status = \"success\"; // requested",
+									"        settled_at = null;",
+									"        amount = getRandomInt(1,20)*100000; // rút từ 100k đến 2m",
+									"        if(hasFee){",
+									"            total_fee = 2000 + Math.round(amount * 0.02);",
+									"        } else total_fee = 0;",
+									"        net_amount = amount - total_fee;",
+									"        break;",
+									"    case 7:",
+									"        let hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"        total_fee = hook_obj.data.total_fee;",
+									"        account_number = hook_obj.data.account_number;",
+									"        created_at = hook_obj.data.created_at;",
+									"        provider_payment_number = hook_obj.data.provider_payment_number;",
+									"        if(getRandomInt(0,1)){ // getRandomInt(0,1)",
+									"            status = \"success\"; // failed, success",
+									"        } else {",
+									"            status = \"failed\"; // failed, success",
+									"        }",
+									"        settled_at = today.toISOString();",
+									"        amount = hook_obj.data.amount; // rút từ 100k đến 2m",
+									"        net_amount = hook_obj.data.net_amount;",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow\");",
+									"        break;",
+									"}",
+									"",
+									"/**",
+									" * khi hook về nếu bị lỗi, ko tạo payment/tnx => hook về lark channel để control (sẽ tạo ở prod)",
+									" */",
+									"let payload;",
+									"if(configs.has_category){",
+									"    payload = {",
+									"        \"data\": {",
+									"            \"account_id\": account_id,",
+									"            \"amount\": amount,",
+									"            \"beneficiary_info\": { // tạm thời hardcode thông tin này vì ko có tài khoản thụ hưởng khác ở dev",
+									"                \"account_name\": \"NGUYEN MINH HIEU\",",
+									"                \"account_number\": \"1232132\",",
+									"                \"bank_code\": \"311\",",
+									"                \"bank_name\": \"Ngân hàng TMCP Quân đội\",",
+									"                \"provider_id\": \"finesys\"",
+									"            },",
+									"            \"business_id\": parseInt(pm.environment.get(\"C-business_id\")),",
+									"            \"cash_out_type\": \"withdraw\",",
+									"            \"category_id\": receive_account_obj.id,",
+									"            \"created_at\": created_at,",
+									"            \"currency_code\": \"VND\",",
+									"            \"is_internal_transfer\": true, // chỉ có khi internal transfer",
+									"            \"net_amount\": net_amount,",
+									"            \"new_balance\": 0,",
+									"            \"provider_payment_number\": provider_payment_number,",
+									"            \"reconciled_at\": null,",
+									"            \"request_id\": \"22df540d-3efb-4ed2-b852-5422aee88561\",",
+									"            \"settled_at\": null,",
+									"            \"status\": status,",
+									"            \"total_fee\": total_fee",
+									"        },",
+									"        \"receiver_key\": \"fo_ledger\",",
+									"        \"type\": \"cash_out\"",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"data\": {",
+									"            // \"account_number\": account_number,",
+									"            \"account_id\": account_id,",
+									"            \"amount\": amount,",
+									"            \"beneficiary_info\": { // tạm thời hardcode thông tin này vì ko có tài khoản thụ hưởng khác ở dev",
+									"            \"account_name\": \"NGUYEN MINH HIEU\",",
+									"            \"account_number\": \"1232132\",",
+									"            \"bank_code\": \"311\",",
+									"            \"bank_name\": \"Ngân hàng TMCP Quân đội\",",
+									"            \"provider_id\": \"finesys\"",
+									"            },",
+									"            \"business_id\": parseInt(pm.environment.get(\"C-business_id\")),",
+									"            \"cash_out_type\": \"withdraw\",",
+									"            // \"category_id\": 1000304,",
+									"            \"created_at\": created_at,",
+									"            \"currency_code\": \"VND\",",
+									"            \"is_internal_transfer\": true, // chỉ có khi internal transfer",
+									"            \"net_amount\": net_amount,",
+									"            \"new_balance\": 0,",
+									"            \"provider_payment_number\": provider_payment_number,",
+									"            \"reconciled_at\": null,",
+									"            \"request_id\": \"22df540d-3efb-4ed2-b852-5422aee88561\",",
+									"            \"settled_at\": null,",
+									"            \"status\": status,",
+									"            \"total_fee\": total_fee",
+									"        },",
+									"        \"receiver_key\": \"fo_ledger\",",
+									"        \"type\": \"cash_out\"",
+									"    }",
+									"}",
+									"",
+									"// let payload_cash_out = {",
+									"//     \"data\": {",
+									"//         \"account_id\": \"6bd4c179-7883-4b67-bcab-c924d6d701e9\",",
+									"//         \"amount\": 10000,",
+									"            // \"beneficiary_info\": { // tạm thời hardcode thông tin này vì ko có tài khoản thụ hưởng khác ở dev",
+									"            //     \"account_name\": \"NGUYEN NGOC SON\",",
+									"            //     \"account_number\": \"700071059955\",",
+									"            //     \"bank_code\": \"616\",",
+									"            //     \"bank_name\": \"Ngân hàng TNHH MTV Shinhan Việt Nam (ShinhanBank)\",",
+									"            //     \"provider_id\": \"finesys\"",
+									"            // },",
+									"//         \"business_id\": 2,",
+									"//         \"cash_out_type\": \"cash_out\",",
+									"//         \"category_id\": 1000304,",
+									"//         \"created_at\": \"2024-05-29T10:27:50.42281935+07:00\",",
+									"//         \"currency_code\": \"VND\",",
+									"//         \"is_internal_transfer\": true, // chỉ có khi internal transfer",
+									"//         \"net_amount\": 10000,",
+									"//         \"new_balance\": 0,",
+									"//         \"note\": \"chuyen tien noi bo tu VA sang MBB\",",
+									"//         \"provider_payment_number\": \"002T100220240529102748FSGHFTYY\",",
+									"//         \"reconciled_at\": null,",
+									"//         \"request_id\": \"22df540d-3efb-4ed2-b852-5422aee88561\",",
+									"//         \"settled_at\": null,",
+									"//         \"status\": \"success\",",
+									"//         \"total_fee\": 0",
+									"//     },",
+									"//     \"receiver_key\": \"fo_ledger\",",
+									"//     \"type\": \"cash_out\"",
+									"// }",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-hook_obj\",payload);",
+									"console.log(\"hook data\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"function toISOStringWithTimezone(date, offset) {",
+									"    const tzOffset = offset * 60; // offset in minutes",
+									"    const localISOTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));",
+									"    const adjustedTime = new Date(localISOTime.getTime() + (tzOffset * 60000));",
+									"    const isoString = adjustedTime.toISOString().slice(0, -1); // remove the 'Z' at the end",
+									"    ",
+									"    const sign = offset >= 0 ? \"+\" : \"-\";",
+									"    const absOffset = Math.abs(offset);",
+									"    const hours = String(Math.floor(absOffset)).padStart(2, '0');",
+									"    const minutes = String(absOffset % 1 * 60).padStart(2, '0');",
+									"",
+									"    return `${isoString}${sign}${hours}:${minutes}`;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if (pm.response.code == 200) {",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let payment_account_obj = pm.environment.get(\"C-payment_account_obj\");",
+									"    console.log(\"debug: \",jsData);",
+									"",
+									"    let today = new Date();",
+									"    let hook_obj = pm.environment.get(\"C-hook_obj\");",
+									"    hook_obj.account_coa_id = payment_account_obj.id;",
+									"    hook_obj.value_at = toISOStringWithTimezone(today,0);",
+									"    pm.environment.set(\"C-hook_obj\",hook_obj);",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_transaction\"); // get_list_transaction",
+									"} else {",
+									"    console.log(\"Can't get report cash_flow, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Request-Id",
+								"value": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/webhook/finone",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"webhook",
+								"finone"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "hook_payment_via_finesys",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"function toISOStringWithTimezone(date, offset) {",
+									"    const tzOffset = offset * 60; // offset in minutes",
+									"    const localISOTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));",
+									"    const adjustedTime = new Date(localISOTime.getTime() + (tzOffset * 60000));",
+									"    const isoString = adjustedTime.toISOString().slice(0, -1); // remove the 'Z' at the end",
+									"    ",
+									"    const sign = offset >= 0 ? \"+\" : \"-\";",
+									"    const absOffset = Math.abs(offset);",
+									"    const hours = String(Math.floor(absOffset)).padStart(2, '0');",
+									"    const minutes = String(absOffset % 1 * 60).padStart(2, '0');",
+									"",
+									"    return `${isoString}${sign}${hours}:${minutes}`;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let viet_qr_payment = pm.environment.get(\"C-viet_qr_payment\");",
+									"let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"let invoice_obj = pm.environment.get(\"C-invoice_obj\");",
+									"",
+									"let date = new Date();",
+									"let today = toISOStringWithTimezone(date,0).substring(0,19).replace(\"T\",\" \")",
+									"let next_day_stp = Math.floor(date.getTime()/1000) + 24*60*60;",
+									"let next_day = new Date(next_day_stp*1000);",
+									"let term_next = toISOStringWithTimezone(next_day,0).substring(0,19).replace(\"T\",\" \")",
+									"",
+									"let base_fee_amount = 2000 + Math.round(tnx_obj.amount * 0.02);",
+									"let net_amount = tnx_obj.amount - base_fee_amount;",
+									"let redirect_url = \"https://book-dev.finan.one/pay/\" + pm.environment.get(\"C-business_id\") + \"/invoice/\" + invoice_obj.system_code + \"/\" + tnx_obj.payment_request_code;",
+									"",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payment_method = \"\";",
+									"if(configs.test_payment_method == \"bank_transfer\"){",
+									"    payment_method = configs.test_payment_method;",
+									"} else {",
+									"    payment_method = viet_qr_payment.key;",
+									"}",
+									"",
+									"// Hook cash out",
+									"// let payload_cash_out = {",
+									"//   \"business_id\": \"B00200000001\", // ko care",
+									"//   \"notify_data\": {",
+									"//     \"bank_code\": tnx_obj.payment_info.qr_info.bank_id, // ",
+									"//     \"account_name\": tnx_obj.payment_info.qr_info.account_name, //",
+									"//     \"currency_code\": \"704\", // => fix vnd",
+									"//     \"account_number\": tnx_obj.payment_info.provider_payment_number, //",
+									"//     \"payment_number\": \"002P0320240524102605CCWTRT\", // ko care",
+									"//     \"payment_status\": \"success\",",
+									"//     \"transaction_at\": today, // get current",
+									"//     \"adjusted_amount\": 29450,  // ko care (nếu có vấn đề thì tính toán lại)",
+									"//     \"transaction_code\": \"T1003\",  // ko care",
+									"//     \"transaction_note\": \"THANH TOAN HOA DON HD24 FT24145703405061-VND-TGTT-VO THI TUONG VAN\",  // cần check lại",
+									"//     \"transaction_type\": \"CR\", // CR - credit",
+									"//     \"transaction_amount\": 2100, // => tnx amount",
+									"//     \"transaction_number\": \"002T100320240524102605PBLDYGBD\", // ko care",
+									"//     \"bank_account_number\": \"1AM002110000007\", // => bank_account coa",
+									"//     \"payment_failed_reason\": \"\"",
+									"//   },",
+									"//   \"notify_type\": \"payment_changed\"",
+									"// }",
+									"",
+									"// hook 1",
+									"// {",
+									"//   \"business_id\": \"B00200000001\",",
+									"//   \"notify_data\": {",
+									"//     \"bank_code\": \"616\",",
+									"//     \"account_name\": \"MARKETING\",",
+									"//     \"currency_code\": \"704\",",
+									"//     \"account_number\": \"002110000008\",",
+									"//     \"payment_number\": \"002P0320240606160332DYDJFC\",",
+									"//     \"payment_status\": \"success\",",
+									"//     \"transaction_at\": \"2024-06-06 16:03:32\",",
+									"//     \"adjusted_amount\": 30000,",
+									"//     \"transaction_code\": \"T1003\",",
+									"//     \"transaction_note\": \"testing chuyen tien noi bo VA sang VA\",",
+									"//     \"transaction_type\": \"CR\",",
+									"//     \"transaction_amount\": 10000,",
+									"//     \"transaction_number\": \"002T100320240606160417KKYNHKZG\",",
+									"//     \"bank_account_number\": \"1AM002110000008\",",
+									"//     \"payment_failed_reason\": \"\"",
+									"//   },",
+									"//   \"notify_type\": \"payment_changed\"",
+									"// }",
+									"",
+									"// hook 2",
+									"// {",
+									"//   \"business_id\": \"B00200000001\",",
+									"//   \"notify_data\": {",
+									"//     \"bank_code\": \"616\",",
+									"//     \"account_name\": \"DAI LY 2\",",
+									"//     \"currency_code\": \"704\",",
+									"//     \"account_number\": \"002110000011\",",
+									"//     \"payment_number\": \"002P0320240606160332DYDJFC\",",
+									"//     \"payment_status\": \"success\",",
+									"//     \"transaction_at\": \"2024-06-06 16:03:32\",",
+									"//     \"adjusted_amount\": 16000,",
+									"//     \"transaction_code\": \"T1004\",",
+									"//     \"transaction_note\": \"testing chuyen tien noi bo VA sang VA\",",
+									"//     \"transaction_type\": \"DR\",",
+									"//     \"transaction_amount\": 10000,",
+									"//     \"transaction_number\": \"002T100420240606160416LTDLJQWC\",",
+									"//     \"bank_account_number\": \"1AM002110000011\",",
+									"//     \"payment_failed_reason\": \"\"",
+									"//   },",
+									"//   \"notify_type\": \"payment_changed\"",
+									"// }",
+									"",
+									"let payload;",
+									"switch(configs.test_payment_method){",
+									"    case \"\":",
+									"        payload = {",
+									"            \"business_id\": \"B00100000009\", // ko care",
+									"            \"notify_data\": {",
+									"                \"amount\": tnx_obj.amount, // số tiền cash in",
+									"                \"user_id\": \"97df335075c94e3895f34a2243e75332_597666253\", // ?",
+									"                \"expired_at\": term_next, // get current+1",
+									"                \"description\": \"THANH TOÁN HÓA ĐƠN \" + invoice_obj.order_code, // cần check lại",
+									"                \"paid_amount\": tnx_obj.amount, // = amount",
+									"                \"reference_id\": tnx_obj.payment_request_code, // payment_request_code khi gen QR",
+									"                \"currency_code\": \"704\", // fix vnd",
+									"                \"payment_details\": [",
+									"                {",
+									"                    \"paid_at\": today, // get current",
+									"                    \"created_at\": today, // get current",
+									"                    \"net_amount\": net_amount, // số tiền thực nhận",
+									"                    \"payment_url\": \"https://payment.galaxypay.vn\", // link qua galaxy pay, tạm fix",
+									"                    \"total_amount\": tnx_obj.amount, // số tiền cash in",
+									"                    \"currency_code\": \"704\",",
+									"                    \"reconciled_at\": null,",
+									"                    \"payment_method\": payment_method, // phương thức thanh toán",
+									"                    \"payment_number\": \"001P1020240524165625VMZCCZ\", // random",
+									"                    \"recipient_info\": {},",
+									"                    \"base_fee_amount\": base_fee_amount, // phí",
+									"                    \"markup_fee_amount\": 0,",
+									"                    \"settlement_details\": [],",
+									"                    \"provider_reference_id\": \"2405244733135185214416670\", // fix",
+									"                    \"payment_request_status\": \"success\"",
+									"                }",
+									"                ],",
+									"                \"payment_link_url\": null,",
+									"                \"payment_link_type\": \"single\",",
+									"                \"cancel_redirect_url\": redirect_url, // gán theo system code",
+									"                \"payment_link_number\": \"24052416562530934959\",",
+									"                \"payment_link_status\": \"paid\",",
+									"                \"failure_redirect_url\": redirect_url,",
+									"                \"success_redirect_url\": redirect_url,",
+									"                \"linking_account_number\": tnx_obj.payment_info.provider_payment_number,",
+									"                \"linking_bank_account_number\": tnx_obj.payment_info.qr_info.account_number // account trong payment",
+									"            },",
+									"            \"notify_type\": \"payment_success\"",
+									"        };",
+									"        break;",
+									"    case \"va_galaxy\":",
+									"        payload = {",
+									"            \"business_id\": \"B00100000009\", // ko care",
+									"            \"notify_data\": {",
+									"                \"amount\": tnx_obj.amount, // số tiền cash in",
+									"                \"user_id\": \"97df335075c94e3895f34a2243e75332_597666253\", // ?",
+									"                \"expired_at\": term_next, // get current+1",
+									"                \"description\": \"THANH TOÁN HÓA ĐƠN \" + invoice_obj.order_code, // cần check lại",
+									"                \"paid_amount\": tnx_obj.amount, // = amount",
+									"                \"reference_id\": tnx_obj.payment_request_code, // payment_request_code khi gen QR",
+									"                \"currency_code\": \"704\", // fix vnd",
+									"                \"payment_details\": [",
+									"                {",
+									"                    \"paid_at\": today, // get current",
+									"                    \"created_at\": today, // get current",
+									"                    \"net_amount\": net_amount, // số tiền thực nhận",
+									"                    \"payment_url\": \"https://payment.galaxypay.vn\", // link qua galaxy pay, tạm fix",
+									"                    \"total_amount\": tnx_obj.amount, // số tiền cash in",
+									"                    \"currency_code\": \"704\",",
+									"                    \"reconciled_at\": null,",
+									"                    \"payment_method\": payment_method, // phương thức thanh toán",
+									"                    \"payment_number\": \"001P1020240524165625VMZCCZ\", // random",
+									"                    \"recipient_info\": {},",
+									"                    \"base_fee_amount\": base_fee_amount, // phí",
+									"                    \"markup_fee_amount\": 0,",
+									"                    \"settlement_details\": [],",
+									"                    \"provider_reference_id\": \"2405244733135185214416670\", // fix",
+									"                    \"payment_request_status\": \"success\"",
+									"                }",
+									"                ],",
+									"                \"payment_link_url\": null,",
+									"                \"payment_link_type\": \"single\",",
+									"                \"cancel_redirect_url\": redirect_url, // gán theo system code",
+									"                \"payment_link_number\": \"24052416562530934959\",",
+									"                \"payment_link_status\": \"paid\",",
+									"                \"failure_redirect_url\": redirect_url,",
+									"                \"success_redirect_url\": redirect_url,",
+									"                \"linking_account_number\": viet_qr_payment.bank_account.account_number.substring(3,viet_qr_payment.bank_account.account_number.length), // \"002110000007\"",
+									"                \"linking_bank_account_number\": viet_qr_payment.bank_account.account_number// \"1AM002110000007\"",
+									"            },",
+									"            \"notify_type\": \"payment_success\"",
+									"        };",
+									"        break;",
+									"    case \"bank_transfer\": // đổi shinhan qua hook này, tạm thời dùng hook success",
+									"        payload = {",
+									"            \"business_id\": \"B00200000001\",",
+									"            \"notify_data\": {",
+									"                \"amount\": tnx_obj.amount,",
+									"                \"user_id\": \"owner_1am\",",
+									"                \"expired_at\": term_next,",
+									"                \"description\": \"THANH TOÁN HÓA ĐƠN \" + invoice_obj.order_code,",
+									"                \"paid_amount\": tnx_obj.amount,",
+									"                \"reference_id\": tnx_obj.payment_request_code,",
+									"                \"currency_code\": \"704\",",
+									"                \"payment_details\": [",
+									"                {",
+									"                    \"paid_at\": today,",
+									"                    \"created_at\": today,",
+									"                    \"net_amount\": net_amount,",
+									"                    \"payment_url\": null,",
+									"                    \"total_amount\": tnx_obj.amount,",
+									"                    \"currency_code\": \"704\",",
+									"                    \"reconciled_at\": null,",
+									"                    \"payment_method\": payment_method,",
+									"                    \"payment_number\": \"002500000010\",",
+									"                    // \"recipient_info\": {",
+									"                    //   \"qr_code\": \"00020101021238590010A0000007270129000697042401151AM0025000000100208QRIBFTTA5303704540421005802VN5909QUY LUONG62270823THANH TOAN HOA DON HD2463048E6D\",",
+									"                    //   \"bank_code\": \"616\",",
+									"                    //   \"account_name\": \"QUY LUONG\",",
+									"                    //   \"bank_account_number\": \"1AM002500000010\"",
+									"                    // },",
+									"                    \"recipient_info\":tnx_obj.payment_info.qr_info,",
+									"                    \"base_fee_amount\": base_fee_amount,",
+									"                    \"markup_fee_amount\": 0,",
+									"                    \"settlement_details\": [",
+									"                    {",
+									"                        \"net_amount\": net_amount,",
+									"                        \"settled_at\": today,",
+									"                        \"payment_note\": \"THANH TOAN HOA DON \" + invoice_obj.order_code,",
+									"                        \"base_fee_amount\": base_fee_amount,",
+									"                        \"markup_fee_amount\": 0,",
+									"                        \"transaction_number\": \"002T100320240524102605PBLDYGBD\",",
+									"                        \"bank_transaction_number\": \"8113VAC2405000003701\"",
+									"                    }",
+									"                    ],",
+									"                    \"provider_reference_id\": null,",
+									"                    \"payment_request_status\": \"settled\"",
+									"                }",
+									"                ],",
+									"                \"payment_link_url\": null,",
+									"                \"payment_link_type\": \"single\",",
+									"                \"cancel_redirect_url\": redirect_url,",
+									"                \"payment_link_number\": \"24052410233005759735\",",
+									"                \"payment_link_status\": \"paid\",",
+									"                \"failure_redirect_url\": redirect_url,",
+									"                \"success_redirect_url\": redirect_url,",
+									"                \"linking_account_number\": tnx_obj.payment_info.provider_payment_number,",
+									"                \"linking_bank_account_number\": tnx_obj.payment_info.qr_info.account_number // account trong payment",
+									"            },",
+									"            \"notify_type\": \"payment_settled\"",
+									"        }",
+									"        break;",
+									"    default:",
+									"        console.log(\"missing \" + configs.test_payment_method);",
+									"        break;",
+									"}",
+									"",
+									"tnx_obj.net_amount = net_amount;",
+									"tnx_obj.base_fee_amount = base_fee_amount;",
+									"pm.environment.set(\"C-tnx_obj\",tnx_obj);",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-payment_obj\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ====================================== parser cURL",
+									"function parseCURL(request_api){",
+									"    let curl = \"\";",
+									"    switch(request_api.method){",
+									"        case \"PUT\":",
+									"            curl = \"curl --location --request PUT \";",
+									"            break;",
+									"        case \"PATCH\":",
+									"            curl = \"curl --location --request PATCH \";",
+									"            break;",
+									"        case \"DELETE\":",
+									"            curl = \"curl --location --request DELETE \";",
+									"            break;",
+									"        default:",
+									"            curl = \"curl --location \";",
+									"            break;",
+									"    }",
+									"    curl += \"'\" + request_api.url.protocol + \"://\"",
+									"    // host",
+									"    for(let i in request_api.url.host){",
+									"        if(i >= request_api.url.host.length - 1){",
+									"            curl += request_api.url.host[i] + \"/\";",
+									"        } else {",
+									"            curl += request_api.url.host[i] + \".\";",
+									"        }",
+									"    }",
+									"    // path",
+									"    for(let i in request_api.url.path){",
+									"        if(i >= request_api.url.path.length - 1){",
+									"            curl += request_api.url.path[i];",
+									"        } else {",
+									"            curl += request_api.url.path[i] + \"/\";",
+									"        }",
+									"    }",
+									"    // query (if have)",
+									"    if(\"query\" in request_api.url){",
+									"        if(request_api.url.length > 0){",
+									"            curl += \"? \";",
+									"            for(let i in request_api.url.query){",
+									"                if(i >= request_api.url.query.length - 1){",
+									"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+									"                } else {",
+									"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+									"                }",
+									"            }",
+									"        } else {",
+									"            curl += \"' \";",
+									"        }",
+									"    } else {",
+									"        curl += \"' \";",
+									"    }",
+									"    // header",
+									"    for(let i in request_api.header){",
+									"        if(i >= request_api.header.length - 1){",
+									"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+									"        } else {",
+									"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+									"        }",
+									"    }",
+									"    switch(request_api.method){",
+									"        case \"POST\":",
+									"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+									"            break;",
+									"        case \"PUT\": case \"PATCH\":",
+									"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+									"            break;",
+									"        default:",
+									"            break;",
+									"    }",
+									"    console.log(curl);",
+									"    return curl;",
+									"}",
+									"const request_api = pm.request.toJSON();",
+									"parseCURL(request_api);",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    console.log(\"debug: \", jsData); // hook",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_transaction\"); // get_list_transaction",
+									"} else {",
+									"    console.log(\"Can't call hook, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-banking/hook/v1/finesys",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-banking",
+								"hook",
+								"v1",
+								"finesys"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							"/**",
+							" * hook cash-in (receive by invoice OR top up)",
+							" * (payment from va): hold => released, instant (top up)",
+							" */",
+							"// let payload = {",
+							"//     \"data\": {",
+							"//         \"account_number\": \"SBB001110000174\", // =>",
+							"//         \"business_id\": \"7b0ee976-9507-4949-81d3-ece3eef5a679\", // => branch_id",
+							"//         \"cash_in_type\": \"payment\",",
+							"//         \"created_at\": \"2024-03-25T11:02:37.318065+07:00\",",
+							"//         \"currency_code\": \"VND\",",
+							"//         \"net_amount\": 61600, // =>",
+							"//         \"payment_method\": \"qrpay\",",
+							"//         \"reconciled_at\": null,",
+							"//         \"reference_id\": \"DOIM3JXB\", // => system_codde",
+							"//         \"settled_at\": null,",
+							"//         \"status\": \"hold\", // =>",
+							"//         \"total_amount\": 61600, // =>",
+							"//         \"total_fee\": 0, // =>",
+							"//         \"transaction_id\": \"\"",
+							"//     },",
+							"//     \"receiver_key\": \"finan_ledger\",",
+							"//     \"type\": \"cash_in\" // =>",
+							"// }",
+							"",
+							"/**",
+							" * hook cash-out (pay for bill OR withdraw)",
+							" */",
+							"",
+							"// let payload = {",
+							"//   \"data\": {",
+							"//     \"account_number\": \"SBB001110000173\", // Ví finan (VA lúc tạo KYC)",
+							"//     \"amount\": 3000,",
+							"//     \"beneficiary_info\": {",
+							"//       \"account_name\": \"NGUYEN NGOC SON\",",
+							"//       \"account_number\": \"700071059955\",",
+							"//       \"bank_code\": \"616\",",
+							"//       \"bank_name\": \"Ngân hàng TNHH MTV Shinhan Việt Nam (ShinhanBank)\",",
+							"//       \"provider_id\": \"finesys\"",
+							"//     },",
+							"//     \"business_id\": \"7b0ee976-9507-4949-81d3-ece3eef5a679\", // từ user",
+							"//     \"cash_out_type\": \"withdraw\",",
+							"//     \"created_at\": \"2024-04-02T09:31:47.53018+07:00\",",
+							"//     \"currency_code\": \"VND\",",
+							"//     \"net_amount\": 3000,",
+							"//     \"new_balance\": 0,",
+							"//     \"provider_payment_number\": \"001P0220240402100055RGLGLK\",",
+							"//     \"reconciled_at\": null,",
+							"//     \"settled_at\": null,",
+							"//     \"status\": \"requested\",",
+							"//     \"total_fee\": 0",
+							"//   },",
+							"//   \"receiver_key\": \"finan_ledger\",",
+							"//   \"type\": \"cash_out\"",
+							"// }"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":true,",
+					"    \"limit_page\":5,",
+					"    \"timeout\":12000, // miliseconds => timeout to call API",
+					"    \"is_buyer_gen\":false,",
+					"    \"test_payment_method\":\"va_galaxy\", // bank_transfer, viet_qr_pro_mb, va_galaxy",
+					"    \"withdraw_to\":\"viet_qr_pro_mb\", // bank_transfer, viet_qr_pro_mb",
+					"    \"has_category\":true",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"/**",
+					" * Hook request from finesys => OLD VERSION TESTSCRIPT",
+					"NOTE: Update 4Apr2024 - khi hook request sẽ chỉ tạo Payment để lưu lại provider_payment_number",
+					"",
+					"Check data",
+					"Transaction / Get list transaction => nothing happen",
+					"Payment / get list payment => increase 1, got data",
+					"Payment / get payment detail => data correctly",
+					"account bank / get list bank account => nothing happen",
+					"Posting / Get list posting => nothing happen",
+					"",
+					"Hook Success / Failed from finesys",
+					"NOTE:",
+					"Success: tạo đầy đủ transaction/posting, update lại status payment",
+					"Fail: không tạo transaction/posting, update lại status payment",
+					"",
+					"Check data",
+					"Transaction / Get list transaction => increase 2, got data (có thể handle dạng array, thêm type để support case tạo ra nhiều hơn 2 tnx sau này)",
+					"Transaction / Get transaction detail => data correctly",
+					"Payment / get list payment => update status, nothing else happen",
+					"Payment / get payment detail => data correctly",
+					"account bank / get list bank account => update data",
+					"Posting / Get list posting => increase records & data correctly",
+					"",
+					"Note:",
+					"Case 3 & 4 tạm thời sẽ không cần handle nữa, chỉ tạo tnx/payment khi nhận hook",
+					"Case 3 - step confirm => use email-google to get OTP",
+					"Update 4Apr2024: sẽ không tạo tnx khi request, khi release sẽ tạo 2 transaction",
+					"Hiện tại giữa request và release ko có hold tiền => có thể bị sai lệch và làm âm số dư va account hiển thị trên Finan Book => PO chấp nhận",
+					" */",
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    if(request_api.method == \"PUT\"){",
+					"        curl = \"curl --location --request PUT \";",
+					"    } else if(request_api.method == \"DELETE\"){",
+					"        curl = \"curl --location --request DELETE \";",
+					"    } else {",
+					"        curl = \"curl --location \";",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.length > 0){",
+					"            curl += \"? \";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,1372 @@
+{
+	"info": {
+		"_postman_id": "64748eed-b21b-4fd0-b75c-d0699602cac2",
+		"name": "fo_36_verify_to_create_new_product",
+		"description": "### Testsuite: Verify to create new Product\n\n###### Testcase:\n\n1. Login with owner account\n2. Get data\n    1. COA Account / Get coa => get list expense_account & income_account\n    2. Tax / Get tax list => get all tax (rate > 0)\n    3. Product / Get list product => get total product (chỉ cần lấy 100 sp đầu tiên)\n    4. \\[New\\] Product / Get list sku => get total sku (chỉ cần lấy 100 sku đầu tiên)\n3. Create Product\n    1. Unhappy case: null data (name\\*, price\\*, sku_code, expense_account_id, expense_taxes \\[list tax_id\\], income_account_id\\*, income_taxes \\[list tax_id\\])\n    2. Unhappy case: name = \"\"\n    3. Unhappy case: price = null\n    4. Unhappy case: price < 0\n    5. Happy case\n4. Check data\n    1. Product / Get list product => increase 1, matching data (chỉ lấy 100 sp đầu tiên)\n    2. Product / Get product detail => data corretly\n    3. \\[New\\] Product / Get list sku => increase 1, matching data (chỉ lấy 100 sku đầu tiên)\n\n###### Note:\n\n- (\\*) required\n- sku_code missing rule => wait PO confirm\n- expense_account_id: Phân loại chi phí\n- income_account_id: Phân loại doanh thu\n- price: template xx.yyyy ?\n- Mỗi product hiện tại tương ứng 1 sku (sẽ handle 1-n khi có phân loại product)\n- Cần update script validation [https://sobanhang.larksuite.com/wiki/FVDtw2ECTineWSkkYlPuAlV4sAe](https://sobanhang.larksuite.com/wiki/FVDtw2ECTineWSkkYlPuAlV4sAe)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 36 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        pm.execution.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        pm.execution.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-locale",
+								"value": "<string>",
+								"description": "locale",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id); // business_id => hiện tại hard code để lấy đủ 3 tầng coa",
+									"",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    pm.execution.setNextRequest(\"get_list_internal_account\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "coa account",
+			"item": [
+				{
+					"name": "get_list_internal_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let list_income_account = [];",
+									"    let list_expense_account = [];",
+									"    for(let i in jsData.data){",
+									"        for(let j in jsData.data[i].sub_group){",
+									"            for(let k in jsData.data[i].sub_group[j].accounts){",
+									"                switch(jsData.data[i].value){",
+									"                    case \"income\":",
+									"                        // list_income_account",
+									"                        list_income_account[list_income_account.length] = {",
+									"                            \"account_name\":jsData.data[i].sub_group[j].accounts[k].account_name,",
+									"                            \"account_id\":jsData.data[i].sub_group[j].accounts[k].id,",
+									"                            \"description\":jsData.data[i].sub_group[j].accounts[k].description,",
+									"                            \"key\":jsData.data[i].sub_group[j].accounts[k].account_key",
+									"                        }",
+									"                        break;",
+									"                    case \"expense\":",
+									"                        // list_expense_account",
+									"                        list_expense_account[list_expense_account.length] = {",
+									"                            \"account_name\":jsData.data[i].sub_group[j].accounts[k].account_name,",
+									"                            \"account_id\":jsData.data[i].sub_group[j].accounts[k].id,",
+									"                            \"description\":jsData.data[i].sub_group[j].accounts[k].description,",
+									"                            \"key\":jsData.data[i].sub_group[j].accounts[k].account_key",
+									"                        }",
+									"                        break;",
+									"                    default:",
+									"                        break;",
+									"                }",
+									"            }",
+									"        }",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got list_income_account of this user's branch\", function () {",
+									"                pm.expect(list_income_account != null).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"Got list_expense_account of this user's branch\", function () {",
+									"                pm.expect(list_expense_account != null).to.be.true;",
+									"            });",
+									"",
+									"            if(list_income_account != null && list_expense_account != null){",
+									"                pm.environment.set(\"C-list_income_account\",list_income_account);",
+									"                console.log(\"list_income_account: \", list_income_account);",
+									"                pm.environment.set(\"C-list_expense_account\",list_expense_account);",
+									"                console.log(\"list_expense_account: \", list_expense_account);",
+									"",
+									"                pm.execution.setNextRequest(\"get_list_tax\"); // get_list_tax",
+									"            } else {",
+									"                console.log(\"Can't get list_income_account or list_expense_account, end test \");",
+									"                pm.execution.setNextRequest(null);",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            pm.execution.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list internal account, end test \", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}​/fo-ledger/api/v1/account/get-list-setting?business_id={{C-business_id}}&coa_type=",
+							"host": [
+								"{{finone_url}}​"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"account",
+								"get-list-setting"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "coa_type",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "tax",
+			"item": [
+				{
+					"name": "get_list_tax",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_tax = pm.environment.get(\"C-list_tax\");",
+									"    if(!list_tax){",
+									"        list_tax = [];",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        if(jsData.data[item].description.includes(\"[API]\")){",
+									"            list_tax[list_tax.length] = {",
+									"                \"tax_id\":jsData.data[item].id,",
+									"                \"name\":jsData.data[item].name,",
+									"                \"rate\":jsData.data[item].rate,",
+									"                \"account_id\":jsData.data[item].account_id,",
+									"                \"description\":jsData.data[item].description",
+									"            }",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_tax\",list_tax);",
+									"    console.log(\"debug: \", list_tax);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        pm.test(\"Got all tax! \" + list_tax.length, function () {",
+									"            pm.expect(list_tax.length > 0).to.be.true;",
+									"        });",
+									"",
+									"        pm.execution.setNextRequest(\"get_list_product\"); // get_list_product",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more tax\");",
+									"        pm.execution.setNextRequest(\"get_list_tax\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list tax, end test\",jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/tax/get-list?business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&option=&status=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"tax",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "option",
+									"value": ""
+								},
+								{
+									"key": "status",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "product",
+			"item": [
+				{
+					"name": "get_list_product",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 20;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_product, old_list_product;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_product = pm.environment.get(\"C-list_product\");",
+									"            if(!list_product){",
+									"                list_product = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_product = pm.environment.get(\"C-old_list_product\");",
+									"            if(!old_list_product){",
+									"                old_list_product = pm.environment.get(\"C-list_product\");",
+									"                pm.environment.unset(\"C-list_product\");",
+									"                pm.environment.set(\"C-old_list_product\",old_list_product);",
+									"            }",
+									"",
+									"            list_product = pm.environment.get(\"C-list_product\");",
+									"            if(!list_product){",
+									"                list_product = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_product[list_product.length] = {",
+									"            \"product_id\":jsData.data[item].id,",
+									"            \"product_name\":jsData.data[item].product_name,",
+									"            \"sku_code\":jsData.data[item].list_sku[0].sku_code,",
+									"            \"account_id\":jsData.data[item].account_id,",
+									"            \"amount\":jsData.data[item].list_sku[0].sale_price,",
+									"            \"cost_amount\":jsData.data[item].list_sku[0].cost_price,",
+									"            \"branch_id\":jsData.data[item].branch_id,",
+									"            \"created_at\":jsData.data[item].created_at,",
+									"            \"currency\":jsData.data[item].currency,",
+									"            \"product_type\":jsData.data[item].product_type,",
+									"            \"uom\":jsData.data[item].uom,",
+									"            \"apply_tax\":jsData.data[item].apply_tax,",
+									"            \"apply_tax_category_sales\":jsData.data[item].apply_tax_category_sales,",
+									"            \"apply_tax_category_income\":jsData.data[item].apply_tax_category_income,",
+									"            \"is_price_including_tax\":jsData.data[item].is_price_including_tax,",
+									"            \"track_inventory\":jsData.data[item].track_inventory,",
+									"            \"is_final_status\":jsData.data[item].is_final_status,",
+									"            \"object_id_ref\":jsData.data[item].object_id_ref,",
+									"            \"object_type\":jsData.data[item].object_type,",
+									"            \"value_at\":jsData.data[item].value_at,",
+									"            \"short_desc\":jsData.data[item].short_desc",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_product\",list_product);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all product! \" + list_product.length, function () {",
+									"                    pm.expect(list_product.length > 0).to.be.true;",
+									"                });",
+									"",
+									"                testcase++;",
+									"                pm.environment.set(\"C-testcase\",testcase);",
+									"                pm.execution.setNextRequest(\"create_product\"); // create_product",
+									"                break;",
+									"            case 4:",
+									"                let product_obj = pm.environment.get(\"C-product_obj\");",
+									"",
+									"                pm.test(\"Total product increase 1\", function () {",
+									"                    pm.expect(list_product.length == old_list_product.length + 1).to.be.true;",
+									"                });",
+									"",
+									"                let isFound = false;",
+									"                for(let i in list_product){",
+									"                    if(list_product[i].product_id == product_obj.product_id){",
+									"                        isFound = true;",
+									"                        pm.test(\"name of product correctly! \" + product_obj.product_name, function () {",
+									"                            pm.expect(product_obj.product_name == list_product[i].product_name).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"sale_price of product correctly! \" + product_obj.list_sku[0].sale_price, function () {",
+									"                            pm.expect(product_obj.list_sku[0].sale_price == list_product[i].amount).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"cost_price of product correctly! \" + product_obj.list_sku[0].cost_price, function () {",
+									"                            pm.expect(product_obj.list_sku[0].cost_price == list_product[i].cost_amount).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"sku_code of product correctly! \" + product_obj.list_sku[0].sku_code, function () {",
+									"                            pm.expect(product_obj.list_sku[0].sku_code == list_product[i].sku_code).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"product_type of product is default physical! \", function () {",
+									"                            pm.expect(list_product[i].product_type).to.eql(\"physical\");",
+									"                        });",
+									"",
+									"                        // pm.test(\"income_account_id of product correctly! \" + product_obj.income_account_id, function () {",
+									"                        //     pm.expect(product_obj.income_account_id == list_product[i].income_account_id).to.be.true;",
+									"                        // });",
+									"",
+									"                        // let act_income_taxes = [];",
+									"                        // for(let i in  list_product[i].income_taxes){",
+									"                        //     act_income_taxes[act_income_taxes.length] = list_product[i].income_taxes[i].tax_id;",
+									"                        // }",
+									"                        // pm.test(\"income_taxes of product correctly! \" + product_obj.income_taxes, function () {",
+									"                        //     pm.expect(JSON.stringify(product_obj.income_taxes) == JSON.stringify(act_income_taxes)).to.be.true;",
+									"                        // });",
+									"",
+									"                        pm.test(\"description of product correctly! \" + product_obj.short_desc, function () {",
+									"                            pm.expect(product_obj.short_desc == list_product[i].short_desc).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"uom of product correctly! \" + product_obj.uom, function () {",
+									"                            pm.expect(product_obj.uom == list_product[i].uom).to.be.true;",
+									"                        });",
+									"",
+									"                        // pm.test(\"expense_account_id of product correctly! \" + product_obj.expense_account_id, function () {",
+									"                        //     pm.expect(product_obj.expense_account_id == list_product[i].expense_account_id).to.be.true;",
+									"                        // });",
+									"",
+									"                        pm.test(\"apply_tax of product correctly! \" + product_obj.apply_tax, function () {",
+									"                            pm.expect(product_obj.apply_tax == list_product[i].apply_tax).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"apply_tax_category_sales of product correctly! \" + product_obj.apply_tax_category_sales, function () {",
+									"                            pm.expect(product_obj.apply_tax_category_sales == list_product[i].apply_tax_category_sales).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"apply_tax_category_income of product correctly! \" + product_obj.apply_tax_category_income, function () {",
+									"                            pm.expect(product_obj.apply_tax_category_income == list_product[i].apply_tax_category_income).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"is_price_including_tax of product correctly! \" + product_obj.is_price_including_tax, function () {",
+									"                            pm.expect(product_obj.is_price_including_tax == list_product[i].is_price_including_tax).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"track_inventory of product correctly! \" + product_obj.track_inventory, function () {",
+									"                            pm.expect(product_obj.track_inventory == list_product[i].track_inventory).to.be.true;",
+									"                        });",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found new product\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                pm.execution.setNextRequest(\"get_product_detail\");",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                pm.execution.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more product\");",
+									"        pm.execution.setNextRequest(\"get_list_product\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list product, end test\",jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/product/get-list?business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&search=&sort=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"product",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_product_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let product_obj = pm.environment.get(\"C-product_obj\");",
+									"let product_id = product_obj.product_id;",
+									"console.log(\"view detail contact: \" + product_id);",
+									"",
+									"pm.environment.set(\"C-product_id\",product_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"",
+									"    let product_obj = pm.environment.get(\"C-product_obj\");",
+									"",
+									"    pm.test(\"name of product correctly! \" + product_obj.product_name, function () {",
+									"        pm.expect(product_obj.product_name == jsData.data.product_name).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"sale_price of product correctly! \" + product_obj.list_sku[0].sale_price, function () {",
+									"        pm.expect(product_obj.list_sku[0].sale_price == jsData.data.list_sku[0].sale_price).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"cost_price of product correctly! \" + product_obj.list_sku[0].cost_price, function () {",
+									"        pm.expect(product_obj.list_sku[0].cost_price == jsData.data.list_sku[0].cost_price).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"sku_code of product correctly! \" + product_obj.list_sku[0].sku_code, function () {",
+									"        pm.expect(product_obj.list_sku[0].sku_code == jsData.data.list_sku[0].sku_code).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"product_type of product is default physical! \", function () {",
+									"        pm.expect(jsData.data.product_type).to.eql(\"physical\");",
+									"    });",
+									"",
+									"    pm.test(\"income_account_id of product correctly! \" + product_obj.income_account_id, function () {",
+									"        pm.expect(product_obj.income_account_id == jsData.data.product_link_account.income_account_id).to.be.true;",
+									"    });",
+									"",
+									"    // let act_income_taxes = [];",
+									"    // for(let i in  jsData.data.income_taxes){",
+									"    //     act_income_taxes[act_income_taxes.length] = jsData.data.income_taxes[i].tax_id;",
+									"    // }",
+									"    // pm.test(\"income_taxes of product correctly! \" + product_obj.income_taxes, function () {",
+									"    //     pm.expect(JSON.stringify(product_obj.income_taxes) == JSON.stringify(act_income_taxes)).to.be.true;",
+									"    // });",
+									"",
+									"    pm.test(\"description of product correctly! \" + product_obj.short_desc, function () {",
+									"        pm.expect(product_obj.short_desc == jsData.data.short_desc).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"uom of product correctly! \" + product_obj.uom, function () {",
+									"        pm.expect(product_obj.uom == jsData.data.uom).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"expense_account_id of product correctly! \" + product_obj.expense_account_id, function () {",
+									"        pm.expect(product_obj.expense_account_id == jsData.data.product_link_account.expense_account_id).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"apply_tax of product correctly! \" + product_obj.apply_tax, function () {",
+									"        pm.expect(product_obj.apply_tax == jsData.data.apply_tax).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"apply_tax_category_sales of product correctly! \" + product_obj.apply_tax_category_sales, function () {",
+									"        pm.expect(product_obj.apply_tax_category_sales == jsData.data.apply_tax_category_sales).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"apply_tax_category_income of product correctly! \" + product_obj.apply_tax_category_income, function () {",
+									"        pm.expect(product_obj.apply_tax_category_income == jsData.data.apply_tax_category_income).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"is_price_including_tax of product correctly! \" + product_obj.is_price_including_tax, function () {",
+									"        pm.expect(product_obj.is_price_including_tax == jsData.data.is_price_including_tax).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"track_inventory of product correctly! \" + product_obj.track_inventory, function () {",
+									"        pm.expect(product_obj.track_inventory == jsData.data.track_inventory).to.be.true;",
+									"    });",
+									"",
+									"    console.log(\"--- End Testsuite 36 ---\");",
+									"    pm.execution.setNextRequest(null);",
+									"} else {",
+									"    console.log(\"Can't get internal contact detail, end test\",jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/product/get-one/{{C-product_id}}?business_id={{C-business_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"product",
+								"get-one",
+								"{{C-product_id}}"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_product",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" *  =============================  func randNotDupe(min, max, total)",
+									" * total: số lượng random, ko dc nhỏ hơn max-min+1",
+									" * return: array",
+									" */",
+									"function randNotDupe(min, max, total){",
+									"  let arrNum = []; // new empty array",
+									"  let n, p;",
+									"  for (let i = 0; i < total; i++) {",
+									"    do {",
+									"      n = Math.floor(Math.random() * (max - min + 1)) + min;",
+									"      p = arrNum.includes(n);",
+									"      if(!p){",
+									"        arrNum.push(n);",
+									"      }",
+									"    }",
+									"    while(p);",
+									"  }",
+									"  return arrNum;",
+									"}",
+									"",
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"/**",
+									" * income_account_id: Phân loại doanh thu => group = \"income\"",
+									" * expense_account_id: Phân loại chi phí => group = \"expense\"",
+									" */",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"if(!case_){",
+									"    case_ = 5;",
+									"    pm.environment.set(\"C-case_\",case_);",
+									"}",
+									"console.log(\"Testcase: \" + testcase + \".\" + case_);",
+									"",
+									"let today = new Date();",
+									"let next_date_stp = Math.floor(today.getTime()/1000) + 24*60*60;",
+									"let next_date = new Date(next_date_stp*1000);",
+									"",
+									"let list_income_account = pm.environment.get(\"C-list_income_account\");",
+									"// console.log(\"debug list_income_account: \", list_income_account);",
+									"let list_expense_account = pm.environment.get(\"C-list_expense_account\");",
+									"let list_tax = pm.environment.get(\"C-list_tax\");",
+									"// console.log(\"debug list_tax: \", list_tax);",
+									"",
+									"let income_account_id, expense_account_id, price;",
+									"let uom_list = [\"cái\",\"muỗng\",'chén',\"dĩa\",\"lon\",\"phần\",\"ml\"];",
+									"let sku_code, name, expense_taxes = [], income_taxes = [];",
+									"switch(case_){",
+									"    case 1:",
+									"        console.log(\"Unhappy case: income_account_id = null & expense_account_id = null\");",
+									"        income_account_id = null;",
+									"        expense_account_id = null;",
+									"        price = getRandomInt(10,50)*1000;",
+									"        sku_code = randomChars(8);",
+									"        name = \"[API] Product \" + sku_code;",
+									"        break;",
+									"    case 2:",
+									"        console.log(\"Unhappy case: name = ''\");",
+									"        income_account_id = list_income_account[getRandomInt(0,list_income_account.length -  1)].account_id;",
+									"        expense_account_id = null;",
+									"        price = getRandomInt(10,50)*1000;",
+									"        sku_code = randomChars(8);",
+									"        name = \"\";",
+									"        break;",
+									"    case 3:",
+									"        console.log(\"Unhappy case: price = null\");",
+									"        income_account_id = list_income_account[getRandomInt(0,list_income_account.length -  1)].account_id;",
+									"        expense_account_id = null;",
+									"        price = null;",
+									"        sku_code = randomChars(8);",
+									"        name = \"[API] Product \" + sku_code;",
+									"        break;",
+									"    case 4:",
+									"        console.log(\"Unhappy case: price < 0\");",
+									"        income_account_id = list_income_account[getRandomInt(0,list_income_account.length -  1)].account_id;",
+									"        expense_account_id = null;",
+									"        price = -getRandomInt(10,50)*1000;",
+									"        sku_code = randomChars(8);",
+									"        name = \"[API] Product \" + sku_code;",
+									"        break;",
+									"    case 5:",
+									"        console.log(\"Happy case\");",
+									"        income_account_id = list_income_account[getRandomInt(0,list_income_account.length -  1)].account_id;",
+									"        let randTotalTax = 1//getRandomInt(0,1);",
+									"        let randListPos = randNotDupe(0,list_tax.length - 1,randTotalTax);",
+									"        for(let i in randListPos){ // tạm thời cho 2 lists task như nhau",
+									"            income_taxes[income_taxes.length] = list_tax[randListPos[i]].tax_id;",
+									"            expense_taxes[expense_taxes.length] = list_tax[randListPos[i]].tax_id;",
+									"        }",
+									"        expense_account_id = list_expense_account[getRandomInt(0,list_expense_account.length -  1)].account_id;",
+									"        price = getRandomInt(10,50)*1000;",
+									"        sku_code = randomChars(8);",
+									"        name = \"[API] Product \" + sku_code;",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow\");",
+									"        break;",
+									"}",
+									"",
+									"let payload = {",
+									"    \"apply_tax\": true,",
+									"    \"apply_tax_category_income\": true,",
+									"    \"apply_tax_category_sales\": true,",
+									"    // \"brand_id\": \"string\",",
+									"    \"business_id\": parseInt(pm.environment.get(\"C-business_id\")),",
+									"    // \"category_id\": \"00000000-0000-0000-0000-000000000000\",",
+									"    \"expense_account_id\": expense_account_id,",
+									"    \"expense_taxes\": expense_taxes,",
+									"    // \"images\": [\"\"],",
+									"    \"income_account_id\": income_account_id,",
+									"    \"income_taxes\": income_taxes,",
+									"    \"is_expense_recorded\": true, // ghi nhận chi phí",
+									"    \"is_income_recorded\": true, // ghi nhận doanh thu",
+									"    \"is_price_including_tax\": false,",
+									"    // \"label_id\": \"\",",
+									"    \"list_sku\": [ // hiện tại mỗi SP chỉ có 1 sku",
+									"        {",
+									"        \"cost_price\": 0, // giá nhập ứng với ghi nhận chi phí",
+									"        \"is_hidden\": true,",
+									"        \"priority\": 0,",
+									"        // \"product_id\": \"\",",
+									"        \"sale_price\": price, // giá bán ứng vơi ghi nhận doanh thu",
+									"        \"sku_code\": sku_code,",
+									"        \"sku_name\": name",
+									"        }",
+									"    ],",
+									"    \"uom\":uom_list[getRandomInt(0,uom_list.length - 1)],",
+									"    // \"org_id\": 0,",
+									"    \"product_name\": name,",
+									"    \"product_type\": \"\",",
+									"    \"search_keyword\": \"\",",
+									"    \"short_desc\": name + \" description\",",
+									"    \"track_inventory\": false // theo dõi kho hàng",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-product_obj\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"",
+									"let jsData = pm.response.json();",
+									"switch(case_){",
+									"    case 1: case 2: case 3: case 4:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"",
+									"        pm.test(\"System code is 104000\", function () {",
+									"            pm.expect(jsData.code).to.eql(104000);",
+									"        });",
+									"",
+									"        console.log(\"Error: \", jsData);",
+									"",
+									"        // case_ = 5;",
+									"        case_++;",
+									"        pm.environment.set(\"C-case_\",case_);",
+									"        pm.execution.setNextRequest(\"create_product\");",
+									"        break;",
+									"    case 5:",
+									"        console.log(\"debug: \" + JSON.stringify(jsData));",
+									"        pm.test(\"Status code is 200\", function () {",
+									"            pm.response.to.have.status(200);",
+									"        });",
+									"",
+									"        pm.test(\"System code is 102001\", function () {",
+									"            pm.expect(jsData.code).to.eql(102001);",
+									"        });",
+									"",
+									"        pm.environment.unset(\"C-case_\");",
+									"        let product_obj = pm.environment.get(\"C-product_obj\");",
+									"",
+									"        // update product_id for product_obj",
+									"        product_obj.product_id = jsData.data.id;",
+									"",
+									"        pm.test(\"name of product correctly! \" + product_obj.product_name, function () {",
+									"            pm.expect(product_obj.product_name == jsData.data.product_name).to.be.true;",
+									"        });",
+									"",
+									"        // price check trong list và detail",
+									"        // pm.test(\"price of product correctly! \" + product_obj.price, function () {",
+									"        //     pm.expect(product_obj.price == jsData.data.price).to.be.true;",
+									"        // });",
+									"",
+									"        pm.test(\"product_type of product is default physical!\", function () {",
+									"            pm.expect(\"physical\" == jsData.data.product_type).to.be.true;",
+									"        });",
+									"",
+									"        // pm.test(\"income_account_id of product correctly! \" + product_obj.income_account_id, function () {",
+									"        //     pm.expect(product_obj.income_account_id == jsData.data.income_account_id).to.be.true;",
+									"        // });",
+									"",
+									"        // let act_income_taxes = [];",
+									"        // for(let i in  jsData.data.income_taxes){",
+									"        //     act_income_taxes[act_income_taxes.length] = jsData.data.income_taxes[i].tax_id;",
+									"        // }",
+									"        // pm.test(\"income_taxes of product correctly! \" + product_obj.income_taxes, function () {",
+									"        //     pm.expect(JSON.stringify(product_obj.income_taxes) == JSON.stringify(act_income_taxes)).to.be.true;",
+									"        // });",
+									"",
+									"        pm.test(\"description of product correctly! \" + product_obj.short_desc, function () {",
+									"            pm.expect(product_obj.short_desc == jsData.data.short_desc).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"uom of product correctly! \" + product_obj.uom, function () {",
+									"            pm.expect(product_obj.uom == jsData.data.uom).to.be.true;",
+									"        });",
+									"",
+									"        // pm.test(\"expense_account_id of product correctly! \" + product_obj.expense_account_id, function () {",
+									"        //     pm.expect(product_obj.expense_account_id == jsData.data.expense_account_id).to.be.true;",
+									"        // });",
+									"",
+									"        pm.test(\"apply_tax of product correctly! \" + product_obj.apply_tax, function () {",
+									"            pm.expect(product_obj.apply_tax == jsData.data.apply_tax).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"apply_tax_category_sales of product correctly! \" + product_obj.apply_tax_category_sales, function () {",
+									"            pm.expect(product_obj.apply_tax_category_sales == jsData.data.apply_tax_category_sales).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"apply_tax_category_income of product correctly! \" + product_obj.apply_tax_category_income, function () {",
+									"            pm.expect(product_obj.apply_tax_category_income == jsData.data.apply_tax_category_income).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"is_price_including_tax of product correctly! \" + product_obj.is_price_including_tax, function () {",
+									"            pm.expect(product_obj.is_price_including_tax == jsData.data.is_price_including_tax).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"track_inventory of product correctly! \" + product_obj.track_inventory, function () {",
+									"            pm.expect(product_obj.track_inventory == jsData.data.track_inventory).to.be.true;",
+									"        });",
+									"",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        pm.environment.set(\"C-product_obj\",product_obj);",
+									"        pm.execution.setNextRequest(\"get_list_product\"); // get_list_product",
+									"        break;",
+									"    default:",
+									"        console.log(\"missing flow, end test\");",
+									"        pm.execution.setNextRequest(null);",
+									"        break;",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/product/create",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"product",
+								"create"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":false,",
+					"    \"limit_page\":5,",
+					"    \"timeout\":12000, // miliseconds => timeout to call API",
+					"    \"is_buyer_gen\":false,",
+					"    \"test_payment_method\":\"va_galaxy\" // bank_transfer, viet_qr_pro_mb, va_galaxy",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    switch(request_api.method){",
+					"        case \"PUT\":",
+					"            curl = \"curl --location --request PUT \";",
+					"            break;",
+					"        case \"PATCH\":",
+					"            curl = \"curl --location --request PATCH \";",
+					"            break;",
+					"        case \"DELETE\":",
+					"            curl = \"curl --location --request DELETE \";",
+					"            break;",
+					"        default:",
+					"            curl = \"curl --location \";",
+					"            break;",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.query.length > 0){",
+					"            curl += \"?\";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\": case \"PATCH\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"// console.log(\"request_api\",request_api);",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,661 @@
+{
+	"info": {
+		"_postman_id": "a702863b-83e5-4f9e-ab11-6219d42b6022",
+		"name": "finan_58_verify_to_link_new_bank",
+		"description": "### Testsuite: Verify to link with new bank account\n\n###### Testcase:\n\n1. Login with owner account\n2. Get data\n    1. Account / Get list payment account => save total account\n3. Verify bank account\n    \n    1. Invalid account\n        \n    2. Valid account\n        \n4. Link bank account\n    \n    1. Link bank account (if 3.a is valid)\n    2. Link bank account at 3.b again => error about existed\n5. Check data\n    1. Account / Get list payment account => have new respective bank account\n\n###### Note:\n\n- Currently, system only support for MBBank account\n    - 1\\. account / number: ACCOUNT 22550369 / 0245952489218\n    - 2\\. account / number: ACCOUNT 22550367 / 7104520894624",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "verify_email_or_phone_number",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * currently, manual to create account pwd & use charles to get it",
+									" * default pwd created: 21112007 (prod with default account & no need pwd)",
+									" */",
+									"",
+									"let email = pm.environment.get(\"SER-email\");",
+									"let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"",
+									"console.log(\"--- Start Testsuite 58 ---\");",
+									"let testcase = 1;",
+									"",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let isPhone = true;",
+									"",
+									"let payload;",
+									"if(isPhone){",
+									"    console.log(\"login with phone_number: \" + phone_number);",
+									"    payload = {",
+									"        \"phone_number\": phone_number",
+									"    }",
+									"} else {",
+									"    console.log(\"login with email: \" + email);",
+									"    payload = {",
+									"        \"email\": email",
+									"    }",
+									"}",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);",
+									"pm.environment.set(\"C-isPhone\",isPhone);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.is_existed && jsData.data.has_password){",
+									"        postman.setNextRequest(\"login_with_pwd\");",
+									"    } else if(jsData.data.is_existed) {",
+									"        console.log(\"This account doesn't create pwd, please manual create!!!\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        console.log(\"THIS ACCOUNT IS NOT EXISTED IN SYSTEM, WILL MANUAL CREATE IT\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-user/api/v1/auth/account/verify",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_with_pwd",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let crypto = require('crypto-js');",
+									"",
+									"// const algorithm = \"aes-256-gcm\";",
+									"// const IV_LEN = 12;",
+									"// const AUTH_TAG_LEN = 16;",
+									"// const SECRET_KEY = \"7dQ0HwRI5okvwAK0WzxaW6ABFncjeu1E\";",
+									"",
+									"// function encrypt(message) {",
+									"//   const iv = Buffer.from(crypto.randomBytes(IV_LEN));",
+									"//   const cipher = crypto.createCipheriv(algorithm, SECRET_KEY, iv, {",
+									"//     authTagLength: AUTH_TAG_LEN,",
+									"//   });",
+									"//   const encryptedData = Buffer.concat([cipher.update(message), cipher.final()]);",
+									"//   const authTag = cipher.getAuthTag();",
+									"//   const raw = Buffer.concat([iv, encryptedData, authTag]).toString(\"hex\");",
+									"//   return raw;",
+									"// }",
+									"",
+									"// const pwd = \"21112007\";",
+									"// // var superSecretEncrypted = CryptoJS.AES.encrypt(pwd, SECRET_KEY);",
+									"",
+									"// let pwd_enc = encrypt(pwd);",
+									"// console.log(\"pwd_enc: \" + pwd_enc);",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"let isPhone = pm.environment.get(\"C-isPhone\");",
+									"",
+									"let verify_payload = JSON.parse(pm.environment.get(\"C-payload\"));",
+									"",
+									"let payload;",
+									"let version = pm.environment.get(\"x-current-version\");",
+									"if(isPhone){",
+									"    payload = {",
+									"        \"phone_number\": verify_payload.phone_number,",
+									"        \"pwd\": pm.environment.get(\"pwd\"),",
+									"        \"platform\": \"gtapp\",",
+									"        \"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",",
+									"        \"app_version\": version,",
+									"        \"device_name\": \"iPhone\"",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"email\": verify_payload.email,",
+									"        \"pwd\": pm.environment.get(\"pwd\"),",
+									"        \"platform\": \"gtapp\",",
+									"        \"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",",
+									"        \"app_version\": version,",
+									"        \"device_name\": \"iPhone\"",
+									"    }",
+									"}",
+									"console.log(\"debug: \", payload);",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id); // business_id",
+									"",
+									"        postman.setNextRequest(\"get_branch_id\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}/finan-user/api/v1/auth/account/login",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_branch_id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.id;",
+									"    } catch {",
+									"        console.log(\"Can't get branch_id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch_id\", function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    if(branch_id != null){",
+									"        pm.environment.set(\"C-business_id\",branch_id);",
+									"",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"get_list_payment_account\"); // get_list_payment_account",
+									"    } else {",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-business/api/v1/branch/detail/{{C-business_id}}",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"branch",
+								"detail",
+								"{{C-business_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "account",
+			"item": [
+				{
+					"name": "get_list_payment_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_account = jsData.data.accounts.length;",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.environment.set(\"C-total_payment_account\",total_account);",
+									"",
+									"            pm.test(\"Got total payment account \" + total_account, function () {",
+									"                pm.expect(total_account > 0).to.be.true;",
+									"            });",
+									"",
+									"            testcase++;",
+									"            pm.environment.set(\"C-testcase\",testcase);",
+									"            postman.setNextRequest(\"verify_bank_account\"); // verify_bank_account",
+									"            break;",
+									"        case 4:",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list payment account, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkZXZpY2VfaWQiOiJmYjU3OGJlOS1hOTcyLTRkODctYjc2Yy0xNjhmYTM3ZWY2MzkiLCJidXNpbmVzc19pZCI6ImRjMWIwOTY2LWYzNGYtNDZhNi1iMWYxLTg2Y2FjYWI4Y2M2NyIsInBlcm1pc3Npb25fa2V5cyI6InNob3Bfb3duZXIiLCJyZWZyZXNoX3Rva2VuX2lkIjoiMDEyMTM0OWQtZWI3Zi00Yjc1LTgyOGYtZWYzZmVmMTdkZjUxIiwic2VjdXJpdHlfcm9sZXMiOjY2LCJhcHBfdmVyc2lvbiI6IjEuMS4xIiwidXNlcl9pZCI6IjAwYzFiZGM5LWE0MTItNGU1MC1iMDY2LTEzNjJlYzFlMGE2MyIsImV4cCI6MTcxMDkwOTYwNiwiaXNzIjoicHJvX3dlYiIsInN1YiI6IjAwYzFiZGM5LWE0MTItNGU1MC1iMDY2LTEzNjJlYzFlMGE2M3xmYjU3OGJlOS1hOTcyLTRkODctYjc2Yy0xNjhmYTM3ZWY2Mzl8ZmI1NzhiZTktYTk3Mi00ZDg3LWI3NmMtMTY4ZmEzN2VmNjM5In0.ZR_EunDnV2UUluhSkk8SrdPhDpSZ1u2oJMi3XN4G-QY"
+							}
+						],
+						"url": {
+							"raw": "{{finan_base_url}}/finan-ledger/api/v1/account/list-by-key?branch_id={{C-business_id}}&key=cash_and_bank",
+							"host": [
+								"{{finan_base_url}}"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"account",
+								"list-by-key"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "key",
+									"value": "cash_and_bank"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "payment",
+			"item": [
+				{
+					"name": "verify_bank_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * MB account:",
+									" * 1. account / number: ACCOUNT 22550369 / 0245952489218",
+									" * 2. account / number: ACCOUNT 22550367 / 7104520894624",
+									" */",
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"if(!case_){",
+									"    case_ = 1;",
+									"    pm.environment.set(\"C-case_\",case_);",
+									"}",
+									"console.log(\"Testcase: \" + testcase + \".\" + case_);",
+									"",
+									"const default_mb_bank_account = [{",
+									"    \"account_name\":\"ACCOUNT 22550369\",",
+									"    \"account_number\":\"0245952489218\",",
+									"    \"provider_id\":\"mbbank\"",
+									"},{",
+									"    \"account_name\":\"ACCOUNT 22550367\",",
+									"    \"account_number\":\"7104520894624\",",
+									"    \"provider_id\":\"mbbank\"",
+									"}]",
+									"",
+									"let payload;",
+									"switch(case_){",
+									"    case 1:",
+									"        payload = {",
+									"            \"account_name\": default_mb_bank_account[0].account_name,",
+									"            \"account_number\": default_mb_bank_account[1].account_number,",
+									"            \"branch_id\": pm.environment.get(\"C-business_id\"),",
+									"            \"provider_id\": default_mb_bank_account[0].provider_id",
+									"        }",
+									"        break;",
+									"    case 2:",
+									"        let ranAcc = getRandomInt(0,default_mb_bank_account.length - 1);",
+									"        payload = {",
+									"            \"account_name\": default_mb_bank_account[ranAcc].account_name,",
+									"            \"account_number\": default_mb_bank_account[ranAcc].account_number,",
+									"            \"branch_id\": pm.environment.get(\"C-business_id\"),",
+									"            \"provider_id\": default_mb_bank_account[ranAcc].provider_id",
+									"        }",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow\");",
+									"        break;",
+									"}",
+									"",
+									"console.log(\"payload: \", payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-bank_obj\",payload);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200 || pm.response.code == 400){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let case_ = pm.environment.get(\"C-case_\");",
+									"    ",
+									"    // console.log(\"debug: \", jsData.data);",
+									"",
+									"    let error_message = \"\";",
+									"    switch(case_){",
+									"        case 1:",
+									"            pm.test(\"Status code is 400\", function () {",
+									"                pm.response.to.have.status(400);",
+									"            });",
+									"",
+									"            try {",
+									"                error_message = jsData.error.detail;",
+									"            } catch {",
+									"                console.log(\"Can't get error message\");",
+									"            }",
+									"            pm.test(\"Display error message: \" + error_message, function () {",
+									"                pm.expect(error_message).includes(\"account is incorrect\");",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"\"); // verify_bank_account",
+									"            break;",
+									"        case 2:",
+									"            pm.test(\"Status code is 200\", function () {",
+									"                pm.response.to.have.status(200);",
+									"            });",
+									"            ",
+									"            postman.setNextRequest(\"\"); // link_bank_account",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Bank account invalid, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}​/finan-ledger/api/v1/payment/verify-account-by-bank",
+							"host": [
+								"{{finan_base_url}}​"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"payment",
+								"verify-account-by-bank"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "link_bank_account",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"account_name\": \"ACCOUNT 22550367\",\n  \"account_number\": \"7104520894624\",\n  \"branch_id\": {{C-business_id}},\n  \"provider_id\": \"mbbank\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finan_base_url}}​/finan-ledger/api/v1/payment/link-viet-qr-pro",
+							"host": [
+								"{{finan_base_url}}​"
+							],
+							"path": [
+								"finan-ledger",
+								"api",
+								"v1",
+								"payment",
+								"link-viet-qr-pro"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

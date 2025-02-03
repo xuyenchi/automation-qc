@@ -1,0 +1,1242 @@
+{
+	"info": {
+		"_postman_id": "f6d43052-89cf-4783-a12c-35cb6ffef1dc",
+		"name": "fo_93_verify_to_create_new_promotion",
+		"description": "### Testsuite: Verify to create new promotion\n\n###### Testcase:\n\n1. Login with owner account\n    \n2. Get data\n    \n    1. pos-order / promotion / Get list promotion => get total promotion\n        \n3. Create promotion\n    \n    1. Unhappy case: handle sau\n        \n    2. Happy case\n        \n4. Check data\n    \n    1. pos-order / promotion / Get list promotion => increase 1, matching data\n        \n    2. pos-order / promotion / Get promotion detail => data correctly\n        \n\n###### Note:\n\n- Validate handle sau",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 93 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        postman.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-locale",
+								"value": "<string>",
+								"description": "locale",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"    postman.setNextRequest(\"get_current_business\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "get_current_business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"Current business info: \", jsData.data);",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.current_business.list_branch[0].id;",
+									"        pm.environment.set(\"C-branch_id\",branch_id);",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    let payment_method_list = [];",
+									"    for(let i in jsData.data.list_payment_method){",
+									"        if(jsData.data.list_payment_method[i].is_active){",
+									"            payment_method_list[payment_method_list.length] = jsData.data.list_payment_method[i];",
+									"        }",
+									"    }",
+									"",
+									"    pm.test(\"Got payment_method_list \" + payment_method_list.length, function () {",
+									"        pm.expect(payment_method_list.length > 0).to.be.true;",
+									"    });",
+									"    pm.environment.set(\"C-payment_method_list\",payment_method_list);",
+									"    ",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_promotion\"); // get_list_promotion",
+									"} else {",
+									"    console.log(\"Can't get business detail, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/business/get-current",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"business",
+								"get-current"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "promotion",
+			"item": [
+				{
+					"name": "get_list_promotion",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = 0, total_promotions = 0;",
+									"    try {",
+									"        total_pages = jsData.meta.total_pages;",
+									"        total_promotions = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Missing meta data\");",
+									"    }",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_promotion, old_list_promotion;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_promotion = pm.environment.get(\"C-list_promotion\");",
+									"            if(!list_promotion){",
+									"                list_promotion = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_promotion = pm.environment.get(\"C-old_list_promotion\");",
+									"            if(!old_list_promotion){",
+									"                old_list_promotion = pm.environment.get(\"C-list_promotion\");",
+									"                pm.environment.unset(\"C-list_promotion\");",
+									"                pm.environment.set(\"C-old_list_promotion\",old_list_promotion);",
+									"            }",
+									"",
+									"            list_promotion = pm.environment.get(\"C-list_promotion\");",
+									"            if(!list_promotion){",
+									"                list_promotion = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_promotion[list_promotion.length] = {",
+									"            \"promotion_id\":jsData.data[item].id,",
+									"            \"promotion_name\":jsData.data[item].name,",
+									"            \"code\":jsData.data[item].code,",
+									"            \"description\":jsData.data[item].description,",
+									"            \"value\":jsData.data[item].value,",
+									"            \"is_rate\":jsData.data[item].is_rate,",
+									"            \"min_order_price\":jsData.data[item].min_order_price,",
+									"            \"max_price_discount\":jsData.data[item].max_price_discount,",
+									"            \"max_size\":jsData.data[item].max_size,",
+									"            \"max_size_per_user\":jsData.data[item].max_size_per_user,",
+									"            \"min_order_is_publicprice\":jsData.data[item].is_public,",
+									"            \"is_active\":jsData.data[item].is_active,",
+									"            \"is_public\":jsData.data[item].is_public,",
+									"            \"start_time\":jsData.data[item].start_time,",
+									"            \"end_time\":jsData.data[item].end_time,",
+									"            \"images\":jsData.data[item].images",
+									"        }",
+									"",
+									"    }",
+									"    pm.environment.set(\"C-list_promotion\",list_promotion);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all promotion! \" + total_promotions, function () {",
+									"                    pm.expect(total_promotions > 0).to.be.true;",
+									"                });",
+									"                pm.environment.set(\"C-total_promotions\",total_promotions);",
+									"",
+									"                testcase++;",
+									"                if(jsData.data != null){",
+									"                    pm.environment.set(\"C-promotion_name\", jsData.data[0].name)",
+									"                }",
+									"                pm.environment.set(\"C-testcase\",testcase);",
+									"                postman.setNextRequest(\"create_promotion\"); // create_promotion",
+									"                break;",
+									"            case 4:",
+									"                let promotion_obj = pm.environment.get(\"C-promotion_obj\");",
+									"                let old_total_promotions = pm.environment.get(\"C-total_promotions\");",
+									"",
+									"                pm.test(\"Total promotion increase 1\", function () {",
+									"                    pm.expect(total_promotions == old_total_promotions + 1).to.be.true;",
+									"                });",
+									"",
+									"                let isFound = false;",
+									"                for(let i in list_promotion){",
+									"                    if(list_promotion[i].promotion_id == promotion_obj.promotion_id){",
+									"                        isFound = true;",
+									"",
+									"                        pm.test(\"promotion_name of promotion correctly! \" + promotion_obj.name, function () {",
+									"                            pm.expect(promotion_obj.name == list_promotion[i].promotion_name).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"code of promotion correctly! \" + promotion_obj.code, function () {",
+									"                            pm.expect(promotion_obj.code == list_promotion[i].code).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"is_active of promotion correctly! \" + promotion_obj.is_active, function () {",
+									"                            pm.expect(promotion_obj.is_active == list_promotion[i].is_active).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"is_rate of promotion correctly! \" + promotion_obj.is_rate, function () {",
+									"                            pm.expect(promotion_obj.is_rate == list_promotion[i].is_rate).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"max_price_discount of promotion correctly! \" + promotion_obj.max_price_discount, function () {",
+									"                            pm.expect(promotion_obj.max_price_discount == list_promotion[i].max_price_discount).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"min_order_price of promotion correctly! \" + promotion_obj.min_order_price, function () {",
+									"                            pm.expect(promotion_obj.min_order_price == list_promotion[i].min_order_price).to.be.true;",
+									"                        });",
+									"                        ",
+									"                        pm.test(\"value of promotion correctly! \" + promotion_obj.value, function () {",
+									"                            pm.expect(promotion_obj.value == list_promotion[i].value).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"start_time of promotion correctly! \" + promotion_obj.start_time, function () {",
+									"                            pm.expect(promotion_obj.start_time.substring(0,19) == list_promotion[i].start_time.substring(0,19)).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"end_time of promotion correctly! \" + promotion_obj.end_time, function () {",
+									"                            pm.expect(promotion_obj.end_time.substring(0,19) == list_promotion[i].end_time.substring(0,19)).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"max_size_per_user of promotion correctly! \" + promotion_obj.max_size_per_user, function () {",
+									"                            pm.expect(promotion_obj.max_size_per_user == list_promotion[i].max_size_per_user).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"is_public of promotion correctly! \" + promotion_obj.is_public, function () {",
+									"                            console.log(\"act: \" + list_promotion[i].is_public);",
+									"                            pm.expect(promotion_obj.is_public == list_promotion[i].is_public).to.be.true;",
+									"                        });",
+									"",
+									"                        pm.test(\"max_size of promotion correctly! \" + promotion_obj.max_size, function () {",
+									"                            pm.expect(promotion_obj.max_size == list_promotion[i].max_size).to.be.true;",
+									"                        });",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found new promotion\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_promotion_detail\"); //get_promotion_detail",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more promotion\");",
+									"        postman.setNextRequest(\"get_list_promotion\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list promotion, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-order/api/v1/promotion/get-list?page={{C-page}}&page_size={{C-page_size}}&search=&sort=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-order",
+								"api",
+								"v1",
+								"promotion",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_promotion_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let promotion_obj = pm.environment.get(\"C-promotion_obj\");",
+									"let promotion_id = promotion_obj.promotion_id;",
+									"console.log(\"view detail promotion: \" + promotion_id);",
+									"",
+									"pm.environment.set(\"C-promotion_id\",promotion_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"    let promotion_obj = pm.environment.get(\"C-promotion_obj\");",
+									"",
+									"    pm.test(\"name of promotion correctly! \" + promotion_obj.name, function () {",
+									"        pm.expect(promotion_obj.name == jsData.data.name).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"code of promotion correctly! \" + promotion_obj.code, function () {",
+									"        pm.expect(promotion_obj.code == jsData.data.code).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"is_active of promotion correctly! \" + promotion_obj.is_active, function () {",
+									"        pm.expect(promotion_obj.is_active == jsData.data.is_active).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"is_rate of promotion correctly! \" + promotion_obj.is_rate, function () {",
+									"        pm.expect(promotion_obj.is_rate == jsData.data.is_rate).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"max_price_discount of promotion correctly! \" + promotion_obj.max_price_discount, function () {",
+									"        pm.expect(promotion_obj.max_price_discount == jsData.data.max_price_discount).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"min_order_price of promotion correctly! \" + promotion_obj.min_order_price, function () {",
+									"        pm.expect(promotion_obj.min_order_price == jsData.data.min_order_price).to.be.true;",
+									"    });",
+									"    ",
+									"    pm.test(\"value of promotion correctly! \" + promotion_obj.value, function () {",
+									"        pm.expect(promotion_obj.value == jsData.data.value).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"start_time of promotion correctly! \" + promotion_obj.start_time, function () {",
+									"        pm.expect(promotion_obj.start_time.substring(0,19) == jsData.data.start_time.substring(0,19)).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"end_time of promotion correctly! \" + promotion_obj.end_time, function () {",
+									"        pm.expect(promotion_obj.end_time.substring(0,19) == jsData.data.end_time.substring(0,19)).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"max_size_per_user of promotion correctly! \" + promotion_obj.max_size_per_user, function () {",
+									"        pm.expect(promotion_obj.max_size_per_user == jsData.data.max_size_per_user).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"is_public of promotion correctly! \" + promotion_obj.is_public, function () {",
+									"        pm.expect(promotion_obj.is_public == jsData.data.is_public).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"max_size of promotion correctly! \" + promotion_obj.max_size, function () {",
+									"        pm.expect(promotion_obj.max_size == jsData.data.max_size).to.be.true;",
+									"    });",
+									"",
+									"    console.log(\"--- End Testsuite 93 ---\");",
+									"    postman.setNextRequest(null);",
+									"} else {",
+									"    console.log(\"Can't get internal promotion detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-order/api/v1/promotion/get-one/{{C-promotion_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-order",
+								"api",
+								"v1",
+								"promotion",
+								"get-one",
+								"{{C-promotion_id}}"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_promotion",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"// ============================= get random day in exchange month",
+									"function getRandomDayOfExchangeMonth(exchange) {",
+									"    const now = new Date(); // Get the current date and time",
+									"    const year = now.getFullYear(); // Get the current year",
+									"    const month = now.getMonth() + exchange; // Get the current month (0-indexed)",
+									"    const totalDays = new Date(year, month + 1, 0).getDate();",
+									"    const randomDay = Math.floor(Math.random() * totalDays) + 1;",
+									"    const randomDate = new Date(year, month, randomDay);",
+									"    return randomDate;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let randText = randomChars(8);",
+									"let promotion_name = \"[API] promotion \" + randText;",
+									"let promotion_code = \"API\" + randText;",
+									"let is_rate = false;",
+									"let min_order_price = getRandomInt(200,800)*100;",
+									"let max_price_discount, value;",
+									"if(getRandomInt(0,1)){",
+									"    is_rate = true;",
+									"    value = getRandomInt(100,3000)/100;",
+									"    max_price_discount = min_order_price/2;",
+									"} else {",
+									"    value = Math.round(min_order_price/4);",
+									"    max_price_discount = min_order_price/2; // ko quan trọng vì lấy theo value fix",
+									"}",
+									"",
+									"let start_time, end_time;",
+									"let today = new Date();",
+									"start_time = getRandomDayOfExchangeMonth(-1);",
+									"start_time = start_time.toISOString();",
+									"end_time = getRandomDayOfExchangeMonth(1);",
+									"end_time = end_time.toISOString();",
+									"",
+									"let max_size_per_user = getRandomInt(1,2);",
+									"let max_size = getRandomInt(3,10);",
+									"let is_public = true;",
+									"if(getRandomInt(0,1)) is_public = false;",
+									"",
+									"let total_promotions = pm.environment.get(\"C-total_promotions\");",
+									"if(total_promotions > 0){",
+									"    let case_ = pm.environment.get(\"C-case_\");",
+									"    if(!case_){",
+									"        case_ = 2;",
+									"        pm.environment.set(\"C-case_\",case_);",
+									"    }",
+									"",
+									"    switch(case_){",
+									"        case 1:",
+									"            promotion_name = pm.environment.get(\"C-promotion_name\");",
+									"            break;",
+									"        case 2:",
+									"        default:",
+									"            break;",
+									"    }",
+									"",
+									"    console.log(\"Testcase: \" + testcase + \".\" + case_);",
+									"} else {",
+									"    console.log(\"Testcase: \" + testcase);",
+									"}",
+									"",
+									"let payload = {",
+									"    \"code\": promotion_code,",
+									"    \"description\": \"\",",
+									"    \"is_active\": true,",
+									"    \"is_rate\": is_rate,",
+									"    \"max_price_discount\": max_price_discount,",
+									"    \"min_order_price\": min_order_price,",
+									"    \"name\": promotion_name,",
+									"    \"value\": value,",
+									"    \"start_time\":start_time,",
+									"    \"end_time\":end_time,",
+									"    \"max_size_per_user\":max_size_per_user,",
+									"    \"is_public\":is_public,",
+									"    \"max_size\":max_size",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-promotion_obj\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"debug: \",jsData);",
+									"",
+									"let promotion_obj = pm.environment.get(\"C-promotion_obj\");",
+									"",
+									"let total_promotions = pm.environment.get(\"C-total_promotions\");",
+									"if(total_promotions > 0){",
+									"    let case_ = pm.environment.get(\"C-case_\");",
+									"",
+									"    switch(case_){",
+									"        case 1:",
+									"            case_++;",
+									"            pm.environment.set(\"C-case_\",case_);",
+									"",
+									"            pm.test(\"Status code is 400\", function () {",
+									"                pm.response.to.have.status(400);",
+									"            });",
+									"",
+									"            pm.test(\"System code is 104100\", function () {",
+									"                pm.expect(jsData.code).to.eql(104100);",
+									"            });",
+									"",
+									"            pm.test(\"error messaage - Thông tin bị trùng lập\", function () {",
+									"                pm.expect(jsData.message.content).to.eql(\"Thông tin bị trùng lập\");",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"create_promotion\");",
+									"            break;",
+									"        case 2:",
+									"        default:",
+									"            pm.environment.unset(\"C-case_\");",
+									"            pm.test(\"Status code is 200\", function () {",
+									"                pm.response.to.have.status(200);",
+									"            });",
+									"",
+									"            pm.test(\"System code is 102001\", function () {",
+									"                pm.expect(jsData.code).to.eql(102001);",
+									"            });",
+									"",
+									"            // update promotion_id for promotion_obj",
+									"            promotion_obj.promotion_id = jsData.data.id;",
+									"",
+									"            pm.test(\"name of promotion correctly! \" + promotion_obj.name, function () {",
+									"                pm.expect(promotion_obj.name == jsData.data.name).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"code of promotion correctly! \" + promotion_obj.code, function () {",
+									"                pm.expect(promotion_obj.code == jsData.data.code).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"is_active of promotion correctly! \" + promotion_obj.is_active, function () {",
+									"                pm.expect(promotion_obj.is_active == jsData.data.is_active).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"is_rate of promotion correctly! \" + promotion_obj.is_rate, function () {",
+									"                pm.expect(promotion_obj.is_rate == jsData.data.is_rate).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"max_price_discount of promotion correctly! \" + promotion_obj.max_price_discount, function () {",
+									"                pm.expect(promotion_obj.max_price_discount == jsData.data.max_price_discount).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"min_order_price of promotion correctly! \" + promotion_obj.min_order_price, function () {",
+									"                pm.expect(promotion_obj.min_order_price == jsData.data.min_order_price).to.be.true;",
+									"            });",
+									"            ",
+									"            pm.test(\"value of promotion correctly! \" + promotion_obj.value, function () {",
+									"                pm.expect(promotion_obj.value == jsData.data.value).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"start_time of promotion correctly! \" + promotion_obj.start_time, function () {",
+									"                pm.expect(promotion_obj.start_time.substring(0,19) == jsData.data.start_time.substring(0,19)).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"end_time of promotion correctly! \" + promotion_obj.end_time, function () {",
+									"                pm.expect(promotion_obj.end_time.substring(0,19) == jsData.data.end_time.substring(0,19)).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"max_size_per_user of promotion correctly! \" + promotion_obj.max_size_per_user, function () {",
+									"                pm.expect(promotion_obj.max_size_per_user == jsData.data.max_size_per_user).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"is_public of promotion correctly! \" + promotion_obj.is_public, function () {",
+									"                pm.expect(promotion_obj.is_public == jsData.data.is_public).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"max_size of promotion correctly! \" + promotion_obj.max_size, function () {",
+									"                pm.expect(promotion_obj.max_size == jsData.data.max_size).to.be.true;",
+									"            });",
+									"",
+									"            testcase++;",
+									"            pm.environment.set(\"C-testcase\",testcase);",
+									"            pm.environment.set(\"C-promotion_obj\",promotion_obj);",
+									"            postman.setNextRequest(\"get_list_promotion\"); // get_list_promotion",
+									"            break;",
+									"    }",
+									"} else {",
+									"    pm.test(\"Status code is 200\", function () {",
+									"        pm.response.to.have.status(200);",
+									"    });",
+									"",
+									"    pm.test(\"System code is 102001\", function () {",
+									"        pm.expect(jsData.code).to.eql(102001);",
+									"    });",
+									"",
+									"    // update promotion_id for promotion_obj",
+									"    promotion_obj.promotion_id = jsData.data.id;",
+									"",
+									"    pm.test(\"name of promotion correctly! \" + promotion_obj.name, function () {",
+									"        pm.expect(promotion_obj.name == jsData.data.name).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"code of promotion correctly! \" + promotion_obj.code, function () {",
+									"        pm.expect(promotion_obj.code == jsData.data.code).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"is_active of promotion correctly! \" + promotion_obj.is_active, function () {",
+									"        pm.expect(promotion_obj.is_active == jsData.data.is_active).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"is_rate of promotion correctly! \" + promotion_obj.is_rate, function () {",
+									"        pm.expect(promotion_obj.is_rate == jsData.data.is_rate).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"max_price_discount of promotion correctly! \" + promotion_obj.max_price_discount, function () {",
+									"        pm.expect(promotion_obj.max_price_discount == jsData.data.max_price_discount).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"min_order_price of promotion correctly! \" + promotion_obj.min_order_price, function () {",
+									"        pm.expect(promotion_obj.min_order_price == jsData.data.min_order_price).to.be.true;",
+									"    });",
+									"    ",
+									"    pm.test(\"value of promotion correctly! \" + promotion_obj.value, function () {",
+									"        pm.expect(promotion_obj.value == jsData.data.value).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"start_time of promotion correctly! \" + promotion_obj.start_time, function () {",
+									"        pm.expect(promotion_obj.start_time == jsData.data.start_time).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"end_time of promotion correctly! \" + promotion_obj.end_time, function () {",
+									"        pm.expect(promotion_obj.end_time == jsData.data.end_time).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"max_size_per_user of promotion correctly! \" + promotion_obj.max_size_per_user, function () {",
+									"        pm.expect(promotion_obj.max_size_per_user == jsData.data.max_size_per_user).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"is_public of promotion correctly! \" + promotion_obj.is_public, function () {",
+									"        pm.expect(promotion_obj.is_public == jsData.data.is_public).to.be.true;",
+									"    });",
+									"",
+									"    pm.test(\"max_size of promotion correctly! \" + promotion_obj.max_size, function () {",
+									"        pm.expect(promotion_obj.max_size == jsData.data.max_size).to.be.true;",
+									"    });",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    pm.environment.set(\"C-promotion_obj\",promotion_obj);",
+									"    postman.setNextRequest(\"get_list_promotion\"); // get_list_promotion",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-order/api/v1/promotion/create",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-order",
+								"api",
+								"v1",
+								"promotion",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "edit_promotion",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let payload = {",
+									"    \"brand_name\": \"string\",",
+									"    \"images\": [",
+									"        \"string\"",
+									"    ]",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-order/api/v1/promotion/update/{{C-promotion_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-order",
+								"api",
+								"v1",
+								"promotion",
+								"update",
+								"{{C-promotion_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete_promotion",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-order/api/v1/promotion/delete/{{C-promotion_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-order",
+								"api",
+								"v1",
+								"promotion",
+								"delete",
+								"{{C-promotion_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							"// Thương hiệu"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":true,",
+					"    \"limit_page\":5,",
+					"    \"timeout\":12000, // miliseconds => timeout to call API",
+					"    \"is_buyer_gen\":false,",
+					"    \"is_use_the_same_product_price\":false,",
+					"    \"sku_type\":\"variant\", // variant, non_variant, book_product, mix",
+					"    \"total_sku\":3,",
+					"    \"none_uuid\":\"00000000-0000-0000-0000-000000000000\", // 8-4-4-4-12",
+					"    \"is_the_same_branch\":true, // true: branch tạo po và branch check là giống nhau, false: khác nhau",
+					"    \"test_payment_method\":\"va_galaxy\" // bank_transfer, viet_qr_pro_mb, va_galaxy",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    switch(request_api.method){",
+					"        case \"PUT\":",
+					"            curl = \"curl --location --request PUT \";",
+					"            break;",
+					"        case \"PATCH\":",
+					"            curl = \"curl --location --request PATCH \";",
+					"            break;",
+					"        case \"DELETE\":",
+					"            curl = \"curl --location --request DELETE \";",
+					"            break;",
+					"        default:",
+					"            curl = \"curl --location \";",
+					"            break;",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.length > 0){",
+					"            curl += \"? \";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\": case \"PATCH\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}

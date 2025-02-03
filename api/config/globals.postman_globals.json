@@ -1,0 +1,36 @@
+{
+	"id": "f515cd66-18d9-4a33-8879-3285e6a75aed",
+	"values": [
+		{
+			"key": "api_path",
+			"value": "api/v2/storefront",
+			"enabled": true
+		},
+		{
+			"key": "C-randomPhone",
+			"value": "",
+			"enabled": true
+		},
+		{
+			"key": "api_v1_path",
+			"value": "api/v1",
+			"enabled": true
+		},
+		{
+			"key": "PROSPECT_ID",
+			"value": "",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "local_url",
+			"value": "http://localhost:3000",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"name": "Globals",
+	"_postman_variable_scope": "globals",
+	"_postman_exported_at": "2024-07-06T04:26:43.135Z",
+	"_postman_exported_using": "Postman/11.2.34"
+}

@@ -1,0 +1,992 @@
+{
+	"info": {
+		"_postman_id": "feb1cb8f-58f1-430f-b2c2-db63f7a6933b",
+		"name": "fo_84_verify_to_create_new_placement",
+		"description": "### Testsuite: Verify to create new placement\n\n###### Testcase:\n\n1. Login with owner account\n    \n2. Get data\n    \n    1. Unhappy case (if list > 0): existed placement_name\n        \n    2. Product / placement / Get list placement => get total placement\n        \n3. Create placement\n    \n    1. Happy case\n        \n4. Check data\n    \n    1. Contact / Get list placement => increase 1, matching data\n        \n    2. Contact / Get placement detail => data correctly\n        \n\n###### Note:",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 84 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        postman.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-locale",
+								"value": "<string>",
+								"description": "locale",
+								"disabled": true
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"    postman.setNextRequest(\"get_current_business\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "get_current_business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"Current business info: \", jsData.data);",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.current_business.list_branch[0].id;",
+									"        pm.environment.set(\"C-branch_id\",branch_id);",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    let payment_method_list = [];",
+									"    for(let i in jsData.data.list_payment_method){",
+									"        if(jsData.data.list_payment_method[i].is_active){",
+									"            payment_method_list[payment_method_list.length] = jsData.data.list_payment_method[i];",
+									"        }",
+									"    }",
+									"",
+									"    pm.test(\"Got payment_method_list \" + payment_method_list.length, function () {",
+									"        pm.expect(payment_method_list.length > 0).to.be.true;",
+									"    });",
+									"    pm.environment.set(\"C-payment_method_list\",payment_method_list);",
+									"    ",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_placement\"); // get_list_placement",
+									"} else {",
+									"    console.log(\"Can't get business detail, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/business/get-current",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"business",
+								"get-current"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "placement",
+			"item": [
+				{
+					"name": "create_placement",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let placement_name = \"[API] placement \" + randomChars(8);",
+									"",
+									"let total_placements = pm.environment.get(\"C-total_placements\");",
+									"if(total_placements > 0){",
+									"    let case_ = pm.environment.get(\"C-case_\");",
+									"    if(!case_){",
+									"        case_ = 1;",
+									"        pm.environment.set(\"C-case_\",case_);",
+									"    }",
+									"",
+									"    switch(case_){",
+									"        case 1:",
+									"            placement_name = pm.environment.get(\"C-placement_name\");",
+									"            break;",
+									"        case 2:",
+									"        default:",
+									"            break;",
+									"    }",
+									"",
+									"    console.log(\"Testcase: \" + testcase + \".\" + case_);",
+									"} else {",
+									"    console.log(\"Testcase: \" + testcase);",
+									"}",
+									"",
+									"let payload = {",
+									"    \"placement_name\":placement_name,",
+									"    \"images\": []",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-placement_obj\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"debug: \",jsData);",
+									"",
+									"let placement_obj = pm.environment.get(\"C-placement_obj\");",
+									"",
+									"let total_placements = pm.environment.get(\"C-total_placements\");",
+									"if(total_placements > 0){",
+									"    let case_ = pm.environment.get(\"C-case_\");",
+									"",
+									"    switch(case_){",
+									"        case 1:",
+									"            case_++;",
+									"            pm.environment.set(\"C-case_\",case_);",
+									"",
+									"            pm.test(\"Status code is 400\", function () {",
+									"                pm.response.to.have.status(400);",
+									"            });",
+									"",
+									"            pm.test(\"System code is 104100\", function () {",
+									"                pm.expect(jsData.code).to.eql(104100);",
+									"            });",
+									"",
+									"            pm.test(\"error messaage - Thông tin bị trùng lập\", function () {",
+									"                pm.expect(jsData.message.content).to.eql(\"Thông tin bị trùng lập\");",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"create_placement\");",
+									"            break;",
+									"        case 2:",
+									"        default:",
+									"            pm.environment.unset(\"C-case_\");",
+									"            pm.test(\"Status code is 200\", function () {",
+									"                pm.response.to.have.status(200);",
+									"            });",
+									"",
+									"            pm.test(\"System code is 102001\", function () {",
+									"                pm.expect(jsData.code).to.eql(102001);",
+									"            });",
+									"",
+									"            // update placement_id for placement_obj",
+									"            placement_obj.placement_id = jsData.data.id;",
+									"",
+									"            pm.test(\"placement_name of placement correctly! \" + placement_obj.placement_name, function () {",
+									"                pm.expect(placement_obj.placement_name == jsData.data.placement_name).to.be.true;",
+									"            });",
+									"",
+									"            testcase++;",
+									"            pm.environment.set(\"C-testcase\",testcase);",
+									"            pm.environment.set(\"C-placement_obj\",placement_obj);",
+									"            postman.setNextRequest(\"get_list_placement\"); // get_list_placement",
+									"            break;",
+									"    }",
+									"} else {",
+									"    pm.test(\"Status code is 200\", function () {",
+									"        pm.response.to.have.status(200);",
+									"    });",
+									"",
+									"    pm.test(\"System code is 102001\", function () {",
+									"        pm.expect(jsData.code).to.eql(102001);",
+									"    });",
+									"",
+									"    // update placement_id for placement_obj",
+									"    placement_obj.placement_id = jsData.data.id;",
+									"",
+									"    pm.test(\"placement_name of placement correctly! \" + placement_obj.placement_name, function () {",
+									"        pm.expect(placement_obj.placement_name == jsData.data.placement_name).to.be.true;",
+									"    });",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    pm.environment.set(\"C-placement_obj\",placement_obj);",
+									"    postman.setNextRequest(\"get_list_placement\"); // get_list_placement",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/placement/create",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"placement",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "edit_placement",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let payload = {",
+									"    \"placement_name\": \"string\"",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/placement/update/{{C-placement_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"placement",
+								"update",
+								"{{C-placement_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete_placement",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/placement/delete/{{C-placement_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"placement",
+								"delete",
+								"{{C-placement_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_list_placement",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = 0, total_placements = 0;",
+									"    try {",
+									"        total_pages = jsData.meta.total_pages;",
+									"        total_placements = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Missing meta data\");",
+									"    }",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_placement, old_list_placement;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_placement = pm.environment.get(\"C-list_placement\");",
+									"            if(!list_placement){",
+									"                list_placement = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_placement = pm.environment.get(\"C-old_list_placement\");",
+									"            if(!old_list_placement){",
+									"                old_list_placement = pm.environment.get(\"C-list_placement\");",
+									"                pm.environment.unset(\"C-list_placement\");",
+									"                pm.environment.set(\"C-old_list_placement\",old_list_placement);",
+									"            }",
+									"",
+									"            list_placement = pm.environment.get(\"C-list_placement\");",
+									"            if(!list_placement){",
+									"                list_placement = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_placement[list_placement.length] = {",
+									"            \"placement_id\":jsData.data[item].id,",
+									"            \"placement_name\":jsData.data[item].placement_name,",
+									"            \"images\":jsData.data[item].images",
+									"        }",
+									"",
+									"    }",
+									"    pm.environment.set(\"C-list_placement\",list_placement);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all placement! \" + total_placements, function () {",
+									"                    pm.expect(total_placements > 0).to.be.true;",
+									"                });",
+									"                pm.environment.set(\"C-total_placements\",total_placements);",
+									"",
+									"                testcase++;",
+									"                if(jsData.data.length > 0){",
+									"                    pm.environment.set(\"C-placement_name\", jsData.data[0].placement_name)",
+									"                }",
+									"                pm.environment.set(\"C-testcase\",testcase);",
+									"                postman.setNextRequest(\"create_placement\"); // create_placement",
+									"                break;",
+									"            case 4:",
+									"                let placement_obj = pm.environment.get(\"C-placement_obj\");",
+									"                let old_total_placements = pm.environment.get(\"C-total_placements\");",
+									"",
+									"                pm.test(\"Total placement increase 1\", function () {",
+									"                    pm.expect(total_placements == old_total_placements + 1).to.be.true;",
+									"                });",
+									"",
+									"                let isFound = false;",
+									"                for(let i in list_placement){",
+									"                    if(list_placement[i].placement_id == placement_obj.placement_id){",
+									"                        isFound = true;",
+									"                        pm.test(\"placement_name of placement correctly! \" + placement_obj.placement_name, function () {",
+									"                            pm.expect(placement_obj.placement_name == list_placement[i].placement_name).to.be.true;",
+									"                        });",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found new placement\", function () {",
+									"                    pm.expect(isFound).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"get_placement_detail\"); //get_placement_detail",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more placement\");",
+									"        postman.setNextRequest(\"get_list_placement\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list placement, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/placement/get-list?page={{C-page}}&page_size={{C-page_size}}&search=&sort=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"placement",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_placement_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let placement_obj = pm.environment.get(\"C-placement_obj\");",
+									"let placement_id = placement_obj.placement_id;",
+									"console.log(\"view detail placement: \" + placement_id);",
+									"",
+									"pm.environment.set(\"C-placement_id\",placement_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"    let placement_obj = pm.environment.get(\"C-placement_obj\");",
+									"",
+									"    pm.test(\"placement_name of placement correctly! \" + placement_obj.placement_name, function () {",
+									"        pm.expect(placement_obj.placement_name == jsData.data.placement_name).to.be.true;",
+									"    });",
+									"",
+									"    console.log(\"--- End Testsuite 84 ---\");",
+									"    postman.setNextRequest(null);",
+									"} else {",
+									"    console.log(\"Can't get internal placement detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/placement/get-one/{{C-placement_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"placement",
+								"get-one",
+								"{{C-placement_id}}"
+							],
+							"query": [
+								{
+									"key": "branch_id",
+									"value": "{{C-business_id}}",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							"// Vị trí (kệ 1, dãy 1, ...)"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":true,",
+					"    \"limit_page\":5,",
+					"    \"timeout\":12000, // miliseconds => timeout to call API",
+					"    \"is_buyer_gen\":false,",
+					"    \"test_payment_method\":\"va_galaxy\" // bank_transfer, viet_qr_pro_mb, va_galaxy",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    switch(request_api.method){",
+					"        case \"PUT\":",
+					"            curl = \"curl --location --request PUT \";",
+					"            break;",
+					"        case \"PATCH\":",
+					"            curl = \"curl --location --request PATCH \";",
+					"            break;",
+					"        case \"DELETE\":",
+					"            curl = \"curl --location --request DELETE \";",
+					"            break;",
+					"        default:",
+					"            curl = \"curl --location \";",
+					"            break;",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.length > 0){",
+					"            curl += \"? \";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\": case \"PATCH\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}

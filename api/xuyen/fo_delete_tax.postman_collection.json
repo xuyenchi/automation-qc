@@ -1,0 +1,436 @@
+{
+	"info": {
+		"_postman_id": "d914ad15-5b8c-4202-b7fd-71e08390773a",
+		"name": "fo_delete_tax",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17535207",
+		"_collection_link": "https://warped-spaceship-122945.postman.co/workspace/Learn_API_Testing~870ffb9e-5962-40b3-8d91-530fbf3c4242/collection/17535207-d914ad15-5b8c-4202-b7fd-71e08390773a?action=share&source=collection_link&creator=17535207"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let responseJson = pm.response.json();",
+							"pm.environment.set(\"x-token\",responseJson.data.access_token);",
+							"//console.log(responseJson.data.access_token);",
+							"",
+							"pm.test('Verify Status code is 200', function () {",
+							"pm.response.to.have.status(200);",
+							"});",
+							"let testcase = 2;",
+							"pm.environment.set(\"testcase\", testcase);",
+							"postman.setNextRequest(\"get_list_tax\");"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let payload = {",
+							"    \"phone_number\": \"+84327007131\",",
+							"    \"email\": \"\",",
+							"    \"username\": \"\",",
+							"    \"encrypted_password\": \"0231e744220687628f15b0ea82e65b49936245fd6759eb1a62034f386e265707c80a\",",
+							"    \"device_info\": {",
+							"        \"id\": \"2e1d16e4-d289-4aba-8ddf-f625a0615b893\",",
+							"        \"name\": \"desktop\",",
+							"        \"os\": \"MacOS\"",
+							"    },",
+							"    \"app_version\": \"1.1.1\",",
+							"    \"platform_key\": \"desktop-web\"",
+							"}",
+							"pm.environment.set(\"payload\", JSON.stringify(payload));",
+							"",
+							"let testcase = 1;",
+							"pm.environment.set(\"testcase\", testcase);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,vi;q=0.8,eu;q=0.7"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					},
+					{
+						"key": "origin",
+						"value": "https://id-stg.finan.one"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://id-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "x-locale-code",
+						"value": "en_US"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "UTC+07:00"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{{payload}}"
+				},
+				"url": {
+					"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+					"host": [
+						"{{finone_url}}"
+					],
+					"path": [
+						"fo-user",
+						"api",
+						"v1",
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get_list_tax",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let responseData = pm.response.json();",
+							"let page = pm.environment.get(\"page\");",
+							"let total_page = responseData.meta.total_pages;",
+							"",
+							"console.log(\"total page:\" + total_page);",
+							"//lưu thông tin list tax",
+							"",
+							"let testcase = pm.environment.get(\"testcase\");",
+							"switch(testcase){",
+							"    case 2:",
+							"        let list_tax = pm.environment.get(\"list_tax\");",
+							"        if(!list_tax)",
+							"            list_tax = [];",
+							"        for(let i in responseData.data){",
+							"            list_tax.push",
+							"                ({",
+							"                    \"tax_id\": responseData.data[i].id,",
+							"                    \"tax_name\": responseData.data[i].name",
+							"                });",
+							"        }",
+							"        pm.environment.set(\"list_tax\", list_tax);",
+							"        pm.environment.set(\"tax_id\", list_tax[0].tax_id);",
+							"        console.log(\"id tax del:\",pm.environment.get(\"tax_id\" ));",
+							"",
+							"        if( page >= total_page){",
+							"            pm.environment.unset(\"page\");",
+							"            pm.environment.set(\"total_page\", total_page);",
+							"            pm.environment.set(\"total_item\", list_tax.length);",
+							"            console.log(\"my leng :\" + pm.environment.get(\"total_item\"));",
+							"           // pm.environment.unset(\"list_tax\");",
+							"            postman.setNextRequest(\"delete_tax\");",
+							"        }",
+							"        else{",
+							"            page++;",
+							"            pm.environment.set(\"page\", page);",
+							"            postman.setNextRequest(\"get_list_tax\");",
+							"        }",
+							"        break;",
+							"    case 4:",
+							"    console.log(\"Total tax item :\" + pm.environment.get(\"total_item\"));",
+							"        let isExistId = false;",
+							"        let index = -1;",
+							"        for(let i = 0; i < responseData.data.length; i++ ){",
+							"            if(pm.environment.get(\"tax_id\") == responseData.data[i].id)",
+							"            {",
+							"                isExistId = true;",
+							"                return;",
+							"            }",
+							"        }",
+							"",
+							"        if( page >= total_page || isExistId == false){",
+							"                pm.environment.unset(\"page\");",
+							"                // let old_list_tax = pm.environment.get(\"list_tax\");",
+							"",
+							"            pm.test(\"Check total tax decrease 1 item\", function () {",
+							"                pm.expect(pm.environment.get(\"total_item\") - 1 == responseData.meta.total_rows);",
+							"            });",
+							"",
+							"            pm.test(\"Check total id doesn't exist\", function () {",
+							"                pm.expect(isExistId).to.be.false;",
+							"            });",
+							"                pm.environment.unset(\"list_tax\");",
+							"                pm.environment.unset(\"total_item\");",
+							"                postman.setNextRequest(\"\");",
+							"            }",
+							"        else{",
+							"                page++;",
+							"                pm.environment.set(\"page\", page);",
+							"                postman.setNextRequest(\"get_list_tax\");",
+							"        }",
+							"    break;",
+							"    default:",
+							"}",
+							"",
+							"",
+							"",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let page = pm.environment.get(\"page\");",
+							"let page_size = 10;",
+							"",
+							"if(!page){",
+							"    page = 1;",
+							"}",
+							"",
+							"pm.environment.set(\"page\", page);",
+							"pm.environment.set(\"page_size\", page_size);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\""
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "Asia/Ho_Chi_Minh"
+					},
+					{
+						"key": "x-platform-key",
+						"value": "desktop-web"
+					},
+					{
+						"key": "x-locale-code",
+						"value": "en_US"
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer {{x-token}}"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Referer",
+						"value": "https://pos-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					}
+				],
+				"url": {
+					"raw": "{{finone_url}}/fo-business/api/v1/tax/get-list?page={{page}}&page_size={{page_size}}&business_id=20",
+					"host": [
+						"{{finone_url}}"
+					],
+					"path": [
+						"fo-business",
+						"api",
+						"v1",
+						"tax",
+						"get-list"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "{{page}}"
+						},
+						{
+							"key": "page_size",
+							"value": "{{page_size}}"
+						},
+						{
+							"key": "business_id",
+							"value": "20"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "delete_tax",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"let testcase = 4;",
+							"pm.environment.set(\"testcase\", testcase);",
+							"postman.setNextRequest(\"get_list_tax\");"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,vi;q=0.8,eu;q=0.7"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer {{x-token}}"
+					},
+					{
+						"key": "origin",
+						"value": "https://pos-stg.finan.one"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://pos-stg.finan.one/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"macOS\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "x-locale-code",
+						"value": "en_US"
+					},
+					{
+						"key": "x-location-timezone",
+						"value": "Asia/Ho_Chi_Minh"
+					},
+					{
+						"key": "x-platform-key",
+						"value": "desktop-web"
+					}
+				],
+				"url": {
+					"raw": "{{finone_url}}/fo-business/api/v1/tax/delete/{{tax_id}}",
+					"host": [
+						"{{finone_url}}"
+					],
+					"path": [
+						"fo-business",
+						"api",
+						"v1",
+						"tax",
+						"delete",
+						"{{tax_id}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -1,0 +1,3493 @@
+{
+	"info": {
+		"_postman_id": "cbc82fc2-22b5-460e-a630-dc2b0711ee1f",
+		"name": "fo_118_verify_to_create_transfer_v2",
+		"description": "### Testsuite: Verify to create transfer\n\n###### Testcase:\n\n1. Login f1\n    \n    1. Login\n        \n    2. whitelist / create white list ip\n        \n2. Get data\n    \n    1. account/ get_list_va -> get account id thụ hưởng\n        \n    2. payout/ get_list_payout -> get total payput trước khi create\n        \n3. Create payout\n    \n    1. payout/ create_payout\n        \n    2. payout/ verify_otp (try 5 lần -> otp block)\n        \n4. Get data\n    \n    1. payout/ get_list_payout -> get total tăng lên 1 và get info payout\n        \n    2. payput/ get_payout_detail\n        \n    3. account/ get_list_va -> get balance tăng giảm sau khi payout\n        \n\n###### Note:\n\n- chưa đưa luồng transaction vào,\n    \n- get list va ở stg số balance bên đầu finsys và book chưa giống nhau vì finsys lấy số dư thật của account,\n    \n- ở stg payout external luôn fail (BE confirm)\n    \n- acc wkt một số VA shinhan đang truyền sai master account acc 1AM nên thanh toán internal transfer fail. có thể dùng acc sau để internal transfer\n    \n    - \"beneficiary_account_name\": \"WKT TEST TIEN\", \"beneficiary_account_number\": \"WKT110000040\",",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17535207",
+		"_collection_link": "https://warped-spaceship-122945.postman.co/workspace/Learn_API_Testing~870ffb9e-5962-40b3-8d91-530fbf3c4242/collection/17535207-cbc82fc2-22b5-460e-a630-dc2b0711ee1f?action=share&source=collection_link&creator=17535207"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = 1;",
+									"console.log(\"-------- Start Testsuite 118 --------\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"if(configs.is_use_email){",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": \"\",",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"} else {",
+									"    payload = {",
+									"        \"app_version\": \"1.0.0\",",
+									"        \"device_info\": {",
+									"            \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"            \"name\": \"IP name\",",
+									"            \"os\": \"iphone\"",
+									"        },",
+									"        \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"        \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"        \"phone_number\": pm.environment.get(\"SER-phone_number\"),",
+									"        \"platform_key\": platform[0]",
+									"    }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            pm.environment.set(\"C-userToken\",userToken);",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        postman.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    const jsData = pm.response.json();",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"    let user_id = jsData.data.user_id;",
+									"    console.log(\"user_id: \" + user_id);",
+									"    pm.environment.set(\"C-user_id\",user_id);",
+									"",
+									"    switch(configs.feature){",
+									"        case \"create_client\":",
+									"            pm.execution.setNextRequest(\"create_client\");",
+									"            break;",
+									"        case \"edit_client\":",
+									"            if(pm.environment.get(\"C-default_client\") != null){",
+									"                pm.execution.setNextRequest(\"update_client\");",
+									"            } else {",
+									"                console.log(\"missing default_client\");",
+									"                pm.execution.setNextRequest(null);",
+									"            }",
+									"            break;",
+									"        case \"create_va\":",
+									"            if(pm.environment.get(\"C-default_client\") != null){",
+									"                pm.execution.setNextRequest(\"get_master_account\");",
+									"            } else {",
+									"                console.log(\"missing default_client\");",
+									"                pm.execution.setNextRequest(null);",
+									"            }",
+									"            break;",
+									"        case \"create_external_transfer\":",
+									"        case \"create_internal_transfer\":",
+									"        default:",
+									"            if(pm.environment.get(\"C-default_client\") != null){",
+									"                pm.execution.setNextRequest(\"get_list_va\");",
+									"            } else {",
+									"                console.log(\"missing default_client\");",
+									"                pm.execution.setNextRequest(null);",
+									"            }",
+									"    }",
+									"    pm.execution.setNextRequest(\"get_current_business\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "get_current_business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"Current business info: \", jsData.data);",
+									"    let branch_id = null;",
+									"    try {",
+									"        branch_id = jsData.data.current_business.list_branch[0].id;",
+									"        pm.environment.set(\"C-branch_id\",branch_id);",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"",
+									"    let payment_method = null;",
+									"    let list_payment_method = [];",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let test_payment_method = configs.test_payment_method;",
+									"    try {",
+									"        switch(test_payment_method){",
+									"            case \"viet_qr_pro_mb\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].key == test_payment_method){ ",
+									"                        payment_method = jsData.data.list_payment_method[i];",
+									"                        break;",
+									"                    }",
+									"                }",
+									"                break;",
+									"            case \"va_galaxy\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].bank_account.account_number.includes(\"SBB\")){ ",
+									"                        list_payment_method[list_payment_method.length] = jsData.data.list_payment_method[i];",
+									"                    }",
+									"                }",
+									"                payment_method = list_payment_method[getRandomInt(0,list_payment_method.length -1)];",
+									"                break;",
+									"            case \"bank_transfer\":",
+									"                for(let i in jsData.data.list_payment_method){",
+									"                    if(jsData.data.list_payment_method[i].key == test_payment_method){ ",
+									"                        list_payment_method[list_payment_method.length] = jsData.data.list_payment_method[i];",
+									"                    }",
+									"                }",
+									"                payment_method = list_payment_method[getRandomInt(0,list_payment_method.length -1)];",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow\");",
+									"                break;",
+									"        }",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"    pm.environment.set(\"C-viet_qr_payment\",payment_method);",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"    ",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_va\"); // get_list_clients",
+									"} else {",
+									"    console.log(\"Can't get business detail, end test\", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/business/get-current",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"business",
+								"get-current"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "whitelist",
+			"item": [
+				{
+					"name": "Create Whitelist",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-business-id",
+								"value": "{{C-business_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-user-id",
+								"value": "10672a52-1cb0-42c3-9557-aab9a63c53a6",
+								"type": "text"
+							},
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"ip_address\": \"10.100.54.217\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/whitelist",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"whitelist"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Whitelist",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-business-id",
+								"value": "{{C-business_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-user-id",
+								"value": "10672a52-1cb0-42c3-9557-aab9a63c53a6",
+								"type": "text"
+							},
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n      \"ip_address\": \"118.69.69.144\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/whitelist/ec0034d1-b7ea-4d84-aa16-8ca772fb1d81",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"whitelist",
+								"ec0034d1-b7ea-4d84-aa16-8ca772fb1d81"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get List Whitelist",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-business-id",
+								"value": "{{C-business_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-user-id",
+								"value": "10672a52-1cb0-42c3-9557-aab9a63c53a6",
+								"type": "text"
+							},
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"ip_address\": \"172\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/whitelist",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"whitelist"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get White List Detail",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-business-id",
+								"value": "{{C-business_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-user-id",
+								"value": "10672a52-1cb0-42c3-9557-aab9a63c53a6",
+								"type": "text"
+							},
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/whitelist/660e7497-dbde-41e9-bee8-9a79d7268e2c",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"whitelist",
+								"660e7497-dbde-41e9-bee8-9a79d7268e2c"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete White List",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-business-id",
+								"value": "{{C-business_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-user-id",
+								"value": "10672a52-1cb0-42c3-9557-aab9a63c53a6",
+								"type": "text"
+							},
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/whitelist/660e7497-dbde-41e9-bee8-9a79d7268e2c",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"whitelist",
+								"660e7497-dbde-41e9-bee8-9a79d7268e2c"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "check_ip",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api-dev.finan.one/api/v1/get-client-ip",
+							"protocol": "https",
+							"host": [
+								"api-dev",
+								"finan",
+								"one"
+							],
+							"path": [
+								"api",
+								"v1",
+								"get-client-ip"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "account",
+			"item": [
+				{
+					"name": "get_list_va",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");\r",
+									"console.log(\"Testcase: \" + testcase);\r",
+									"\r",
+									"let page = pm.environment.get(\"C-page\");\r",
+									"let page_size = pm.environment.get(\"C-page_size\");\r",
+									"if(!page){\r",
+									"    page = 1;\r",
+									"    pm.environment.set(\"C-page\",page);\r",
+									"\r",
+									"    page_size = 50;\r",
+									"    pm.environment.set(\"C-page_size\",page_size);\r",
+									"}\r",
+									"\r",
+									"// Example secret key for signing, replace with your actual secret\r",
+									"const secretKey = pm.environment.get(\"C-client_key\");\r",
+									"console.log(\"secretKey: \" + secretKey);\r",
+									"\r",
+									"// function ()\r",
+									"let today = new Date();\r",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;\r",
+									"console.log(\"timestamp: \" + timestamp);\r",
+									"\r",
+									"// Get method, URL, body, and timestamp\r",
+									"const method = pm.request.method;\r",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");\r",
+									"url = url.replace(\"{{C-page}}\",page);\r",
+									"url = url.replace(\"{{C-page_size}}\",page_size);\r",
+									"\r",
+									"const body = pm.request.body ? pm.request.body.raw : '';\r",
+									"// const timestamp = pm.request.headers.get('x-timestamp');\r",
+									"\r",
+									"// Concatenate the components to form the message to sign\r",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;\r",
+									"console.log(\"Generated message: \", message);\r",
+									"\r",
+									"// Generate SHA256 signature\r",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);\r",
+									"console.log(\"Generated signature: \", signature);\r",
+									"\r",
+									"pm.environment.set(\"C-timestamp\",timestamp);\r",
+									"\r",
+									"// Add the signature to the headers\r",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));",
+									"",
+									"let jsData = pm.response.json();",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"",
+									"    let page = pm.environment.get(\"C-page\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    console.log(\"Testcase\", testcase);",
+									"    switch (testcase) {",
+									"        case 2:",
+									"            let account_wkt = pm.environment.get(\"X-account_wkt\");",
+									"            if (!account_wkt)",
+									"                account_wkt = [];",
+									"            let list_va = pm.environment.get(\"X-list_va\");",
+									"            if (!list_va)",
+									"                list_va = [];",
+									"            for (let i in jsData.data) {",
+									"",
+									"                if (jsData.data[i].bank_code == \"SHBVN\" && jsData.data[i].account_number != \"WKT036110000002\" && jsData.data[i].account_number.length == 12)//WKT036110000002 fix đây là acc có tiền để chuyển đc",
+									"                {",
+									"                    list_va.push(jsData.data[i]);",
+									"                }",
+									"",
+									"            }",
+									"            for (let i in jsData.data) {",
+									"",
+									"                if (jsData.data[i].account_number == \"WKT036110000002\") {",
+									"                    account_wkt.push(jsData.data[i]);",
+									"                    pm.environment.set(\"X-account_wkt\", account_wkt);",
+									"                }",
+									"            }",
+									"            pm.environment.set(\"X-list_va\", list_va);",
+									"            console.log(\"acc wkt\", account_wkt);",
+									"",
+									"            if (page >= total_pages) {",
+									"                pm.environment.unset(\"C-page\");",
+									"                pm.environment.unset(\"C-page_size\");",
+									"                //console.log(\"----list va----\", list_va);",
+									"",
+									"                if (list_va.length > 0) {",
+									"                    console.log(\"Đủ điều kiện thực hiện internal transfer\");",
+									"                    let va_obj = list_va[list_func.getRandomInt(0, list_va.length - 1)];",
+									"                    pm.environment.set(\"X-va_obj\", va_obj);",
+									"                    console.log(\"va_obj\", va_obj);",
+									"                    console.log(\"Balance wkt\", account_wkt[0].balance_current_amount);",
+									"                    console.log(\"Balance beneficiary account\", va_obj.balance_current_amount);",
+									"                    pm.execution.setNextRequest(\"get_list_payout\");//",
+									"                } else {",
+									"                    console.log(\"Vui lòng tạo thêm VA để thực hiện internal transfer\");",
+									"                    pm.environment.setNextRequest(\"\");",
+									"                }",
+									"",
+									"            }",
+									"            else {",
+									"                page++;",
+									"                pm.environment.set(\"C-page\", page);",
+									"                pm.execution.setNextRequest(\"get_list_va\");",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            let payout_obj = pm.environment.get(\"X-payout_obj\");",
+									"            let account_wkt_old = pm.environment.get(\"X-account_wkt\");",
+									"            let account_beneficiary_old = pm.environment.get(\"X-va_obj\");",
+									"",
+									"            let account_wkt_new = pm.environment.get(\"X-account_wkt_new\");",
+									"            if (!account_wkt_new)",
+									"                account_wkt_new = [];",
+									"            let account_beneficiary_new = pm.environment.get(\"X-account_beneficiary_new\");",
+									"            if (!account_beneficiary_new)",
+									"                account_beneficiary_new = [];",
+									"",
+									"            for (let i in jsData.data) {",
+									"                if (jsData.data[i].bank_code == \"SHBVN\" && jsData.data[i].account_number == \"WKT036110000002\") {",
+									"                    account_wkt_new.push(jsData.data[i]);",
+									"                    pm.environment.set(\"X-account_wkt_new\", account_wkt_new);",
+									"                }",
+									"                if (jsData.data[i].bank_code == \"SHBVN\" && jsData.data[i].account_number == account_beneficiary_old.account_number) {",
+									"                    account_beneficiary_new.push(jsData.data[i]);",
+									"                    pm.environment.set(\"X-account_beneficiary_new\", account_beneficiary_new);",
+									"                }",
+									"            }",
+									"            console.log(\"acc_wkt_old\", account_wkt_old);",
+									"            console.log(\"acc beneficiary old\", account_beneficiary_old);",
+									"            console.log(\"acc_wkt_new\", account_wkt_new);",
+									"            console.log(\"acc beneficiary new\", account_beneficiary_new);",
+									"            if (page >= total_pages) {",
+									"                pm.environment.unset(\"C-page\");",
+									"                pm.environment.unset(\"C-page_size\");",
+									"                console.log(\"Balance wkt new\", account_wkt_new[0].balance_current_amount);",
+									"                console.log(\"Balance beneficiary account new\", account_beneficiary_new[0].balance_current_amount);",
+									"                switch (configs.transfer_type) {",
+									"                    case \"internal\":",
+									"                        //kieemr tra so tien 1 dau va 1 tang 1 giam",
+									"                        pm.test(\"Account wkt decrease \" + payout_obj.amount, () => {",
+									"                            pm.expect(account_wkt.balance_current_amount - payout_obj.amount).to.eql(account_wkt_new[0].balance_current_amount);",
+									"                        });",
+									"",
+									"                        pm.test(\"Account beneficiary increase \" + payout_obj.amount, () => {",
+									"                            pm.expect(account_beneficiary_old.balance_current_amount - payout_obj.amount).to.eql(account_beneficiary_new[0].balance_current_amount);",
+									"                        });",
+									"                        break;",
+									"                    case \"external\":",
+									"                        pm.test(\"Account wkt decrease \" + payout_obj.amount, () => {",
+									"                            pm.expect(account_wkt.balance_current_amount - payout_obj.amount).to.eql(account_wkt_new[0].balance_current_amount);",
+									"                        });",
+									"                        break;",
+									"                    default:",
+									"                        console.log(\"Transfer type not suport\");",
+									"                        break;",
+									"                }",
+									"                pm.execution.setNextRequest(\"\");",
+									"            }",
+									"            else {",
+									"                page++;",
+									"                pm.environment.set(\"C-page\", page);",
+									"                pm.execution.setNextRequest(\"get_list_va\");",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Testcase not define flow\");",
+									"            break;",
+									"    }",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/bank-accounts?page={{C-page}}&page_size={{C-page_size}}",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bank-accounts"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "client",
+			"item": [
+				{
+					"name": "get_list_clients",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");\r",
+									"console.log(\"Testcase: \" + testcase);\r",
+									"\r",
+									"let page = pm.environment.get(\"C-page\");\r",
+									"let page_size = pm.environment.get(\"C-page_size\");\r",
+									"if(!page){\r",
+									"    page = 1;\r",
+									"    pm.environment.set(\"C-page\",page);\r",
+									"\r",
+									"    page_size = 20;\r",
+									"    pm.environment.set(\"C-page_size\",page_size);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let page = pm.environment.get(\"C-page\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"",
+									"    let list_clients, old_list_clients;",
+									"    // console.log(\"debug total record in page: \" + jsData.data.length);",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_clients = pm.environment.get(\"C-list_clients\");",
+									"            if(!list_clients){",
+									"                list_clients = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_clients = pm.environment.get(\"C-old_list_clients\");",
+									"            if(!old_list_clients){",
+									"                old_list_clients = pm.environment.get(\"C-list_clients\");",
+									"                pm.environment.unset(\"C-list_clients\");",
+									"                pm.environment.set(\"C-old_list_clients\",old_list_clients);",
+									"            }",
+									"",
+									"            list_clients = pm.environment.get(\"C-list_clients\");",
+									"            if(!list_clients){",
+									"                list_clients = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_clients[list_clients.length] = {",
+									"            \"client_id\":jsData.data[item].id,",
+									"            \"business_id\":jsData.data[item].business_id,",
+									"            \"client_secret\":jsData.data[item].client_secret,",
+									"            \"name\":jsData.data[item].name,",
+									"            \"owner_id\":jsData.data[item].owner_id,",
+									"            \"webhook_url\":jsData.data[item].webhook_url,",
+									"            \"is_active\":jsData.data[item].is_active,",
+									"            \"created_at\":jsData.data[item].created_at,",
+									"            \"updated_at\":jsData.data[item].updated_at",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_clients\",list_clients);",
+									"",
+									"    if(page >= total_pages || page >= configs.limit_page){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                let client_obj = null;",
+									"                try {",
+									"                    client_obj = list_clients[list_func.getRandomInt(0,list_clients.length - 1)];",
+									"                } catch {",
+									"                    console.log(\"Have nothing client\");",
+									"                }",
+									"                pm.test(\"Got client_obj\", function () {",
+									"                    pm.expect(client_obj != null).to.be.true;",
+									"                });",
+									"",
+									"                if(client_obj != null){",
+									"                    pm.environment.set(\"C-client_obj\",client_obj);",
+									"                    console.log(\"Action with client: \", client_obj);",
+									"                    pm.environment.set(\"C-client_key\",client_obj.client_secret);",
+									"                    pm.environment.set(\"C-client_id\",client_obj.client_id);",
+									"",
+									"                    pm.execution.setNextRequest(\"get_list_transaction\"); // get_list_transaction",
+									"                } else {",
+									"                    pm.execution.setNextRequest(null);",
+									"                }",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                pm.execution.setNextRequest(null);",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more clients\");",
+									"        postman.setNextRequest(\"get_list_clients\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list client, end test\", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/client/get-clients",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"client",
+								"get-clients"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ledger_coa",
+			"item": [
+				{
+					"name": "get_list_coa",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let coa = [];",
+									"    try {",
+									"        for(let i in jsData.data){",
+									"            let sub_group_i = [];",
+									"            for(let j in jsData.data[i].sub_group){",
+									"                let accounts_j = [];",
+									"                for(let k in jsData.data[i].sub_group[j].accounts){",
+									"                    accounts_j[accounts_j.length] = {",
+									"                        \"account_name\":jsData.data[i].sub_group[j].accounts[k].account_name,",
+									"                        \"account_id\":jsData.data[i].sub_group[j].accounts[k].id,",
+									"                        \"business_id\":jsData.data[i].sub_group[j].accounts[k].business_id,",
+									"                        \"account_source\":jsData.data[i].sub_group[j].accounts[k].account_source,",
+									"                        \"total_balance_amount\":jsData.data[i].sub_group[j].accounts[k].total_balance_amount,",
+									"                        \"account_type\":jsData.data[i].sub_group[j].accounts[k].account_type,",
+									"                        \"account_number\":jsData.data[i].sub_group[j].accounts[k].account_number,",
+									"                        \"coa_type\":jsData.data[i].sub_group[j].accounts[k].coa_type,",
+									"                        \"status\":jsData.data[i].sub_group[j].accounts[k].status,",
+									"                        \"parent_account_id\":jsData.data[i].sub_group[j].accounts[k].parent_account_id,",
+									"                        \"description\":jsData.data[i].sub_group[j].accounts[k].description,",
+									"                        \"open_amount\":jsData.data[i].sub_group[j].accounts[k].open_amount,",
+									"                        \"currency\":jsData.data[i].sub_group[j].accounts[k].currency",
+									"                    }",
+									"",
+									"                    if(jsData.data[i].sub_group[j].accounts[k].account_key == \"A3001\"){",
+									"                        pm.environment.set(\"C-account_receivable\",jsData.data[i].sub_group[j].accounts[k]);",
+									"                    } else if(jsData.data[i].sub_group[j].accounts[k].account_key == \"D1004\"){",
+									"                        pm.environment.set(\"C-account_fee\",jsData.data[i].sub_group[j].accounts[k]);",
+									"                    } else if(jsData.data[i].sub_group[j].accounts[k].account_key == \"C3001\"){",
+									"                        pm.environment.set(\"C-account_uncategory_income\",jsData.data[i].sub_group[j].accounts[k]);",
+									"                    }",
+									"                }",
+									"",
+									"                sub_group_i[sub_group_i.length] = {",
+									"                    \"sub_group_name\":jsData.data[i].sub_group[j].name,",
+									"                    \"sub_group_id\":jsData.data[i].sub_group[j].id,",
+									"                    \"sub_group_value\":jsData.data[i].sub_group[j].value,",
+									"                    \"sub_group_description\":jsData.data[i].sub_group[j].description,",
+									"                    \"accounts\":accounts_j",
+									"                }",
+									"            }",
+									"",
+									"            coa[coa.length] = {",
+									"                \"group_name\":jsData.data[i].name,",
+									"                \"value\":jsData.data[i].value,",
+									"                \"index\":jsData.data[i].index,",
+									"                \"sub_group\":sub_group_i",
+									"            }",
+									"        }",
+									"    } catch {",
+									"        console.log(\"can't get all account in coa\");",
+									"    }",
+									"",
+									"    pm.test(\"Got coa of this user's business\", function () {",
+									"        pm.expect(coa.length > 0).to.be.true;",
+									"    });",
+									"",
+									"    if(coa.length > 0){",
+									"        // console.log(\"coa: \", coa);",
+									"        pm.environment.set(\"C-coa\",coa);",
+									"        let list_debit_account = [];",
+									"        let list_credit_account = [];",
+									"        /**",
+									"         * lấy những account_id và phân loại thành debit/credit",
+									"         * - credit: tài khoản (only cash & bank)",
+									"         * - debit: phân loại (all)",
+									"         */ ",
+									"        for(let i in coa){",
+									"            for(let j in coa[i].sub_group){",
+									"                for(let k in coa[i].sub_group[j].accounts){",
+									"                    // if(coa[i].group_name == \"income\" || coa[i].group_name == \"expense\"){ // mở điều kiện này khi cần debug tạo tnx có report cassh-flow",
+									"                        list_debit_account[list_debit_account.length] = coa[i].sub_group[j].accounts[k];",
+									"                    // }",
+									"                    if(coa[i].sub_group[j].sub_group_value == \"cash_and_bank\"){ ",
+									"                        // console.log(\"debug: \", coa[i].sub_group[j].accounts[k]);",
+									"                        if(coa[i].sub_group[j].accounts[k].account_name.includes(\"[API]\")){ // do 1 số name bị null (dev chưa validation dẫn đến report sẽ không biết của account nào - report ko trả về id)",
+									"                            list_credit_account[list_credit_account.length] = coa[i].sub_group[j].accounts[k];",
+									"                        }",
+									"                    }",
+									"                }",
+									"            }",
+									"        }",
+									"",
+									"        // console.log(\"list_debit_account: \", list_debit_account);",
+									"        // console.log(\"list_credit_account: \", list_credit_account);",
+									"",
+									"        pm.environment.set(\"C-list_debit_account\",list_debit_account);",
+									"        pm.environment.set(\"C-list_credit_account\",list_credit_account);",
+									"        ",
+									"        postman.setNextRequest(\"get_list_ledger_txn\"); // get_list_ledger_txn",
+									"    } else {",
+									"        console.log(\"Can't get list internal account, end test \");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list internal account, end test \", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}​/fo-ledger/api/v1/account/get-list-setting?business_id={{C-business_id}}&coa_type=",
+							"host": [
+								"{{finone_url}}​"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"account",
+								"get-list-setting"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "coa_type",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ledger_transaction",
+			"item": [
+				{
+					"name": "get_list_ledger_txn",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}",
+									"",
+									"if(testcase == 4 && page == 1){",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    if(configs.test_payment_method == \"viet_qr_pro_mb\"){",
+									"        // setTimeout(function(){}, configs.timeout); => tự hook ko cần timeout nữa",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let total_ledger_tnx = null;",
+									"    try {",
+									"        total_ledger_tnx = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Can't get total tnx\");",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got total_ledger_tnx \" + total_ledger_tnx, function () {",
+									"                pm.expect(total_ledger_tnx > 0).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-total_ledger_tnx\",total_ledger_tnx);",
+									"",
+									"            postman.setNextRequest(\"get_list_posting\"); // get_list_posting",
+									"            break;",
+									"        case 4:",
+									"            let page = pm.environment.get(\"C-page\");",
+									"            let list_ledger_tnx = pm.environment.get(\"C-list_ledger_tnx\");",
+									"            if(!list_ledger_tnx){",
+									"                list_ledger_tnx = [];",
+									"            }",
+									"            for(let i in jsData.data){",
+									"                list_ledger_tnx.push({",
+									"                    \"id\":jsData.data[i].id,",
+									"                    \"payment\":jsData.data[i].payment,",
+									"                    \"payment_id\":jsData.data[i].payment_id,",
+									"                    \"is_txn_bank\":jsData.data[i].is_txn_bank,",
+									"                    \"object_id\":jsData.data[i].object_id,",
+									"                    \"object_type\":jsData.data[i].object_type,",
+									"                    \"txn_type\":jsData.data[i].txn_type,",
+									"                    \"amount\":jsData.data[i].amount,",
+									"                    \"value_at\":jsData.data[i].value_at,",
+									"                    \"account_id\":jsData.data[i].account_id,",
+									"                    \"account_alias_id\":jsData.data[i].account_alias_id,",
+									"                    \"category_id\":jsData.data[i].category_id,",
+									"                    \"short_desc\":jsData.data[i].short_desc,",
+									"                    \"is_internal_transfer\":jsData.data[i].is_internal_transfer,",
+									"                    \"fee_amount\":jsData.data[i].fee_amount,",
+									"                    \"tax_amount\":jsData.data[i].tax_amount",
+									"                });",
+									"            }",
+									"            pm.environment.set(\"C-list_ledger_tnx\",list_ledger_tnx);",
+									"",
+									"            if(page >= jsData.meta.total_pages || page >= configs.limit_page){",
+									"                pm.environment.unset(\"C-page\");",
+									"",
+									"                let old_total_ledger_tnx = pm.environment.get(\"C-total_ledger_tnx\");",
+									"                ",
+									"                if(configs.transfer_type == \"internal\"){",
+									"                    pm.test(\"total_ledger_tnx increase 2\", function () {",
+									"                        pm.expect(total_ledger_tnx).to.eql(old_total_ledger_tnx + 2);",
+									"                    });",
+									"                } else {",
+									"                    pm.test(\"total_ledger_tnx increase 1\", function () {",
+									"                        pm.expect(total_ledger_tnx).to.eql(old_total_ledger_tnx + 1);",
+									"                    });",
+									"                }",
+									"",
+									"                // let payment_obj = pm.environment.get(\"C-payment_obj\");",
+									"                // console.log(\"debug payment_obj.tnx: \", payment_obj.tnx);",
+									"",
+									"                // let isFound = false;",
+									"                // for(let i in list_ledger_tnx){",
+									"                //     if(payment_obj.payment_info.payment_note == list_ledger_tnx[i].short_desc && list_ledger_tnx[i].is_txn_bank){ // list_ledger_tnx[i].description == payment_obj.tnx.description => hiện tại ko ghi discription cho tnx bank nữa",
+									"                //         payment_obj.tnx.tnx_id = list_ledger_tnx[i].id;",
+									"                //         // payment_obj.tnx.payment_id = list_ledger_tnx[i].payment_id;",
+									"                //         pm.environment.set(\"C-payment_obj.tnx\",payment_obj.tnx);",
+									"                //         isFound = true;",
+									"                //         pm.test(\"amount of tnx correctly! \" + payment_obj.tnx.amount, function () {",
+									"                //             pm.expect(payment_obj.tnx.amount == list_ledger_tnx[i].amount).to.be.true;",
+									"                //         });",
+									"                //         break;",
+									"                //     }",
+									"                // }",
+									"",
+									"                // pm.test(\"Found new tnx\", function () {",
+									"                //     pm.expect(isFound).to.be.true;",
+									"                // });",
+									"",
+									"                // pm.environment.set(\"C-payment_obj\",payment_obj);",
+									"                postman.setNextRequest(\"get_list_posting\"); // get_list_posting",
+									"            } else {",
+									"                page++;",
+									"                pm.environment.set(\"C-page\",page);",
+									"",
+									"                console.log(\"view next page (\" + page + \") to get more transaction\");",
+									"                postman.setNextRequest(\"get_list_ledger_txn\");",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list tnx, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/transaction/get-list?page={{C-page}}&page_size={{C-page_size}}&sort&is_txn_bank=true",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"transaction",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "sort",
+									"value": null
+								},
+								{
+									"key": "is_txn_bank",
+									"value": "true"
+								},
+								{
+									"key": "txn_type",
+									"value": "in",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.request.headers.add({",
+							" key: \"authorization\",",
+							" value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"});",
+							"",
+							"pm.request.headers.add({",
+							" key: \"Content-Type\",",
+							" value: \"application/json\"",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "ledger_posting",
+			"item": [
+				{
+					"name": "get_list_posting",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * hiện tại page_size limit 20 (performance issue)",
+									" * => chỉ quét tối đa 5 page, hạn chế broken log file",
+									" */",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let total_records = jsData.meta.total_rows;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_posting, old_list_posting;",
+									"    // console.log(\"debug total record in page: \" + jsData.data.length);",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_posting = pm.environment.get(\"C-list_posting\");",
+									"            if(!list_posting){",
+									"                list_posting = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_posting = pm.environment.get(\"C-old_list_posting\");",
+									"            if(!old_list_posting){",
+									"                old_list_posting = pm.environment.get(\"C-list_posting\");",
+									"                pm.environment.unset(\"C-list_posting\");",
+									"                pm.environment.set(\"C-old_list_posting\",old_list_posting);",
+									"            }",
+									"",
+									"            list_posting = pm.environment.get(\"C-list_posting\");",
+									"            if(!list_posting){",
+									"                list_posting = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_posting[list_posting.length] = {",
+									"            \"posting_id\":jsData.data[item].id,",
+									"            \"account_id\":jsData.data[item].account_id,",
+									"            \"account_alias_id\":jsData.data[item].account_alias_id,",
+									"            \"amount\":jsData.data[item].amount,",
+									"            \"branch_id\":jsData.data[item].branch_id,",
+									"            \"created_at\":jsData.data[item].created_at,",
+									"            \"currency\":jsData.data[item].currency,",
+									"            \"deleted_at\":jsData.data[item].deleted_at,",
+									"            \"is_credit\":jsData.data[item].is_credit,",
+									"            \"is_final_status\":jsData.data[item].is_final_status,",
+									"            \"object_ref_id\":jsData.data[item].object_ref_id,",
+									"            \"object_ref_type\":jsData.data[item].object_ref_type, // product (line_item), tax, discount",
+									"            \"object_id\":jsData.data[item].object_id,",
+									"            \"object_type\":jsData.data[item].object_type,",
+									"            // \"value_at\":jsData.data[item].value_at,",
+									"            \"short_desc\":jsData.data[item].short_desc",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_posting\",list_posting);",
+									"",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    if(page >= total_pages || page >= configs.limit_page){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        let old_total_records;",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all posting! \" + total_records, function () {",
+									"                    pm.expect(total_records > 0).to.be.true;",
+									"                });",
+									"                pm.environment.set(\"C-total_posting\",total_records);",
+									"",
+									"                testcase++;",
+									"                pm.environment.set(\"C-testcase\",testcase);",
+									"                if(configs.transfer_type == \"external\"){",
+									"                    pm.execution.setNextRequest(\"create_external_trasfer\"); // create_external_trasfer",
+									"                } else {",
+									"                     pm.execution.setNextRequest(\"create_internal_trasfer\"); // create_internal_trasfer",
+									"                }",
+									"                break;",
+									"            case 4:",
+									"                let payment_obj = pm.environment.get(\"C-payment_obj\");",
+									"                console.log(\"payment_obj: \", payment_obj);",
+									"                let tnx_obj = payment_obj.tnx;",
+									"                let va_obj = pm.environment.get(\"C-va_obj\");",
+									"",
+									"                let account_uncategory_income = pm.environment.get(\"C-account_uncategory_income\");",
+									"",
+									"                old_total_records = pm.environment.get(\"C-total_posting\");",
+									"                let foundAll = false, count = 0;",
+									"                if(configs.transfer_type == \"internal\"){",
+									"                    pm.test(\"total_posting increase 4\", function () {",
+									"                        pm.expect(total_records).to.eql(old_total_records + 4);",
+									"                    });",
+									"",
+									"                    if(total_records == old_total_records + 4){",
+									"                        for(let i in list_posting){",
+									"                            if(list_posting[i].object_type == \"transaction\" && list_posting[i].object_id == tnx_obj.tnx_id){",
+									"                                // console.log(\"list_posting[i]: \", list_posting[i]);",
+									"                                if(list_posting[i].is_credit){",
+									"                                    count++;",
+									"                                    pm.test(\"Found account_uncategory_income for credit\", function () {",
+									"                                        console.log(\"account_uncategory_income: \" + account_uncategory_income.id);",
+									"                                        console.log(\"act: \" + list_posting[i].account_id);",
+									"                                        pm.expect(list_posting[i].account_id == account_uncategory_income.id).to.be.true;",
+									"                                    });",
+									"",
+									"                                    pm.test(\"--- amount correctly \" + tnx_obj.amount, function () {",
+									"                                        console.log(\"actual: \" + list_posting[i].amount);",
+									"                                        pm.expect(list_posting[i].amount.toFixed(2) == tnx_obj.amount.toFixed(2)).to.be.true;",
+									"                                    });",
+									"                                } else {",
+									"                                    count++;",
+									"                                    if(configs.test_payment_method == \"mb\"){",
+									"                                        pm.test(\"Found account va for debit\", function () {",
+									"                                            console.log(\"account_debit: \" + va_obj.account_alias_id);",
+									"                                            console.log(\"act: \" + list_posting[i].account_alias_id);",
+									"                                            pm.expect(list_posting[i].account_alias_id == va_obj.account_alias_id).to.be.true;",
+									"                                        });",
+									"                                    } else {",
+									"                                        pm.test(\"Found account va for debit\", function () {",
+									"                                            console.log(\"account_debit: \" + va_obj.account_id);",
+									"                                            console.log(\"act: \" + list_posting[i].account_id);",
+									"                                            pm.expect(list_posting[i].account_id == va_obj.account_id).to.be.true;",
+									"                                        });",
+									"                                    }",
+									"",
+									"                                    pm.test(\"--- amount correctly \" + tnx_obj.amount, function () {",
+									"                                        console.log(\"actual: \" + list_posting[i].amount);",
+									"                                        pm.expect(list_posting[i].amount.toFixed(2) == tnx_obj.amount.toFixed(2)).to.be.true;",
+									"                                    });",
+									"                                }",
+									"",
+									"                                if(count == 2){",
+									"                                    foundAll = true;",
+									"                                    break;",
+									"                                }",
+									"                            }",
+									"                        }",
+									"                    }",
+									"                } else {",
+									"                    pm.test(\"total_posting increase 2\", function () {",
+									"                        pm.expect(total_records).to.eql(old_total_records + 2);",
+									"                    });",
+									"",
+									"                    if(total_records == old_total_records + 2){",
+									"                        for(let i in list_posting){",
+									"                            if(list_posting[i].object_type == \"transaction\" && list_posting[i].object_id == tnx_obj.tnx_id){",
+									"                                // console.log(\"list_posting[i]: \", list_posting[i]);",
+									"                                if(list_posting[i].is_credit){",
+									"                                    count++;",
+									"                                    pm.test(\"Found account_uncategory_income for credit\", function () {",
+									"                                        console.log(\"account_uncategory_income: \" + account_uncategory_income.id);",
+									"                                        console.log(\"act: \" + list_posting[i].account_id);",
+									"                                        pm.expect(list_posting[i].account_id == account_uncategory_income.id).to.be.true;",
+									"                                    });",
+									"",
+									"                                    pm.test(\"--- amount correctly \" + tnx_obj.amount, function () {",
+									"                                        console.log(\"actual: \" + list_posting[i].amount);",
+									"                                        pm.expect(list_posting[i].amount.toFixed(2) == tnx_obj.amount.toFixed(2)).to.be.true;",
+									"                                    });",
+									"                                } else {",
+									"                                    count++;",
+									"                                    if(configs.test_payment_method == \"mb\"){",
+									"                                        pm.test(\"Found account va for debit\", function () {",
+									"                                            console.log(\"account_debit: \" + va_obj.account_alias_id);",
+									"                                            console.log(\"act: \" + list_posting[i].account_alias_id);",
+									"                                            pm.expect(list_posting[i].account_alias_id == va_obj.account_alias_id).to.be.true;",
+									"                                        });",
+									"                                    } else {",
+									"                                        pm.test(\"Found account va for debit\", function () {",
+									"                                            console.log(\"account_debit: \" + va_obj.account_id);",
+									"                                            console.log(\"act: \" + list_posting[i].account_id);",
+									"                                            pm.expect(list_posting[i].account_id == va_obj.account_id).to.be.true;",
+									"                                        });",
+									"                                    }",
+									"",
+									"                                    pm.test(\"--- amount correctly \" + tnx_obj.amount, function () {",
+									"                                        console.log(\"actual: \" + list_posting[i].amount);",
+									"                                        pm.expect(list_posting[i].amount.toFixed(2) == tnx_obj.amount.toFixed(2)).to.be.true;",
+									"                                    });",
+									"                                }",
+									"",
+									"                                if(count == 2){",
+									"                                    foundAll = true;",
+									"                                    break;",
+									"                                }",
+									"                            }",
+									"                        }",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found all posting\", function () {",
+									"                    pm.expect(foundAll).to.be.true;",
+									"                });",
+									"",
+									"                console.log(\"-------- End Testsuite 118 --------\");",
+									"                pm.execution.setNextRequest(null);",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more posting\");",
+									"        postman.setNextRequest(\"get_list_posting\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list posting, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/posting/get-list?business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&search=&sort=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"posting",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "transaction",
+			"item": [
+				{
+					"name": "get_list_transaction",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");\r",
+									"console.log(\"Testcase: \" + testcase);\r",
+									"\r",
+									"// if(testcase == 4){\r",
+									"//     setTimeout(function(){}, 5000);\r",
+									"// }\r",
+									"\r",
+									"let page = pm.environment.get(\"C-page\");\r",
+									"let page_size = pm.environment.get(\"C-page_size\");\r",
+									"if(!page){\r",
+									"    page = 1;\r",
+									"    pm.environment.set(\"C-page\",page);\r",
+									"\r",
+									"    page_size = 20;\r",
+									"    pm.environment.set(\"C-page_size\",page_size);\r",
+									"}\r",
+									"\r",
+									"// Example secret key for signing, replace with your actual secret\r",
+									"const secretKey = pm.environment.get(\"C-client_key\");\r",
+									"console.log(\"secretKey: \" + secretKey);\r",
+									"\r",
+									"// function ()\r",
+									"let today = new Date();\r",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;\r",
+									"console.log(\"timestamp: \" + timestamp);\r",
+									"\r",
+									"// Get method, URL, body, and timestamp\r",
+									"const method = pm.request.method;\r",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");\r",
+									"url = url.replace(\"{{C-page}}\",page);\r",
+									"url = url.replace(\"{{C-page_size}}\",page_size);\r",
+									"\r",
+									"const body = pm.request.body ? pm.request.body.raw : '';\r",
+									"// const timestamp = pm.request.headers.get('x-timestamp');\r",
+									"\r",
+									"// Concatenate the components to form the message to sign\r",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;\r",
+									"console.log(\"Generated message: \", message);\r",
+									"\r",
+									"// Generate SHA256 signature\r",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);\r",
+									"console.log(\"Generated signature: \", signature);\r",
+									"\r",
+									"pm.environment.set(\"C-timestamp\",timestamp);\r",
+									"\r",
+									"// Add the signature to the headers\r",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let page = pm.environment.get(\"C-page\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"",
+									"    let list_tnx, old_list_tnx;",
+									"    // console.log(\"debug total record in page: \" + jsData.data.length);",
+									"    switch(testcase){",
+									"        case 2:",
+									"            list_tnx = pm.environment.get(\"C-list_tnx\");",
+									"            if(!list_tnx){",
+									"                list_tnx = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_list_tnx = pm.environment.get(\"C-old_list_tnx\");",
+									"            if(!old_list_tnx){",
+									"                old_list_tnx = pm.environment.get(\"C-list_tnx\");",
+									"                pm.environment.unset(\"C-list_tnx\");",
+									"                pm.environment.set(\"C-old_list_tnx\",old_list_tnx);",
+									"            }",
+									"",
+									"            list_tnx = pm.environment.get(\"C-list_tnx\");",
+									"            if(!list_tnx){",
+									"                list_tnx = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        list_tnx[list_tnx.length] = {",
+									"            \"transaction_id\":jsData.data[item].transaction_id,",
+									"            \"transaction_number\":jsData.data[item].transaction_number,",
+									"            \"created_at\":jsData.data[item].created_at,",
+									"            \"type\":jsData.data[item].type,",
+									"            \"bank_remark\":jsData.data[item].bank_remark,",
+									"            \"amount\":jsData.data[item].amount,",
+									"            \"additional_info\":jsData.data[item].additional_info",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_tnx\",list_tnx);",
+									"",
+									"    if(page >= total_pages || page >= configs.limit_page){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        let payment_obj = pm.environment.get(\"C-payment_obj\");",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got total tnx!!! \" + list_tnx.length, function () {",
+									"                    pm.expect(list_tnx.length > 0).to.be.true;",
+									"                });",
+									"",
+									"                pm.execution.setNextRequest(\"get_list_va\"); // get_list_va",
+									"                break;",
+									"            case 4:",
+									"                if(configs.transfer_type == \"external\"){",
+									"                    // pm.test(\"total tnx increase 1\", function () {",
+									"                    //     pm.expect(list_tnx.length).to.eql(old_list_tnx.length + 1);",
+									"                    // });",
+									"                    // console.log(\"payment_obj: \", payment_obj);",
+									"                    // console.log(\"list_tnx[0]: \", list_tnx[0]);",
+									"",
+									"                    let isFound = false, tnx_obj = null;",
+									"                    for(let i in list_tnx){",
+									"                        if(list_tnx[i].type == \"DR\" && list_tnx[i].transaction_number == payment_obj.transaction_number){",
+									"                            isFound = true;",
+									"                            tnx_obj = list_tnx[i];",
+									"                            // bank_remark",
+									"                            pm.test(\"bank_remark is \" + payment_obj.note, function () {",
+									"                                pm.expect(list_tnx[i].bank_remark).to.eql(payment_obj.note);",
+									"                            });",
+									"",
+									"                            // amount",
+									"                            pm.test(\"amount is \" + payment_obj.amount, function () {",
+									"                                pm.expect(list_tnx[i].amount).to.eql(payment_obj.amount);",
+									"                            });",
+									"",
+									"                            // created_at",
+									"                            let today = new Date();",
+									"                            let value_at = today.toISOString();",
+									"                            payment_obj.value_at = value_at;",
+									"                            pm.test(\"created_at is \" + value_at, function () {",
+									"                                console.log(\"act: \" + list_tnx[i].created_at);",
+									"                                pm.expect(list_tnx[i].created_at.substring(0,17)).to.eql(value_at.substring(0,17));",
+									"                            });",
+									"                            break;",
+									"                        }",
+									"                    }",
+									"",
+									"                    pm.test(\"Found new tnx\", function () {",
+									"                        pm.expect(isFound).to.be.true;",
+									"                    });",
+									"",
+									"                    if(isFound){",
+									"                        pm.environment.set(\"C-payment_obj\",payment_obj);",
+									"                        pm.environment.set(\"C-tnx_obj\",tnx_obj);",
+									"                        pm.execution.setNextRequest(\"get_transaction_detail\"); // get_transaction_detail",
+									"                    } else {",
+									"                        // ko tạo tnx thì ko cần check detail",
+									"                        pm.execution.setNextRequest(null);",
+									"                    }",
+									"                } else {",
+									"                    // pm.test(\"total tnx increase 2\", function () {",
+									"                    //     pm.expect(list_tnx.length).to.eql(old_list_tnx.length + 2);",
+									"                    // });",
+									"",
+									"                    let isFoundIn = false, tnx_obj_in = null;",
+									"                    let isFoundOut = false, tnx_obj_out = null;",
+									"                    for(let i in list_tnx){",
+									"                        if(\"transaction_number\" in list_tnx[i].additional_info){",
+									"                            if(list_tnx[i].additional_info.transaction_number == payment_obj.provider_transaction_number){",
+									"                                if(list_tnx[i].type == \"DR\"){",
+									"                                    isFoundOut = true;",
+									"                                    tnx_obj_out = list_tnx[i];",
+									"                                    console.log(\"Found DR ==============\");",
+									"                                } else {",
+									"                                    isFoundIn = true;",
+									"                                    tnx_obj_in = list_tnx[i];",
+									"                                    console.log(\"Found CR ==============\");",
+									"                                }",
+									"",
+									"                                // bank_remark",
+									"                                pm.test(\"bank_remark is \" + payment_obj.note, function () {",
+									"                                    pm.expect(list_tnx[i].bank_remark).to.eql(payment_obj.note);",
+									"                                });",
+									"",
+									"                                // amount",
+									"                                pm.test(\"amount is \" + payment_obj.amount, function () {",
+									"                                    pm.expect(list_tnx[i].amount).to.eql(payment_obj.amount);",
+									"                                });",
+									"",
+									"                                // created_at",
+									"                                let today = new Date();",
+									"                                let value_at = today.toISOString();",
+									"                                payment_obj.value_at = value_at;",
+									"                                pm.test(\"created_at is \" + value_at, function () {",
+									"                                    console.log(\"act: \" + list_tnx[i].created_at);",
+									"                                    pm.expect(list_tnx[i].created_at.substring(0,17)).to.eql(value_at.substring(0,17));",
+									"                                });",
+									"                            }",
+									"                        }",
+									"",
+									"                        if(isFoundIn && isFoundOut) break;",
+									"                    }",
+									"",
+									"                    pm.test(\"Found new isFoundIn\", function () {",
+									"                        pm.expect(isFoundIn).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"Found new isFoundOut\", function () {",
+									"                        pm.expect(isFoundOut).to.be.true;",
+									"                    });",
+									"",
+									"                    if(isFoundOut && isFoundIn){",
+									"                        pm.environment.set(\"C-payment_obj\",payment_obj);",
+									"                        // pm.environment.set(\"C-tnx_obj\",tnx_obj);",
+									"",
+									"                        // console.log(\"-------- End Testsuite 118 --------\");",
+									"                        pm.execution.setNextRequest(\"get_list_ledger_txn\"); // get_transaction_detail, get_list_ledger_txn",
+									"                    } else {",
+									"                        // ko tạo tnx thì ko cần check detail",
+									"                        pm.execution.setNextRequest(null);",
+									"                    }",
+									"                }",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                pm.execution.setNextRequest(null);",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more tnx\");",
+									"        postman.setNextRequest(\"get_list_transaction\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list va, end test\", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}2"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/transaction/get-list?page={{C-page}}&page_size={{C-page_size}}",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transaction",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_transaction_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");\r",
+									"console.log(\"Testcase: \" + testcase);\r",
+									"\r",
+									"let tnx_obj = pm.environment.get(\"C-tnx_obj\");\r",
+									"let tnx_number = tnx_obj.transaction_number;\r",
+									"pm.environment.set(\"C-tnx_number\",tnx_number);\r",
+									"\r",
+									"// Example secret key for signing, replace with your actual secret\r",
+									"const secretKey = pm.environment.get(\"C-client_key\");\r",
+									"console.log(\"secretKey: \" + secretKey);\r",
+									"\r",
+									"// function ()\r",
+									"let today = new Date();\r",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;\r",
+									"console.log(\"timestamp: \" + timestamp);\r",
+									"\r",
+									"// Get method, URL, body, and timestamp\r",
+									"const method = pm.request.method;\r",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");\r",
+									"url = url.replace(\"{{C-tnx_number}}\",tnx_number);\r",
+									"const body = pm.request.body ? pm.request.body.raw : '';\r",
+									"// const timestamp = pm.request.headers.get('x-timestamp');\r",
+									"\r",
+									"// Concatenate the components to form the message to sign\r",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;\r",
+									"console.log(\"Generated message: \", message);\r",
+									"\r",
+									"// Generate SHA256 signature\r",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);\r",
+									"console.log(\"Generated signature: \", signature);\r",
+									"\r",
+									"pm.environment.set(\"C-timestamp\",timestamp);\r",
+									"\r",
+									"// Add the signature to the headers\r",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let payment_obj = pm.environment.get(\"C-payment_obj\");",
+									"",
+									"    switch(testcase){",
+									"        case 4:",
+									"            console.log(\"debug: \", jsData);",
+									"            // type",
+									"            pm.test(\"type is DR\", function () {",
+									"                pm.expect(jsData.data.type).to.eql(\"DR\");",
+									"            });",
+									"",
+									"            // bank_remark",
+									"            pm.test(\"bank_remark is \" + payment_obj.note, function () {",
+									"                pm.expect(jsData.data.bank_remark).to.eql(payment_obj.note);",
+									"            });",
+									"",
+									"            // amount",
+									"            pm.test(\"amount is \" + payment_obj.amount, function () {",
+									"                pm.expect(jsData.data.amount).to.eql(payment_obj.amount);",
+									"            });",
+									"",
+									"            // created_at",
+									"            pm.test(\"created_at is \" + payment_obj.value_at, function () {",
+									"                console.log(\"act: \" + jsData.data.created_at);",
+									"                pm.expect(jsData.data.created_at.substring(0,17)).to.eql(payment_obj.value_at.substring(0,17));",
+									"            });",
+									"",
+									"            pm.execution.setNextRequest(\"get_list_ledger_txn\"); //get_list_ledger_txn",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            pm.execution.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get payment detail, end test\", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/transaction/detail/{{C-tnx_number}}",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transaction",
+								"detail",
+								"{{C-tnx_number}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "transfer",
+			"item": [
+				{
+					"name": "get_transfer_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");\r",
+									"console.log(\"Testcase: \" + testcase);\r",
+									"\r",
+									"let payment_obj = pm.environment.get(\"C-payment_obj\");\r",
+									"let transfer_id = payment_obj.request_obj.id;\r",
+									"pm.environment.set(\"C-transfer_id\",transfer_id);\r",
+									"\r",
+									"// Example secret key for signing, replace with your actual secret\r",
+									"const secretKey = pm.environment.get(\"C-client_key\");\r",
+									"console.log(\"secretKey: \" + secretKey);\r",
+									"\r",
+									"// function ()\r",
+									"let today = new Date();\r",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;\r",
+									"console.log(\"timestamp: \" + timestamp);\r",
+									"\r",
+									"// Get method, URL, body, and timestamp\r",
+									"const method = pm.request.method;\r",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");\r",
+									"url = url.replace(\"{{C-transfer_id}}\",transfer_id);\r",
+									"const body = pm.request.body ? pm.request.body.raw : '';\r",
+									"// const timestamp = pm.request.headers.get('x-timestamp');\r",
+									"\r",
+									"// Concatenate the components to form the message to sign\r",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;\r",
+									"console.log(\"Generated message: \", message);\r",
+									"\r",
+									"// Generate SHA256 signature\r",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);\r",
+									"console.log(\"Generated signature: \", signature);\r",
+									"\r",
+									"pm.environment.set(\"C-timestamp\",timestamp);\r",
+									"\r",
+									"// Add the signature to the headers\r",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let payment_obj = pm.environment.get(\"C-payment_obj\");",
+									"    let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"",
+									"    switch(testcase){",
+									"        case 4:",
+									"            console.log(\"debug: \", jsData);",
+									"            // // business_id",
+									"            // let business_id = pm.environment.get(\"C-business_id\");",
+									"            // pm.test(\"business_id is \" + business_id, function () {",
+									"            //     console.log(\"act: \" + jsData.data.business_id);",
+									"            //     pm.expect(business_id == jsData.data.business_id).to.be.true;",
+									"            // });",
+									"",
+									"            // // account_id",
+									"            // pm.test(\"account_id is \" + va_obj.va_id, function () {",
+									"            //     pm.expect(jsData.data.account_id).to.eql(va_obj.va_id);",
+									"            // });",
+									"",
+									"            // // request_amount",
+									"            // pm.test(\"request_amount is \" + payment_obj.payment_info.request_amount, function () {",
+									"            //     pm.expect(jsData.data.request_amount).to.eql(payment_obj.payment_info.request_amount);",
+									"            // });",
+									"",
+									"            // // note",
+									"            // pm.test(\"note is \" + payment_obj.payment_info.payment_note, function () {",
+									"            //     pm.expect(jsData.data.note).to.eql(payment_obj.payment_info.payment_note);",
+									"            // });",
+									"",
+									"            // other data check later",
+									"",
+									"            pm.execution.setNextRequest(\"get_list_va\"); // get_list_transaction, get_list_va",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            pm.execution.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get payment detail, end test\", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/transfer/detail/{{C-transfer_id}}",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transfer",
+								"detail",
+								"{{C-transfer_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "payout",
+			"item": [
+				{
+					"name": "get_list_payout",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"\r",
+									"let testcase = pm.environment.get(\"C-testcase\");\r",
+									"console.log(\"Testcase: \" + testcase);\r",
+									"\r",
+									"let page = pm.environment.get(\"C-page\");\r",
+									"let page_size = pm.environment.get(\"C-page_size\");\r",
+									"if(!page){\r",
+									"    page = 1;\r",
+									"    pm.environment.set(\"C-page\",page);\r",
+									"\r",
+									"    page_size = 50;\r",
+									"    pm.environment.set(\"C-page_size\",page_size);\r",
+									"}\r",
+									"\r",
+									"// Example secret key for signing, replace with your actual secret\r",
+									"const secretKey = pm.environment.get(\"C-client_key\");\r",
+									"console.log(\"secretKey: \" + secretKey);\r",
+									"\r",
+									"// function ()\r",
+									"let today = new Date();\r",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;\r",
+									"console.log(\"timestamp: \" + timestamp);\r",
+									"\r",
+									"// Get method, URL, body, and timestamp\r",
+									"const method = pm.request.method;\r",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");\r",
+									"url = url.replace(\"{{C-page}}\",page);\r",
+									"url = url.replace(\"{{C-page_size}}\",page_size);\r",
+									"\r",
+									"const body = pm.request.body ? pm.request.body.raw : '';\r",
+									"// const timestamp = pm.request.headers.get('x-timestamp');\r",
+									"\r",
+									"// Concatenate the components to form the message to sign\r",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;\r",
+									"console.log(\"Generated message: \", message);\r",
+									"\r",
+									"// Generate SHA256 signature\r",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);\r",
+									"console.log(\"Generated signature: \", signature);\r",
+									"\r",
+									"pm.environment.set(\"C-timestamp\",timestamp);\r",
+									"\r",
+									"// Add the signature to the headers\r",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if (pm.response.code == 200) {",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let page = pm.environment.get(\"C-page\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    //console.log(\"debug: \", jsData);",
+									"    console.log(\"Testcase\", testcase);",
+									"",
+									"    switch (testcase) {",
+									"        case 2:",
+									"",
+									"            let list_payout_old = pm.environment.get(\"X-list_payout_old\");",
+									"            if (!list_payout_old)",
+									"                list_payout_old = [];",
+									"            for (let i in jsData.data) {",
+									"                list_payout_old.push(jsData.data[i]);",
+									"            }",
+									"            pm.environment.set(\"X-list_payout_old\", list_payout_old);",
+									"            if (page >= total_pages) {",
+									"                pm.environment.unset(\"C-page\");",
+									"                pm.environment.unset(\"C-page_size\");",
+									"                let total_payout_request_old = list_payout_old.length;",
+									"",
+									"                pm.environment.set(\"X-total_payout_old\", total_payout_request_old);",
+									"                console.log(\"total_payout_request_old\", pm.environment.get(\"X-total_payout_old\"));",
+									"                pm.execution.setNextRequest(\"create_payout\");",
+									"            }",
+									"            else {",
+									"                page++;",
+									"                pm.environment.set(\"C-page\", page);",
+									"                pm.execution.setNextRequest(\"get_list_payout\");",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            let payout_obj = pm.environment.get(\"X-payout_obj\");",
+									"            console.log(\"payout_obj\", payout_obj);",
+									"            let list_payout_new = pm.environment.get(\"X-list_payout_new\");",
+									"            if (!list_payout_new)",
+									"                list_payout_new = [];",
+									"            for (let i in jsData.data) {",
+									"                list_payout_new.push(jsData.data[i]);",
+									"            }",
+									"            pm.environment.set(\"X-list_payout_new\", list_payout_new);",
+									"",
+									"            for (let i in jsData.data) {",
+									"                if (jsData.data[i].id == payout_obj.create_info.data.id) {",
+									"                    pm.test(\"Status is correct success : \" + jsData.data[i].status, () => {",
+									"                        pm.expect(jsData.data[i].status).to.eql(\"success\");",
+									"                    });",
+									"",
+									"                    pm.test(\"Remaining try id is correct \" + jsData.data[i].remaining_try, () => {",
+									"                        pm.expect(jsData.data[i].remaining_try).to.eql(payout_obj.create_info.remaining_try);",
+									"                    });",
+									"                }",
+									"            }",
+									"            if (page >= total_pages) {",
+									"                pm.environment.unset(\"C-page\");",
+									"                pm.environment.unset(\"C-page_size\");",
+									"                let total_payout_request_new = list_payout_new.length;",
+									"                console.log(\"total_payout_request_new\", total_payout_request_new);",
+									"                //pm.environment.set(\"X-total_payout_old\", total_payout_request_old);",
+									"                pm.test(\"After create payout total payout increase 1 item\", () => {",
+									"                    pm.expect(total_payout_request_new).to.eql(pm.environment.get(\"X-total_payout_old\") + 1);",
+									"                })",
+									"                //kiểm tra thông tin payout đã tạo chính xác",
+									"                let payout_obj = pm.environment.get(\"X-payout_obj\");",
+									"",
+									"                pm.execution.setNextRequest(\"get_payout_detail\");",
+									"            }",
+									"            else {",
+									"                page++;",
+									"                pm.environment.set(\"C-page\", page);",
+									"                pm.execution.setNextRequest(\"get_list_payout\");",
+									"            }",
+									"            break;",
+									"        default:",
+									"            break;",
+									"    }",
+									"",
+									"",
+									"} else {",
+									"    console.log(\"Can't get payout list, end test\", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text"
+							},
+							{
+								"key": "x-real-ip",
+								"value": "118.69.69.144",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/payouts?page={{C-page}}&page_size={{C-page_size}}",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"payouts"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_payout",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");\r",
+									"testcase++;\r",
+									"console.log(\"Testcase: \" + testcase);\r",
+									"pm.environment.set(\"C-testcase\", testcase);\r",
+									"\r",
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));\r",
+									"\r",
+									"// Example secret key for signing, replace with your actual secret\r",
+									"const secretKey = pm.environment.get(\"C-client_key\");\r",
+									"console.log(\"secretKey: \" + secretKey);\r",
+									"\r",
+									"let today = new Date();\r",
+									"let timestamp = Math.floor(today.getTime() / 1000) + 30;\r",
+									"console.log(\"timestamp: \" + timestamp);\r",
+									"\r",
+									"// Get method, URL, body, and timestamp\r",
+									"const method = pm.request.method;\r",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\", \"\");\r",
+									"// console.log(\" ======== url: \", url);\r",
+									"\r",
+									"let va_obj = pm.environment.get(\"X-va_obj\");\r",
+									"let configs = pm.environment.get(\"C-configs\");\r",
+									"let reference_id = list_func.randomChars(\"10\").toUpperCase();\r",
+									"let body;\r",
+									"switch (configs.transfer_type) {\r",
+									"    case \"internal\":\r",
+									"        body = {\r",
+									"            \"account_id\": \"3ade4211-a5b5-4843-aacb-8c6fc4db5c47\",// account id của tk WKT036110000002\r",
+									"            \"amount\": list_func.getRandomInt(100000, 500000),\r",
+									"            \"beneficiary_account_name\": va_obj.account_name,\r",
+									"            \"beneficiary_account_number\": va_obj.account_number,\r",
+									"            \"beneficiary_bank_id\": \"616\", //shinhan 616, MB 311\r",
+									"            \"currency\": \"VND\",\r",
+									"            \"reference_id\": reference_id,\r",
+									"            \"description\": \"Thuc hien internal transfer cho DH \" + reference_id\r",
+									"        }\r",
+									"        break;\r",
+									"    case \"external\":\r",
+									"        body = {\r",
+									"            \"account_id\": \"3ade4211-a5b5-4843-aacb-8c6fc4db5c47\",// account id của tk WKT036110000002\r",
+									"            \"amount\": list_func.getRandomInt(100000, 500000),\r",
+									"            \"beneficiary_account_name\": \"ACCOUNT 22550369\",\r",
+									"            \"beneficiary_account_number\": \"5729334769767\", // account test MB ở stg\r",
+									"            \"beneficiary_bank_id\": \"311\",//shinhan 616, MB 311\r",
+									"            \"currency\": \"VND\",\r",
+									"            \"reference_id\": reference_id,\r",
+									"            \"description\": \"Thuc hien external transfer cho DH \" + reference_id\r",
+									"        }\r",
+									"    default:\r",
+									"        console.log(\"Transfer type is not supported\");\r",
+									"        break;\r",
+									"}\r",
+									"\r",
+									"body = JSON.stringify(body);\r",
+									"\r",
+									"// Concatenate the components to form the message to sign\r",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;\r",
+									"console.log(\"Generated message: \", message);\r",
+									"\r",
+									"// Generate SHA256 signature\r",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);\r",
+									"console.log(\"Generated signature: \", signature);\r",
+									"\r",
+									"pm.environment.set(\"C-timestamp\", timestamp);\r",
+									"\r",
+									"// Add the signature to the headers\r",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });\r",
+									"\r",
+									"console.log(\"payload: \", JSON.parse(body));\r",
+									"pm.environment.set(\"C-payload\", body);\r",
+									"pm.environment.set(\"X-payout_obj\", JSON.parse(body));\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if (pm.response.code == 200) {",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"debug: \", jsData);",
+									"",
+									"    // update payment data",
+									"    let payout_obj = pm.environment.get(\"X-payout_obj\");",
+									"    payout_obj.create_info = jsData;",
+									"    pm.environment.set(\"X-payout_obj\", payout_obj);",
+									"",
+									"    let payout_id = jsData.data.id;",
+									"    pm.environment.set(\"X-payout_id\", payout_id);",
+									"",
+									"    pm.test(\"Payout status is success\", () => {",
+									"        pm.expect(jsData.data.status).to.eql(\"waiting_confirm\");",
+									"    })",
+									"",
+									"    // pm.test(\"Reference id response is not null\", () => {",
+									"    //     pm.expect(jsData.data.reference_id).not.eql(\"\");",
+									"    // });",
+									"    pm.test(\"Remaining try is 5 times\", () => {",
+									"        pm.expect(jsData.data.remaining_try).to.eql(5);",
+									"    })",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\", testcase);",
+									"    pm.execution.setNextRequest(\"get_list_email_for_an_account\"); // verify_otp",
+									"} else {",
+									"    console.log(\"Can't create payout, end test\", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/payouts",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"payouts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_list_email_for_an_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.set(\"inbox\",\"chaulth\");",
+									"pm.environment.set(\"token\",\"4675ee5fca294748ab0b0d724701bb87\");",
+									"pm.environment.set(\"domain\",\"finanteam.testinator.com\");",
+									"setTimeout(function(){}, 10000); // should timeout 10s => need apply best practice timeout",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let email_obj = null;",
+									"    for(let i in jsData.msgs){",
+									"        if(jsData.msgs[i].seconds_ago <= 1000){ // cho phép độ trễ 10s",
+									"            email_obj = jsData.msgs[i];",
+									"            break;",
+									"        } ",
+									"    }",
+									"",
+									"    pm.test(\"Got email_obj\", function () {",
+									"        pm.expect(email_obj != null).to.be.true;",
+									"    });",
+									"",
+									"    pm.environment.set(\"C-email_obj\",email_obj);",
+									"",
+									"    if(email_obj != null){",
+									"        pm.execution.setNextRequest(\"get_email_detail\"); // get_email_detail",
+									"    } else {",
+									"        pm.execution.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list mailinator, end test\",jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.mailinator.com/api/v2/domains/private/inboxes/{{inbox}}?token={{token}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"mailinator",
+								"com"
+							],
+							"path": [
+								"api",
+								"v2",
+								"domains",
+								"private",
+								"inboxes",
+								"{{inbox}}"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "{{token}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_email_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let email_obj = pm.environment.get(\"C-email_obj\");",
+									"pm.environment.set(\"msg_id\",email_obj.id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// var jsdom = require('jsdom');",
+									"// global.document = jsdom();",
+									"",
+									"// function parseHTML(markup) {",
+									"//   var doc = document.createElement('html');",
+									"//   doc.innerHTML = markup;",
+									"//   return doc;",
+									"// }",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let new_mess = null;",
+									"    try{",
+									"        let message_body = jsData.headers.subject;",
+									"        new_mess = message_body.slice(-6);",
+									"        console.log(\"new_mess: \" + new_mess);",
+									"    } catch {",
+									"        console.log(\"Can't get OTP\");",
+									"    }",
+									"",
+									"    pm.test(\"Got OTP \" + new_mess, function () {",
+									"        pm.expect(new_mess != null).to.be.true;",
+									"    });",
+									"",
+									"    pm.environment.set(\"C-otp\",new_mess);",
+									"",
+									"    pm.execution.setNextRequest(\"verify_otp\");",
+									"} else {",
+									"    console.log(\"Can't get mailinator, end test\",jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://mailinator.com/api/v2/domains/{{domain}}/inboxes/{{inbox}}/messages/{{msg_id}}?token={{token}}",
+							"protocol": "https",
+							"host": [
+								"mailinator",
+								"com"
+							],
+							"path": [
+								"api",
+								"v2",
+								"domains",
+								"{{domain}}",
+								"inboxes",
+								"{{inbox}}",
+								"messages",
+								"{{msg_id}}"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "{{token}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "verify_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");\r",
+									"console.log(\"Testcase: \" + testcase);\r",
+									"\r",
+									"// Example secret key for signing, replace with your actual secret\r",
+									"const secretKey = pm.environment.get(\"C-client_key\");\r",
+									"console.log(\"secretKey: \" + secretKey);\r",
+									"\r",
+									"let today = new Date();\r",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;\r",
+									"console.log(\"timestamp: \" + timestamp);\r",
+									"\r",
+									"// Get method, URL, body, and timestamp\r",
+									"const method = pm.request.method;\r",
+									"\r",
+									"let payout_id = pm.environment.get(\"X-payout_id\");\r",
+									"\r",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");\r",
+									"// console.log(\" ======== url: \", url);\r",
+									"url = url.replace(\"{{X-payout_id}}\",payout_id);\r",
+									"\r",
+									"let payment_obj = pm.environment.get(\"C-payment_obj\");\r",
+									"let body = {\r",
+									"    //\"client_id\": pm.environment.get(\"C-client_id\"),\r",
+									"    \"payout_id\": pm.environment.get(\"X-payout_id\"),\r",
+									"    \"code\": pm.environment.get(\"C-otp\")\r",
+									"}\r",
+									"body = JSON.stringify(body);\r",
+									"\r",
+									"// Concatenate the components to form the message to sign\r",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;\r",
+									"console.log(\"Generated message: \", message);\r",
+									"\r",
+									"// Generate SHA256 signature\r",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);\r",
+									"console.log(\"Generated signature: \", signature);\r",
+									"\r",
+									"pm.environment.set(\"C-timestamp\",timestamp);\r",
+									"\r",
+									"// Add the signature to the headers\r",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });\r",
+									"\r",
+									"console.log(\"payload: \",body);\r",
+									"pm.environment.set(\"C-payload\",body);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if (pm.response.code == 200) {",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let payout_obj = pm.environment.get(\"X-payout_obj\");",
+									"    console.log(\"debug: \", jsData);",
+									"",
+									"    // update payout_obj",
+									"    payout_obj.create_info.status = jsData.data.status;",
+									"    payout_obj.create_info.remaining_try = jsData.data.remaining_try;",
+									"    pm.environment.set(\"X-payout_obj\", payout_obj);",
+									"",
+									"    //kiem tra sau khi verify otp payout sucess",
+									"    pm.test(\"After verify OTP payout success : \" + jsData.data.status, () => {",
+									"        pm.expect(jsData.data.status).to.eql(\"processing\");",
+									"    })",
+									"",
+									"    pm.test(\"After verify OTP payout success, remaining_try = 0 : \" + jsData.data.remaining_try, () => {",
+									"        pm.expect(jsData.data.remaining_try).to.eql(0);",
+									"    })",
+									"",
+									"",
+									"    pm.environment.set(\"C-testcase\", testcase);",
+									"    pm.execution.setNextRequest(\"get_list_payout\"); // get_list_va, get_transfer_detail",
+									"} else {",
+									"    console.log(\"Can't create payment, end test\", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/payouts/{{X-payout_id}}/otps",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"payouts",
+								"{{X-payout_id}}",
+								"otps"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_payout_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"\r",
+									"let testcase = pm.environment.get(\"C-testcase\");\r",
+									"console.log(\"Testcase: \" + testcase);\r",
+									"\r",
+									"let page = pm.environment.get(\"C-page\");\r",
+									"let page_size = pm.environment.get(\"C-page_size\");\r",
+									"if(!page){\r",
+									"    page = 1;\r",
+									"    pm.environment.set(\"C-page\",page);\r",
+									"\r",
+									"    page_size = 50;\r",
+									"    pm.environment.set(\"C-page_size\",page_size);\r",
+									"}\r",
+									"let payout_id = pm.environment.get(\"X-payout_id\");\r",
+									"\r",
+									"// Example secret key for signing, replace with your actual secret\r",
+									"const secretKey = pm.environment.get(\"C-client_key\");\r",
+									"console.log(\"secretKey: \" + secretKey);\r",
+									"\r",
+									"// function ()\r",
+									"let today = new Date();\r",
+									"let timestamp = Math.floor(today.getTime()/1000) + 30;\r",
+									"console.log(\"timestamp: \" + timestamp);\r",
+									"\r",
+									"// Get method, URL, body, and timestamp\r",
+									"const method = pm.request.method;\r",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");\r",
+									"url = url.replace(\"{{X-payout_id}}\",payout_id);\r",
+									"url = url.replace(\"{{C-page}}\",page);\r",
+									"url = url.replace(\"{{C-page_size}}\",page_size);\r",
+									"\r",
+									"const body = pm.request.body ? pm.request.body.raw : '';\r",
+									"// const timestamp = pm.request.headers.get('x-timestamp');\r",
+									"\r",
+									"// Concatenate the components to form the message to sign\r",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;\r",
+									"console.log(\"Generated message: \", message);\r",
+									"\r",
+									"// Generate SHA256 signature\r",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);\r",
+									"console.log(\"Generated signature: \", signature);\r",
+									"\r",
+									"pm.environment.set(\"C-timestamp\",timestamp);\r",
+									"\r",
+									"// Add the signature to the headers\r",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if (pm.response.code == 200) {",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Testcase\", testcase);",
+									"    let payout_obj = pm.environment.get(\"X-payout_obj\");",
+									"    console.log(\"debug: \", jsData);",
+									"",
+									"    pm.test(\"Status is correct success : \" + jsData.data.status, () => {",
+									"        pm.expect(jsData.data.status).to.eql(\"success\");",
+									"    });",
+									"",
+									"    // pm.test(\"Reference id is correct\", () => {",
+									"    //     pm.expect(jsData.data.reference_id).to.eql(payout_obj.create_info.reference_id);",
+									"    // });",
+									"",
+									"    pm.test(\"Remaining try id is correct : \" + jsData.data.remaining_try, () => {",
+									"        pm.expect(jsData.data.remaining_try).to.eql(payout_obj.create_info.remaining_try);",
+									"    });",
+									"    pm.execution.setNextRequest(\"bank_notify\");",
+									"",
+									"} else {",
+									"    console.log(\"Can't get payout detail, end test\", jsData);",
+									"    pm.execution.setNextRequest(null);",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/payouts/{{X-payout_id}}",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"payouts",
+								"{{X-payout_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "webhook",
+			"item": [
+				{
+					"name": "bank_notify",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Example secret key for signing, replace with your actual secret\r",
+									"const secretKey = pm.environment.get(\"C-client_key\");\r",
+									"console.log(\"secretKey: \" + secretKey);\r",
+									"\r",
+									"let today = new Date();\r",
+									"let timestamp = Math.floor(today.getTime()/1000);\r",
+									"console.log(\"timestamp: \" + timestamp);\r",
+									"\r",
+									"// Get method, URL, body, and timestamp\r",
+									"const method = pm.request.method;\r",
+									"let url = pm.request.url.toString().replace(\"{{f1_open_url}}\",\"\");\r",
+									"// console.log(\" ======== url: \", url);\r",
+									"\r",
+									"let body = {\r",
+									"    \"client_id\": pm.environment.get(\"C-client_id\"),\r",
+									"    \"data\": \"test hook thử\",\r",
+									"    \"type\": \"cashout\"\r",
+									"}\r",
+									"body = JSON.stringify(body);\r",
+									"\r",
+									"// Concatenate the components to form the message to sign\r",
+									"const message = `${secretKey}_${method}_${url}_${body || ''}_${timestamp}`;\r",
+									"console.log(\"Generated message: \", message);\r",
+									"\r",
+									"// Generate SHA256 signature\r",
+									"const signature = CryptoJS.SHA256(message).toString(CryptoJS.enc.Hex);\r",
+									"console.log(\"Generated signature: \", signature);\r",
+									"\r",
+									"pm.environment.set(\"C-timestamp\",timestamp);\r",
+									"\r",
+									"// Add the signature to the headers\r",
+									"pm.request.headers.add({ key: 'x-signature', value: signature });\r",
+									"\r",
+									"console.log(\"payload: \",body);\r",
+									"pm.environment.set(\"C-payload\",body);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.execution.setNextRequest(\"test_webhook_url\");"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-client-id",
+								"value": "{{C-client_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-timestamp",
+								"value": "{{C-timestamp}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{f1_open_url}}/api/v1/webhook/banking-notify",
+							"host": [
+								"{{f1_open_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"webhook",
+								"banking-notify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "test_webhook_url",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"",
+									"",
+									"let default_hook_1 = {",
+									"    \"msg_type\": \"text\",",
+									"    \"content\": {",
+									"        \"text\": \"Hello, this is a test message from your cURL command!\"",
+									"    }",
+									"}",
+									"",
+									"let default_hook_2 = {",
+									"    \"msg_type\": \"interactive\",",
+									"    \"card\": {",
+									"        \"config\": {",
+									"            \"wide_screen_mode\": true",
+									"        },",
+									"        \"elements\": [{",
+									"            \"tag\": \"div\",",
+									"            \"text\": {",
+									"                \"content\": \"**Hello, this is a card message!**\",",
+									"                \"tag\": \"lark_md\"",
+									"            }",
+									"        },{",
+									"            \"tag\": \"hr\"",
+									"        },{",
+									"            \"tag\": \"div\",",
+									"            \"text\": {",
+									"                \"content\": \"Click the button below to learn more:\",",
+									"                \"tag\": \"lark_md\"",
+									"            }",
+									"        },{",
+									"            \"tag\": \"action\",",
+									"            \"actions\": [{",
+									"                \"tag\": \"button\",",
+									"                \"text\": {",
+									"                    \"content\": \"Learn More\",",
+									"                    \"tag\": \"lark_md\"",
+									"                },",
+									"                \"url\": \"https://www.example.com\",",
+									"                \"type\": \"default\"",
+									"            }]",
+									"        }],",
+									"        \"header\": {",
+									"            \"title\": {",
+									"                \"content\": \"Sample Card Message\",",
+									"                \"tag\": \"plain_text\"",
+									"            }",
+									"        }",
+									"    }",
+									"}",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(default_hook_2));"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.execution.setNextRequest(\"get_list_va\");"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://open.larksuite.com/open-apis/bot/v2/hook/0f271c16-5fb2-47fd-87ba-347e22f8655e",
+							"protocol": "https",
+							"host": [
+								"open",
+								"larksuite",
+								"com"
+							],
+							"path": [
+								"open-apis",
+								"bot",
+								"v2",
+								"hook",
+								"0f271c16-5fb2-47fd-87ba-347e22f8655e"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"is_use_email\":false,",
+					"    \"limit_page\":10,",
+					"    \"timeout\":12000,",
+					"    // \"client_action\":\"edit\", // create, edit",
+					"    \"transfer_type\":\"internal\", // external, internal",
+					"    \"test_payment_method\":\"bank_transfer\" // mb, bidv, bank_transfer - Open API chưa support GP",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    switch(request_api.method){",
+					"        case \"PUT\":",
+					"            curl = \"curl --location --request PUT \";",
+					"            break;",
+					"        case \"PATCH\":",
+					"            curl = \"curl --location --request PATCH \";",
+					"            break;",
+					"        case \"DELETE\":",
+					"            curl = \"curl --location --request DELETE \";",
+					"            break;",
+					"        default:",
+					"            curl = \"curl --location \";",
+					"            break;",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.query.length > 0){",
+					"            curl += \"?\";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\": case \"PATCH\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"// console.log(\"request_api\",request_api);",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}

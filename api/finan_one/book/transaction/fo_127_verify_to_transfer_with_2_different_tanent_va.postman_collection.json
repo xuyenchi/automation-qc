@@ -1,0 +1,2513 @@
+{
+	"info": {
+		"_postman_id": "00652d03-804c-473c-bcd0-19aa42575c4c",
+		"name": "fo_127_verify_to_transfer_with_2_different_tanent_va",
+		"description": "Testcase:\n\n1. Login\n    \n    1. Account chuyển tiền (WKT - phone)\n        \n    2. Get business\n        \n    3. Get other business data\n        \n2. Get data\n    \n    1. account coa > get COA => get uncategory expense account\n        \n    2. account coa > get list shinhan va => get ix \"account_number\": \"WKT036110000002\"\n        \n    3. account coa > get overview shinhan balance => get data\n        \n    4. ~~account cash n bank > get list bank account => get data~~\n        \n    5. transaction > get list transaction => get data\n        \n    6. posting => get list posting => get data\n        \n3. Login\n    \n    1. Account nhận tiền (1AM - email)\n        \n    2. Get business\n        \n    3. Get other business data\n        \n4. Get data\n    \n    1. account coa > get COA => get uncategory income account\n        \n    2. account coa > get list shinhan va => get data\n        \n    3. account coa > get overview shinhan balance => compare 4.a & get data\n        \n    4. ~~account cash n bank > get list bank account => get random shinhan va~~\n        \n    5. transaction > get list transaction => get data\n        \n    6. posting => get list posting => get data\n        \n5. External transfer\n    \n    1. Verify 1AM account\n        \n    2. Transfer from WKT va to 1AM va\n        \n    3. Get mailinator => get OTP\n        \n    4. Confirm transfer\n        \n6. Check data account transfer\n    \n    1. account coa > get list shinhan va => data decrease correctly\n        \n    2. account coa > get overview shinhan balance => data decrease correctly\n        \n    3. ~~Bank account => balance decrease respective (balance_available_amount)~~\n        \n    4. \\[NY\\] Transaction => increase 1, data correctly\n        \n    5. \\[NY\\] Posting => increase 2, data correctly (đầu uncategory expense)\n        \n7. Check data account receive\n    \n    1. account coa > get list shinhan va => data increase correctly\n        \n    2. account coa > get overview shinhan balance => data increase correctly\n        \n    3. ~~Bank account => balance increase respective (balance_available_amount)~~\n        \n    4. \\[NY\\] Transaction => increase 1, data correctly\n        \n    5. \\[NY\\] Posting => increase 2, data correctly (đầu uncategory income)\n        \n\nNOTE:\n\n- API bank account (fo-banking) sẽ không sử dụng nữa, tất cả data shinhan BẮT BUỘC đồnng bộ đúng và đủ trên ledger service\n    \n- Cần handle thêm API payment (if needed)\n    \n- Refactor:\n    \n    - Gộp 2a & 2b\n        \n    - Gộp 4a & 4b",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "authen",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// ============================= random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"if(!testcase) {",
+									"    testcase = 1;",
+									"    console.log(\"-------- Start Testsuite 127 --------\");",
+									"}",
+									"",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let platform = [\"desktop-web\",\"mobile-web\",\"mobile-app\"];",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let payload;",
+									"",
+									"switch(testcase){",
+									"    case 1:",
+									"        payload = {",
+									"            \"app_version\": \"1.0.0\",",
+									"            \"device_info\": {",
+									"                \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"                \"name\": \"IP name\",",
+									"                \"os\": \"iphone\"",
+									"            },",
+									"            \"email\":\"\", // pm.environment.get(\"SER-email\")",
+									"            \"encrypted_password\": pm.environment.get(\"SER-password\"), // \"0df17ae11917f47cf28c88437de27c87b95e8024d973674247abd10a26ac975a8cf9\",",
+									"            \"phone_number\": pm.environment.get(\"SER-phone_number\"), // \"+84931000000\" acc ku Nhân",
+									"            \"platform_key\": platform[0]",
+									"        }",
+									"        break;",
+									"    case 2:",
+									"    default:",
+									"        payload = {",
+									"            \"app_version\": \"1.0.0\",",
+									"            \"device_info\": {",
+									"                \"id\": randomChars(7) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12),",
+									"                \"name\": \"IP name\",",
+									"                \"os\": \"iphone\"",
+									"            },",
+									"            \"email\": pm.environment.get(\"SER-email\"), // pm.environment.get(\"SER-email\")",
+									"            \"encrypted_password\": pm.environment.get(\"SER-password\"),",
+									"            \"phone_number\": \"\",",
+									"            \"platform_key\": platform[0]",
+									"        }",
+									"}",
+									"",
+									"console.log(\"payload: \",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    pm.test(\"System code is 102000\", function () {",
+									"        pm.expect(jsData.code).to.eql(102000);",
+									"    });",
+									"",
+									"    if(jsData.code == 102000){",
+									"        let userToken = null;",
+									"        try {",
+									"            userToken = jsData.data.access_token;",
+									"            if(testcase == 1){",
+									"                pm.environment.set(\"C-userToken_1\",userToken);",
+									"            } else {",
+									"                pm.environment.set(\"C-userToken_2\",userToken);",
+									"            }",
+									"        } catch {",
+									"            console.log(\"Can't get userToken\");",
+									"        }",
+									"",
+									"        pm.test(\"Got userToken\", function () {",
+									"            pm.expect(userToken != null).to.be.true;",
+									"        });",
+									"",
+									"        let userInfo = jsData.data.user_info;",
+									"",
+									"        // show log",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"",
+									"        postman.setNextRequest(\"verify_token_to_get_business\");",
+									"    } else {",
+									"        console.log(\"Can't get Token, end test\",jsData);",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't login new account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/login",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "verify_token_to_get_business",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// verify token to get business",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"if(testcase == 1){",
+									"    userToken = pm.environment.get(\"C-userToken_1\");",
+									"} else {",
+									"    userToken = pm.environment.get(\"C-userToken_2\");",
+									"}",
+									"pm.environment.set(\"C-userToken\",userToken);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200 && jsData.code == 102000){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    pm.environment.set(\"C-user_id\",jsData.data.user_id);",
+									"",
+									"    let business_id = jsData.data.headers[\"x-business-id\"];",
+									"    console.log(\"business_id: \" + business_id);",
+									"    if(testcase == 1){",
+									"        pm.environment.set(\"C-business_id_1\",business_id);",
+									"    } else {",
+									"        pm.environment.set(\"C-business_id_2\",business_id);",
+									"    }",
+									"",
+									"    postman.setNextRequest(\"get_current_business\");",
+									"} else {",
+									"    console.log(\"Can't check token to get business_id, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{C-userToken}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-user/api/v1/auth/verify-token",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-user",
+								"api",
+								"v1",
+								"auth",
+								"verify-token"
+							]
+						},
+						"description": "Login User"
+					},
+					"response": []
+				},
+				{
+					"name": "get_current_business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// ============================= random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // console.log(\"Current business info: \", jsData.data);",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let branch_id = null, filter_branch_id = null, list_branch = [];",
+									"    try {",
+									"        list_branch = jsData.data.current_business.list_branch;",
+									"        branch_id = list_branch[getRandomInt(0,list_branch.length - 1)].id;",
+									"        if(configs.is_the_same_branch){",
+									"            filter_branch_id = branch_id;",
+									"        } else {",
+									"            while(1){",
+									"                filter_branch_id = list_branch[getRandomInt(0,list_branch.length - 1)].id;",
+									"",
+									"                if(branch_id != filter_branch_id) break;",
+									"            }",
+									"            // for(let i in list_branch){",
+									"            //     if(list_branch[i].id != branch_id){",
+									"            //         filter_branch_id = list_branch[i].id;",
+									"            //         break;",
+									"            //     }",
+									"            // }",
+									"        }",
+									"        console.log(\"branch_id: \" + branch_id);",
+									"        console.log(\"filter_branch_id: \" + filter_branch_id);",
+									"        pm.environment.set(\"C-branch_id\",branch_id);",
+									"        pm.environment.set(\"C-filter_branch_id\",filter_branch_id);",
+									"    } catch {",
+									"        console.log(\"Can't get branch id\");",
+									"    }",
+									"",
+									"    pm.test(\"Got all branch \" + list_branch.length, function () {",
+									"        pm.expect(list_branch != null).to.be.true;",
+									"    });",
+									"    pm.environment.set(\"C-list_branch\",list_branch);",
+									"",
+									"    pm.test(\"Got branch id \" + branch_id, function () {",
+									"        pm.expect(branch_id != null).to.be.true;",
+									"    });",
+									"    ",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_internal_account\");",
+									"} else {",
+									"    console.log(\"Can't get business detail, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"if(testcase == 1){",
+									"    userToken = pm.environment.get(\"C-userToken_1\");",
+									"} else {",
+									"    userToken = pm.environment.get(\"C-userToken_2\");",
+									"}",
+									"pm.environment.set(\"C-userToken\",userToken);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-business/api/v1/business/get-current",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-business",
+								"api",
+								"v1",
+								"business",
+								"get-current"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "account coa",
+			"item": [
+				{
+					"name": "get_list_internal_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"if(testcase == 2){",
+									"    business_id = pm.environment.get(\"C-business_id_1\");",
+									"    userToken = pm.environment.get(\"C-userToken_1\");",
+									"} else {",
+									"    business_id = pm.environment.get(\"C-business_id_2\");",
+									"    userToken = pm.environment.get(\"C-userToken_2\");",
+									"}",
+									"pm.environment.set(\"C-business_id\",business_id);",
+									"pm.environment.set(\"C-userToken\",userToken);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    try {",
+									"        loop:",
+									"        for(let i in jsData.data){",
+									"            for(let j in jsData.data[i].sub_group){",
+									"                for(let k in jsData.data[i].sub_group[j].accounts){",
+									"                    if(testcase == 2){",
+									"                        if(jsData.data[i].sub_group[j].accounts[k].account_key == \"D4001\"){",
+									"                            pm.environment.set(\"C-account_uncategory_expense\",jsData.data[i].sub_group[j].accounts[k]);",
+									"                            break loop;",
+									"                        }",
+									"                    } else {",
+									"                        if(jsData.data[i].sub_group[j].accounts[k].account_key == \"C3001\"){",
+									"                            pm.environment.set(\"C-account_uncategory_income\",jsData.data[i].sub_group[j].accounts[k]);",
+									"                            break loop;",
+									"                        }",
+									"                    }",
+									"                }",
+									"            }",
+									"        }",
+									"    } catch {",
+									"        console.log(\"can't get all account in coa\");",
+									"    }",
+									"",
+									"    postman.setNextRequest(\"get_list_shinhan_va\");",
+									"} else {",
+									"    console.log(\"Can't get list internal account, end test \", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}​/fo-ledger/api/v1/account/get-list-setting?business_id={{C-business_id}}&coa_type=",
+							"host": [
+								"{{finone_url}}​"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"account",
+								"get-list-setting"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "coa_type",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_list_shinhan_va",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let transfer_from_account = null;",
+									"    let transfer_to_account = null;",
+									"    let transfer_obj = pm.environment.get(\"C-transfer_obj\");",
+									"    switch(testcase){",
+									"        case 2:",
+									"            for(let i in jsData.data[0].accounts){",
+									"                if(jsData.data[0].accounts[i].account_type == \"va_bank\" && jsData.data[0].accounts[i].status == \"open\"){",
+									"                    console.log(\"debug: \" + jsData.data[0].accounts[i].account_number);",
+									"                    if(jsData.data[0].accounts[i].account_number == \"WKT036110000002\"){",
+									"                        transfer_from_account = jsData.data[0].accounts[i];",
+									"                        console.log(\"transfer_from_account: \", transfer_from_account);",
+									"",
+									"                        pm.environment.set(\"C-transfer_from_account\",transfer_from_account);",
+									"                        break;",
+									"                    }",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Got transfer_from_account\", function () {",
+									"                pm.expect(transfer_from_account != null).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_overview_shinhan_balance\"); // get_overview_shinhan_balance",
+									"            break;",
+									"        case 4:",
+									"            let list_shinhan_va_open = [], list_shinhan_va_close = [];",
+									"            for(let i in jsData.data[0].accounts){",
+									"                if(jsData.data[0].accounts[i].account_type == \"va_bank\"){",
+									"                    if(jsData.data[0].accounts[i].status == \"open\" && jsData.data[0].accounts[i].account_number.length == 12){",
+									"                        list_shinhan_va_open[list_shinhan_va_open.length] = jsData.data[0].accounts[i];",
+									"                    } else {",
+									"                        list_shinhan_va_close[list_shinhan_va_close.length] = jsData.data[0].accounts[i];",
+									"                    }",
+									"                }",
+									"            }",
+									"",
+									"            console.log(\"total shinhan_va: \" + (list_shinhan_va_open.length + list_shinhan_va_close.length));",
+									"            // console.log(\"list_shinhan_va_open: \", list_shinhan_va_open);",
+									"            // console.log(\"list_shinhan_va_close: \", list_shinhan_va_close);",
+									"",
+									"            try {",
+									"                transfer_to_account = list_shinhan_va_open[list_func.getRandomInt(0,list_shinhan_va_open.length - 1)];",
+									"                console.log(\"transfer_to_account: \", transfer_to_account);",
+									"            } catch {",
+									"                console.log(\"Can't get transfer_to_account\");",
+									"            }",
+									"            pm.test(\"Got transfer_to_account\", function () {",
+									"                pm.expect(transfer_to_account != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-transfer_to_account\",transfer_to_account);",
+									"            pm.environment.set(\"C-list_shinhan_va_open\",list_shinhan_va_open);",
+									"            pm.environment.set(\"C-list_shinhan_va_close\",list_shinhan_va_close);",
+									"",
+									"            postman.setNextRequest(\"get_overview_shinhan_balance\");",
+									"            break;",
+									"        case 6:",
+									"            transfer_from_account = pm.environment.get(\"C-transfer_from_account\");",
+									"            let new_transfer_from_account = null;",
+									"            for(let i in jsData.data[0].accounts){",
+									"                if(jsData.data[0].accounts[i].account_number == transfer_from_account.account_number){",
+									"                    new_transfer_from_account = jsData.data[0].accounts[i];",
+									"                    console.log(\"new_transfer_from_account: \", new_transfer_from_account);",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"total_balance_amount descrease \" + transfer_obj.amount, function () {",
+									"                console.log(\"old: \" + transfer_from_account.total_balance_amount);",
+									"                console.log(\"new: \" + new_transfer_from_account.total_balance_amount);",
+									"                pm.expect(new_transfer_from_account.total_balance_amount).to.eql(transfer_from_account.total_balance_amount - transfer_obj.amount);",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_overview_shinhan_balance\"); // get_overview_shinhan_balance",
+									"            break;",
+									"        case 7:",
+									"            transfer_to_account = pm.environment.get(\"C-transfer_to_account\");",
+									"            let new_transfer_to_account = null;",
+									"            for(let i in jsData.data[0].accounts){",
+									"                if(jsData.data[0].accounts[i].account_number == transfer_to_account.account_number){",
+									"                    new_transfer_to_account = jsData.data[0].accounts[i];",
+									"                    console.log(\"new_transfer_to_account: \", new_transfer_to_account);",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"total_balance_amount increase \" + transfer_obj.amount, function () {",
+									"                console.log(\"old: \" + transfer_to_account.total_balance_amount);",
+									"                console.log(\"new: \" + new_transfer_to_account.total_balance_amount);",
+									"                pm.expect(new_transfer_to_account.total_balance_amount).to.eql(transfer_to_account.total_balance_amount + transfer_obj.amount);",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_overview_shinhan_balance\"); // get_overview_shinhan_balance",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list shinhan va, end test \", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"if(testcase == 2){",
+									"    business_id = pm.environment.get(\"C-business_id_1\");",
+									"    userToken = pm.environment.get(\"C-userToken_1\");",
+									"} else if (testcase == 6){",
+									"    setTimeout(function(){}, 4000); // should timeout 4s => need apply best practice timeout",
+									"    business_id = pm.environment.get(\"C-business_id_1\");",
+									"    userToken = pm.environment.get(\"C-userToken_1\");",
+									"} else {",
+									"    business_id = pm.environment.get(\"C-business_id_2\");",
+									"    userToken = pm.environment.get(\"C-userToken_2\");",
+									"}",
+									"pm.environment.set(\"C-business_id\",business_id);",
+									"pm.environment.set(\"C-userToken\",userToken);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/account/get-list-sub?sub_account_key=A1&is_alias=true&option=all",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"account",
+								"get-list-sub"
+							],
+							"query": [
+								{
+									"key": "sub_account_key",
+									"value": "A1"
+								},
+								{
+									"key": "is_alias",
+									"value": "true"
+								},
+								{
+									"key": "option",
+									"value": "all"
+								}
+							]
+						},
+						"description": "Generated from cURL: curl 'https://stg-api.finan.one/fo-ledger/api/v1/account/get-list-sub?sub_account_key=A1&is_alias=true&option=all' \\\n  -H 'authority: stg-api.finan.one' \\\n  -H 'accept: */*' \\\n  -H 'accept-language: en-US,en;q=0.9' \\\n  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJGTyBVc2VyIiwic3ViIjoiMTA2NzJhNTItMWNiMC00MmMzLTk1NTctYWFiOWE2M2M1M2E2IiwiYXVkIjpbIkZPIFVzZXIiXSwiZXhwIjoxNzMyMTU5OTQ4LCJuYmYiOjE3Mjk1Njc5NDgsImlhdCI6MTcyOTU2Nzk0OCwib3JnX2lkIjoiMzI1IiwiYnVzaW5lc3NfaWQiOiIzMjUiLCJkZXZpY2VfaWQiOiIxNTEyZDQ3OS00MTQ3LTQ1YWItODU4MS1mZjU4MGEwNTBmOWYiLCJwbGF0Zm9ybV9rZXkiOiJ3ZWItYm9vayIsInVzZXJfaWQiOiIxMDY3MmE1Mi0xY2IwLTQyYzMtOTU1Ny1hYWI5YTYzYzUzYTYiLCJsb2dpbl9tZXRob2QiOiJwYXNzd29yZCIsImFwcF92ZXJzaW9uIjoiMS4xLjEiLCJzZWN1cml0eV9yb2xlIjowLCJwZXJtaXNzaW9uX2tleXMiOiIiLCJyZWZyZXNoX3Rva2VuX2lkIjoiODc4OTdmMDgtYTY5YS00YjhmLThmMmYtZTFlMTM2ZGJmOTExIn0.8FJYAHF3xzUIarnfP7rfuZjDQM9TBoCSmMshyGVpQGM' \\\n  -H 'origin: https://book-stg.finan.one' \\\n  -H 'referer: https://book-stg.finan.one/' \\\n  -H 'sec-ch-ua: \"Google Chrome\";v=\"113\", \"Chromium\";v=\"113\", \"Not-A.Brand\";v=\"24\"' \\\n  -H 'sec-ch-ua-mobile: ?0' \\\n  -H 'sec-ch-ua-platform: \"macOS\"' \\\n  -H 'sec-fetch-dest: empty' \\\n  -H 'sec-fetch-mode: cors' \\\n  -H 'sec-fetch-site: same-site' \\\n  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36' \\\n  -H 'x-locale: en' \\\n  -H 'x-location-timezone: Asia/Ho_Chi_Minh' \\\n  -H 'x-platform-key: desktop-web' \\\n  --compressed"
+					},
+					"response": []
+				},
+				{
+					"name": "get_overview_shinhan_balance",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"if(testcase == 2 || testcase == 6){",
+									"    business_id = pm.environment.get(\"C-business_id_1\");",
+									"    userToken = pm.environment.get(\"C-userToken_1\");",
+									"} else {",
+									"    business_id = pm.environment.get(\"C-business_id_2\");",
+									"    userToken = pm.environment.get(\"C-userToken_2\");",
+									"}",
+									"pm.environment.set(\"C-business_id\",business_id);",
+									"pm.environment.set(\"C-userToken\",userToken);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let shinhan_from_overview = pm.environment.get(\"C-shinhan_from_overview\");",
+									"    let shinhan_to_overview = pm.environment.get(\"C-shinhan_to_overview\");",
+									"    let transfer_obj = pm.environment.get(\"C-transfer_obj\");",
+									"    switch(testcase){",
+									"        case 2:",
+									"            shinhan_from_overview = jsData.data;",
+									"            console.log(\"shinhan_from_overview: \",shinhan_from_overview);",
+									"            pm.environment.set(\"C-shinhan_from_overview\",shinhan_from_overview);",
+									"",
+									"            postman.setNextRequest(\"get_list_transaction\");",
+									"            break;",
+									"        case 4:",
+									"            let list_shinhan_va_open = pm.environment.get(\"C-list_shinhan_va_open\");",
+									"            let list_shinhan_va_close = pm.environment.get(\"C-list_shinhan_va_close\");",
+									"            shinhan_to_overview = jsData.data;",
+									"",
+									"            let term_total_balance = 0, term_count_account = 0;",
+									"            for(let i in list_shinhan_va_open){",
+									"                term_total_balance += list_shinhan_va_open[i].total_balance_amount;",
+									"                term_count_account++;",
+									"            }",
+									"",
+									"            for(let i in list_shinhan_va_close){",
+									"                term_total_balance += list_shinhan_va_close[i].total_balance_amount;",
+									"                // term_count_account++;",
+									"            }",
+									"",
+									"            pm.test(\"total_balance_amount correctly \" + term_total_balance, function () {",
+									"                console.log(\"act: \" + shinhan_to_overview.total_balance_amount);",
+									"                pm.expect(term_total_balance).to.eql(shinhan_to_overview.total_balance_amount);",
+									"            });",
+									"",
+									"            pm.test(\"total_sub_account_open correctly \" + term_count_account, function () {",
+									"                pm.expect(term_count_account).to.eql(shinhan_to_overview.total_sub_account_open);",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_list_transaction\");",
+									"            break;",
+									"        case 6:",
+									"            let new_shinhan_from_overview = jsData.data;",
+									"",
+									"            // total_balance_amount decrease",
+									"            pm.test(\"total_balance_amount decrease \" + transfer_obj.amount, function () {",
+									"                console.log(\"old: \" + shinhan_from_overview.total_balance_amount);",
+									"                console.log(\"new: \" + new_shinhan_from_overview.total_balance_amount);",
+									"                pm.expect(new_shinhan_from_overview.total_balance_amount).to.eql(shinhan_from_overview.total_balance_amount - transfer_obj.amount);",
+									"            });",
+									"",
+									"            // testcase++;",
+									"            // pm.environment.set(\"C-testcase\",testcase);",
+									"            postman.setNextRequest(\"get_list_transaction\"); // get_list_transaction , get_list_shinhan_va",
+									"            break;",
+									"        case 7:",
+									"            let new_shinhan_to_overview = jsData.data;",
+									"",
+									"            // total_balance_amount decrease",
+									"            pm.test(\"total_balance_amount increase \" + transfer_obj.amount, function () {",
+									"                console.log(\"old: \" + shinhan_to_overview.total_balance_amount);",
+									"                console.log(\"new: \" + new_shinhan_to_overview.total_balance_amount);",
+									"                pm.expect(new_shinhan_to_overview.total_balance_amount).to.eql(shinhan_to_overview.total_balance_amount + transfer_obj.amount);",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_list_transaction\"); // get_list_transaction",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get shinhan overview, end test \", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/account/overview?account_type=va_bank",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"account",
+								"overview"
+							],
+							"query": [
+								{
+									"key": "account_type",
+									"value": "va_bank"
+								}
+							]
+						},
+						"description": "Generated from cURL: curl 'https://stg-api.finan.one/fo-ledger/api/v1/account/overview?account_type=va_bank' \\\n  -H 'authority: stg-api.finan.one' \\\n  -H 'accept: */*' \\\n  -H 'accept-language: en-US,en;q=0.9' \\\n  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJGTyBVc2VyIiwic3ViIjoiMTA2NzJhNTItMWNiMC00MmMzLTk1NTctYWFiOWE2M2M1M2E2IiwiYXVkIjpbIkZPIFVzZXIiXSwiZXhwIjoxNzMyMTU5OTQ4LCJuYmYiOjE3Mjk1Njc5NDgsImlhdCI6MTcyOTU2Nzk0OCwib3JnX2lkIjoiMzI1IiwiYnVzaW5lc3NfaWQiOiIzMjUiLCJkZXZpY2VfaWQiOiIxNTEyZDQ3OS00MTQ3LTQ1YWItODU4MS1mZjU4MGEwNTBmOWYiLCJwbGF0Zm9ybV9rZXkiOiJ3ZWItYm9vayIsInVzZXJfaWQiOiIxMDY3MmE1Mi0xY2IwLTQyYzMtOTU1Ny1hYWI5YTYzYzUzYTYiLCJsb2dpbl9tZXRob2QiOiJwYXNzd29yZCIsImFwcF92ZXJzaW9uIjoiMS4xLjEiLCJzZWN1cml0eV9yb2xlIjowLCJwZXJtaXNzaW9uX2tleXMiOiIiLCJyZWZyZXNoX3Rva2VuX2lkIjoiODc4OTdmMDgtYTY5YS00YjhmLThmMmYtZTFlMTM2ZGJmOTExIn0.8FJYAHF3xzUIarnfP7rfuZjDQM9TBoCSmMshyGVpQGM' \\\n  -H 'origin: https://book-stg.finan.one' \\\n  -H 'referer: https://book-stg.finan.one/' \\\n  -H 'sec-ch-ua: \"Google Chrome\";v=\"113\", \"Chromium\";v=\"113\", \"Not-A.Brand\";v=\"24\"' \\\n  -H 'sec-ch-ua-mobile: ?0' \\\n  -H 'sec-ch-ua-platform: \"macOS\"' \\\n  -H 'sec-fetch-dest: empty' \\\n  -H 'sec-fetch-mode: cors' \\\n  -H 'sec-fetch-site: same-site' \\\n  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36' \\\n  -H 'x-locale: en' \\\n  -H 'x-location-timezone: Asia/Ho_Chi_Minh' \\\n  -H 'x-platform-key: desktop-web' \\\n  --compressed"
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// pm.request.headers.add({",
+							"//  key: \"authorization\",",
+							"//  value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"// });",
+							"",
+							"// pm.request.headers.add({",
+							"//  key: \"Content-Type\",",
+							"//  value: \"application/json\"",
+							"// });"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "account cash_n_bank",
+			"item": [
+				{
+					"name": "get_list_bank_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"if(testcase == 2){",
+									"    business_id = pm.environment.get(\"C-business_id_1\");",
+									"    userToken = pm.environment.get(\"C-userToken_1\");",
+									"} else {",
+									"    business_id = pm.environment.get(\"C-business_id_2\");",
+									"    userToken = pm.environment.get(\"C-userToken_2\");",
+									"}",
+									"pm.environment.set(\"C-business_id\",business_id);",
+									"pm.environment.set(\"C-userToken\",userToken);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let transfer_from_account = null;",
+									"    let tranfer_to_arr = [], transfer_to_account = null;;",
+									"    switch(testcase){",
+									"        case 2:",
+									"           for(let i in jsData.data){",
+									"                if(jsData.data[i].account_number == \"WKT036110000002\"){",
+									"                    transfer_from_account = {",
+									"                        \"account_number\":jsData.data[i].account_number,",
+									"                        \"account_name\":jsData.data[i].account_name,",
+									"                        \"bank_code\":jsData.data[i].bank_code,",
+									"                        \"usage_type\":jsData.data[i].usage_type,",
+									"                        \"qr\":jsData.data[i].static_qr_code,",
+									"                        \"id\":jsData.data[i].id,",
+									"                        \"balance_available_amount\":jsData.data[i].balance_available_amount,",
+									"                        \"reference_id\":jsData.data[i].reference_id,",
+									"                        \"master_account_name\":jsData.data[i].master_account_name,",
+									"                        \"bank_id\":jsData.data[i].bank_id",
+									"                    }",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Got transfer_from_account\", function () {",
+									"                pm.expect(transfer_from_account != null).to.be.true;",
+									"            });",
+									"",
+									"            if(transfer_from_account != null){",
+									"                pm.environment.set(\"C-transfer_from_account\",transfer_from_account);",
+									"                console.log(\"transfer_from_account: \",transfer_from_account);",
+									"            }",
+									"",
+									"            postman.setNextRequest(\"get_list_transaction\");",
+									"            break;",
+									"        case 4:",
+									"            let shinhan_to = pm.environment.get(\"C-shinhan_to\");",
+									"            // for(let i in jsData.data){",
+									"            //     if(jsData.data[i].usage_type == \"merchant_host\" && jsData.data[i].is_active){",
+									"            //         tranfer_to_arr[tranfer_to_arr.length] = {",
+									"            //             \"account_number\":jsData.data[i].account_number,",
+									"            //             \"account_name\":jsData.data[i].account_name,",
+									"            //             \"bank_code\":jsData.data[i].bank_code,",
+									"            //             \"usage_type\":jsData.data[i].usage_type,",
+									"            //             \"qr\":jsData.data[i].static_qr_code,",
+									"            //             \"id\":jsData.data[i].id,",
+									"            //             \"balance_available_amount\":jsData.data[i].balance_available_amount,",
+									"            //             \"reference_id\":jsData.data[i].reference_id,",
+									"            //             \"master_account_name\":jsData.data[i].master_account_name,",
+									"            //             \"bank_id\":jsData.data[i].bank_id",
+									"            //         }",
+									"            //     }",
+									"            // }",
+									"            // transfer_to_account = tranfer_to_arr[list_func.getRandomInt(0,tranfer_to_arr.length - 1)];",
+									"            console.log(\"shinhan_to: \", shinhan_to);",
+									"            for(let i in jsData.data){",
+									"                console.log(\"jsData.data[i].account_number: \" + jsData.data[i].account_number);",
+									"                if(jsData.data[i].account_number == shinhan_to.account_number){",
+									"                    transfer_to_account = jsData.data[i];",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Got transfer_to_account\", function () {",
+									"                pm.expect(transfer_to_account != null).to.be.true;",
+									"            });",
+									"",
+									"            if(transfer_to_account != null){",
+									"                pm.environment.set(\"C-transfer_to_account\",transfer_to_account);",
+									"                console.log(\"transfer_to_account: \",transfer_to_account);",
+									"            }",
+									"",
+									"            postman.setNextRequest(\"get_list_transaction\");",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list payment account, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-banking/api/v1/bank-account/get-list?usage_type=merchant_host&search=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-banking",
+								"api",
+								"v1",
+								"bank-account",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "usage_type",
+									"value": "merchant_host"
+								},
+								{
+									"key": "search",
+									"value": ""
+								}
+							]
+						},
+						"description": "Generated from cURL: curl 'https://stg-api.finan.one/fo-banking/api/v1/bank-account/get-list?usage_type=merchant_host&search=' \\\n  -H 'authority: stg-api.finan.one' \\\n  -H 'accept: */*' \\\n  -H 'accept-language: en-US,en;q=0.9,vi;q=0.8' \\\n  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJGTyBVc2VyIiwic3ViIjoiYmY4NmNmZDQtMzljNi00Yzg4LTliNGMtMGZiMGI5MzYxMGJmIiwiYXVkIjpbIkZPIFVzZXIiXSwiZXhwIjoxNzI4MDkxNDYyLCJuYmYiOjE3MjU0OTk0NjIsImlhdCI6MTcyNTQ5OTQ2Miwib3JnX2lkIjoiMTM0IiwiYnVzaW5lc3NfaWQiOiIxMzQiLCJkZXZpY2VfaWQiOiJlNzY2MWRhYy0wNDVkLTQxMTMtYjE5NC03ZTBlNzI0MzQ1ZGYiLCJwbGF0Zm9ybV9rZXkiOiJ3ZWItYm9vayIsInVzZXJfaWQiOiJiZjg2Y2ZkNC0zOWM2LTRjODgtOWI0Yy0wZmIwYjkzNjEwYmYiLCJsb2dpbl9tZXRob2QiOiJwYXNzd29yZCIsImFwcF92ZXJzaW9uIjoiMS4xLjEiLCJzZWN1cml0eV9yb2xlIjowLCJyZWZyZXNoX3Rva2VuX2lkIjoiOTQyNGVlMzktMGM5ZS00YjUzLWIyNjYtODE0OGFmOTJhMWRjIn0.hO-qJmGBlPP3CkAMx5cF2oVFG6ek4M6487_wpA9phhE' \\\n  -H 'origin: https://book-stg.finan.one' \\\n  -H 'referer: https://book-stg.finan.one/' \\\n  -H 'sec-ch-ua: \"Google Chrome\";v=\"113\", \"Chromium\";v=\"113\", \"Not-A.Brand\";v=\"24\"' \\\n  -H 'sec-ch-ua-mobile: ?0' \\\n  -H 'sec-ch-ua-platform: \"macOS\"' \\\n  -H 'sec-fetch-dest: empty' \\\n  -H 'sec-fetch-mode: cors' \\\n  -H 'sec-fetch-site: same-site' \\\n  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36' \\\n  -H 'x-locale: vi' \\\n  -H 'x-location-timezone: Asia/Ho_Chi_Minh' \\\n  -H 'x-platform-key: desktop-web' \\\n  --compressed"
+					},
+					"response": []
+				},
+				{
+					"name": "get_list_bank_transaction",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-banking/api/v1/payment-request/get-list?page=1&page_size=50&sort=&search=&from_time=&to_time=&payment_method=&status=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-banking",
+								"api",
+								"v1",
+								"payment-request",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "sort",
+									"value": ""
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "from_time",
+									"value": ""
+								},
+								{
+									"key": "to_time",
+									"value": ""
+								},
+								{
+									"key": "payment_method",
+									"value": "",
+									"description": "ewallet_zalopay,credit_card,ewallet_momo"
+								},
+								{
+									"key": "status",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							"// link bank => dùng list payment account",
+							"// merchant host (va bank) => dùng list bank account"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "transaction",
+			"item": [
+				{
+					"name": "get_list_transaction",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"if(testcase == 2 || testcase == 6){",
+									"    business_id = pm.environment.get(\"C-business_id_1\");",
+									"    userToken = pm.environment.get(\"C-userToken_1\");",
+									"} else {",
+									"    business_id = pm.environment.get(\"C-business_id_2\");",
+									"    userToken = pm.environment.get(\"C-userToken_2\");",
+									"}",
+									"pm.environment.set(\"C-business_id\",business_id);",
+									"pm.environment.set(\"C-userToken\",userToken);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"function toISOStringWithTimezone(date, offset) {",
+									"    const tzOffset = offset * 60; // offset in minutes",
+									"    const localISOTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));",
+									"    const adjustedTime = new Date(localISOTime.getTime() + (tzOffset * 60000));",
+									"    const isoString = adjustedTime.toISOString().slice(0, -1); // remove the 'Z' at the end",
+									"    ",
+									"    const sign = offset >= 0 ? \"+\" : \"-\";",
+									"    const absOffset = Math.abs(offset);",
+									"    const hours = String(Math.floor(absOffset)).padStart(2, '0');",
+									"    const minutes = String(absOffset % 1 * 60).padStart(2, '0');",
+									"",
+									"    return `${isoString}${sign}${hours}:${minutes}`;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    let total_tnx = null;",
+									"    try {",
+									"        total_tnx = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Can't get total tnx\");",
+									"    }",
+									"",
+									"    let transfer_obj = pm.environment.get(\"C-transfer_obj\");",
+									"    let old_total_tnx;",
+									"    let isFound = false;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got total tnx! \" + total_tnx, function () {",
+									"                pm.expect(total_tnx != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-total_tnx\",total_tnx);",
+									"            console.log(\"total_tnx from: \" + total_tnx);",
+									"",
+									"            postman.setNextRequest(\"get_list_posting\"); // hook_payment_via_finesys",
+									"            break;",
+									"        case 4:",
+									"            pm.test(\"Got total tnx! \" + total_tnx, function () {",
+									"                pm.expect(total_tnx != null).to.be.true;",
+									"            });",
+									"            pm.environment.set(\"C-total_tnx_2\",total_tnx);",
+									"            console.log(\"total_tnx to: \" + total_tnx);",
+									"",
+									"            postman.setNextRequest(\"get_list_posting\"); // hook_payment_via_finesys",
+									"            break;",
+									"        case 6:",
+									"            console.log(\"transfer_obj: \", transfer_obj);",
+									"            old_total_tnx = pm.environment.get(\"C-total_tnx\");",
+									"            let transfer_from_account = pm.environment.get(\"C-transfer_from_account\");",
+									"            let account_uncategory_expense = pm.environment.get(\"C-account_uncategory_expense\");",
+									"            console.log(\"account_uncategory_expense: \", account_uncategory_expense);",
+									"",
+									"            pm.test(\"Total tnx increase 1\", function () {",
+									"                console.log(\"Actual: \" + total_tnx);",
+									"                console.log(\"Expected: \" + (old_total_tnx + 1));",
+									"                pm.expect(total_tnx == old_total_tnx + 1).to.be.true;",
+									"            });",
+									"            ",
+									"            for(let i in jsData.data){",
+									"                console.log(\"jsData.data[i].description: \" + jsData.data[i].description);",
+									"                if(transfer_obj.note == jsData.data[i].description && jsData.data[i].is_txn_bank){ // điều kiện map, cần check data thực tế",
+									"                    transfer_obj.tnx_id = jsData.data[i].id;",
+									"                    transfer_obj.payment_id = jsData.data[i].payment_id;",
+									"                    pm.environment.set(\"C-transfer_obj\",transfer_obj);",
+									"",
+									"                    isFound = true;",
+									"                    pm.test(\"amount of tnx correctly! \" + transfer_obj.amount, function () {",
+									"                        pm.expect(transfer_obj.amount == jsData.data[i].amount).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"txn_type must be `out`\", function () {",
+									"                        pm.expect(\"out\" == jsData.data[i].txn_type).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"account_id of tnx must be \" + transfer_from_account.id, function () {",
+									"                        pm.expect(transfer_from_account.id == jsData.data[i].account_id).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"category_id of tnx must be \" + account_uncategory_expense.id, function () {",
+									"                        pm.expect(account_uncategory_expense.id == jsData.data[i].category_id).to.be.true;",
+									"                    });",
+									"",
+									"                    let today = new Date();",
+									"                    let exp_value_at = toISOStringWithTimezone(today,0);",
+									"                    pm.test(\"value_at of tnx correctly! \" + exp_value_at, function () {",
+									"                        let act_value_at = jsData.data[i].value_at.substring(0,19);",
+									"                        console.log(\"actual value_at: \" + act_value_at);",
+									"                        pm.expect(exp_value_at.substring(0,16) == act_value_at.substring(0,16)).to.be.true; // tạm thời lấy mốc giờ +7 nên fix cứng, sau này sẽ dùng biến",
+									"                    });",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Found new() tnx\", function () {",
+									"                pm.expect(isFound).to.be.true;",
+									"            });",
+									"",
+									"            if(isFound){",
+									"                postman.setNextRequest(\"get_list_posting\");",
+									"            } else {",
+									"                postman.setNextRequest(null);",
+									"            }",
+									"            break;",
+									"        case 7:",
+									"            console.log(\"transfer_obj: \", transfer_obj);",
+									"            old_total_tnx = pm.environment.get(\"C-total_tnx_2\");",
+									"            let transfer_to_account = pm.environment.get(\"C-transfer_to_account\");",
+									"            let account_uncategory_income = pm.environment.get(\"C-account_uncategory_income\");",
+									"            console.log(\"account_uncategory_income: \", account_uncategory_income);",
+									"",
+									"            pm.test(\"Total tnx increase 1\", function () {",
+									"                console.log(\"Actual: \" + total_tnx);",
+									"                console.log(\"Expected: \" + (old_total_tnx + 1));",
+									"                pm.expect(total_tnx == old_total_tnx + 1).to.be.true;",
+									"            });",
+									"            ",
+									"            for(let i in jsData.data){",
+									"                console.log(\"jsData.data[i].description: \" + jsData.data[i].description);",
+									"                if(transfer_obj.note == jsData.data[i].description && jsData.data[i].is_txn_bank){ // điều kiện map, cần check data thực tế",
+									"                    transfer_obj.tnx_id = jsData.data[i].id;",
+									"                    transfer_obj.payment_id = jsData.data[i].payment_id;",
+									"                    pm.environment.set(\"C-transfer_obj\",transfer_obj);",
+									"",
+									"                    isFound = true;",
+									"                    pm.test(\"amount of tnx correctly! \" + transfer_obj.amount, function () {",
+									"                        pm.expect(transfer_obj.amount == jsData.data[i].amount).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"txn_type must be `in`\", function () {",
+									"                        pm.expect(\"in\" == jsData.data[i].txn_type).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"account_id of tnx must be \" + transfer_to_account.id, function () {",
+									"                        pm.expect(transfer_to_account.id == jsData.data[i].account_id).to.be.true;",
+									"                    });",
+									"",
+									"                    pm.test(\"category_id of tnx must be \" + account_uncategory_income.id, function () {",
+									"                        pm.expect(account_uncategory_income.id == jsData.data[i].category_id).to.be.true;",
+									"                    });",
+									"",
+									"                    let today = new Date();",
+									"                    let exp_value_at = toISOStringWithTimezone(today,0);",
+									"                    pm.test(\"value_at of tnx correctly! \" + exp_value_at, function () {",
+									"                        let act_value_at = jsData.data[i].value_at.substring(0,19);",
+									"                        console.log(\"actual value_at: \" + act_value_at);",
+									"                        pm.expect(exp_value_at.substring(0,16) == act_value_at.substring(0,16)).to.be.true; // tạm thời lấy mốc giờ +7 nên fix cứng, sau này sẽ dùng biến",
+									"                    });",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Found new() tnx\", function () {",
+									"                pm.expect(isFound).to.be.true;",
+									"            });",
+									"",
+									"            if(isFound){",
+									"                postman.setNextRequest(\"get_list_posting\");",
+									"            } else {",
+									"                postman.setNextRequest(null);",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list tnx, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/transaction/get-list?page=1&page_size=50&sort=&is_txn_bank=true",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"transaction",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "sort",
+									"value": ""
+								},
+								{
+									"key": "is_txn_bank",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_transaction_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"",
+									"let configs = pm.environment.get(\"C-configs\");",
+									"let tnx_id;",
+									"if(configs.test_payment_method == \"viet_qr_pro_mb\" || configs.test_payment_method == \"bank_transfer\"){ // tạm xử lý shinhan ko có phí với QR tĩnh",
+									"    tnx_id = tnx_obj.tnx_id;",
+									"} else {",
+									"    let count_check = pm.environment.get(\"C-count_check\");",
+									"    if(!count_check){",
+									"        count_check = 1;",
+									"        pm.environment.set(\"C-count_check\",count_check);",
+									"",
+									"        tnx_id = tnx_obj.tnx_payment_id;",
+									"        console.log(\"Check detail payment tnx\");",
+									"    } else {",
+									"        tnx_id = tnx_obj.tnx_fee_id;",
+									"        console.log(\"Check detail fee tnx\");",
+									"    }",
+									"}",
+									"console.log(\"view detail tnx: \" + tnx_id);",
+									"",
+									"pm.environment.set(\"C-tnx_id\",tnx_id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"function toISOStringWithTimezone(date, offset) {",
+									"    const tzOffset = offset * 60; // offset in minutes",
+									"    const localISOTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));",
+									"    const adjustedTime = new Date(localISOTime.getTime() + (tzOffset * 60000));",
+									"    const isoString = adjustedTime.toISOString().slice(0, -1); // remove the 'Z' at the end",
+									"    ",
+									"    const sign = offset >= 0 ? \"+\" : \"-\";",
+									"    const absOffset = Math.abs(offset);",
+									"    const hours = String(Math.floor(absOffset)).padStart(2, '0');",
+									"    const minutes = String(absOffset % 1 * 60).padStart(2, '0');",
+									"",
+									"    return `${isoString}${sign}${hours}:${minutes}`;",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    // let testcase = pm.environment.get(\"C-testcase\");",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"    let tnx_obj = pm.environment.get(\"C-tnx_obj\");",
+									"    let mb_bank_account = pm.environment.get(\"C-mb_bank_account\");",
+									"    let alias_obj = pm.environment.get(\"C-alias_obj\");",
+									"    let account_uncategory_income = pm.environment.get(\"C-account_uncategory_income\");",
+									"",
+									"    if(configs.test_payment_method == \"viet_qr_pro_mb\" || configs.test_payment_method == \"bank_transfer\"){",
+									"        pm.test(\"amount of tnx correctly! \" + tnx_obj.amount, function () {",
+									"            pm.expect(tnx_obj.amount == jsData.data.amount).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"txn_type must be `in`\", function () {",
+									"            pm.expect(\"in\" == jsData.data.txn_type).to.be.true;",
+									"        });",
+									"",
+									"        if(configs.test_payment_method == \"viet_qr_pro_mb\"){",
+									"            pm.test(\"account_id of tnx must be \" + mb_bank_account.account_id, function () {",
+									"                pm.expect(mb_bank_account.account_id == jsData.data.account_id).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"account_alias_id of tnx must be \" + alias_obj.alias_id, function () {",
+									"                pm.expect(alias_obj.alias_id == jsData.data.account_alias_id).to.be.true;",
+									"            });",
+									"        } else {",
+									"            pm.test(\"account_id of tnx must be \" + tnx_obj.account_id, function () {",
+									"                pm.expect(tnx_obj.account_id == jsData.data.account_id).to.be.true;",
+									"            });",
+									"        }",
+									"",
+									"        pm.test(\"category_id of tnx must be \" + account_uncategory_income.id, function () {",
+									"            pm.expect(account_uncategory_income.id == jsData.data.category_id).to.be.true;",
+									"        });",
+									"",
+									"        let today = new Date();",
+									"        let exp_value_at = toISOStringWithTimezone(today,0);",
+									"        pm.test(\"value_at of tnx correctly! \" + exp_value_at, function () {",
+									"            let act_value_at = jsData.data.value_at.substring(0,19);",
+									"            console.log(\"actual value_at: \" + act_value_at);",
+									"            pm.expect(exp_value_at.substring(0,16) == act_value_at.substring(0,16)).to.be.true; // tạm thời lấy mốc giờ +7 nên fix cứng, sau này sẽ dùng biến",
+									"        });",
+									"",
+									"        // payment_method => chỉ trả trong payment object",
+									"        // pm.test(\"payment_method of tnx is bank_transfer\", function () {",
+									"        //     pm.expect(\"bank_transfer\").to.eql(jsData.data.payment_method);",
+									"        // });",
+									"",
+									"        postman.setNextRequest(\"get_list_payment\"); // get_list_payment",
+									"    } else {",
+									"        let count_check = pm.environment.get(\"C-count_check\");",
+									"",
+									"        if(count_check == 1){",
+									"            count_check++;",
+									"            pm.test(\"amount of tnx correctly! \" + tnx_obj.amount, function () {",
+									"                pm.expect(tnx_obj.amount == jsData.data.amount).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"value_at of tnx correctly! \" + tnx_obj.value_at.substring(0,19), function () {",
+									"                let act_value_at = jsData.data.value_at.substring(0,19);",
+									"                console.log(\"actual value_at: \" + act_value_at);",
+									"                pm.expect(tnx_obj.value_at.substring(0,16) == act_value_at.substring(0,16)).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"object_type of tnx correctly! \" + tnx_obj.object_type, function () {",
+									"                pm.expect(tnx_obj.object_type).to.eql(jsData.data.object_type);",
+									"            });",
+									"",
+									"            pm.test(\"object_id of tnx correctly! \" + tnx_obj.object_id, function () {",
+									"                pm.expect(tnx_obj.object_id).to.eql(jsData.data.object_id);",
+									"            });",
+									"",
+									"            pm.environment.set(\"C-count_check\",count_check);",
+									"            postman.setNextRequest(\"get_transaction_detail\"); // get_transaction_detail",
+									"        } else {",
+									"            pm.environment.unset(\"C-count_check\");",
+									"            pm.test(\"amount of tnx correctly! \" + tnx_obj.base_fee_amount, function () {",
+									"                pm.expect(tnx_obj.base_fee_amount == jsData.data.amount).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"value_at of tnx correctly! \" + tnx_obj.value_at.substring(0,19), function () {",
+									"                let act_value_at = jsData.data.value_at.substring(0,19);",
+									"                console.log(\"actual value_at: \" + act_value_at);",
+									"                pm.expect(tnx_obj.value_at.substring(0,16) == act_value_at.substring(0,16)).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"object_type of tnx correctly! \" + tnx_obj.object_type, function () {",
+									"                pm.expect(\"transaction\").to.eql(jsData.data.object_type);",
+									"            });",
+									"",
+									"            pm.test(\"object_id of tnx correctly! \" + tnx_obj.object_id, function () {",
+									"                pm.expect(tnx_obj.tnx_payment_id).to.eql(jsData.data.object_id);",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"get_list_payment\"); // get_list_payment",
+									"        }",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get internal contact detail, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/transaction/get-one/{{C-tnx_id}}",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"transaction",
+								"get-one",
+								"{{C-tnx_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.request.headers.add({",
+							" key: \"authorization\",",
+							" value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"});",
+							"",
+							"pm.request.headers.add({",
+							" key: \"Content-Type\",",
+							" value: \"application/json\"",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "posting",
+			"item": [
+				{
+					"name": "get_list_posting",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}",
+									"",
+									"if(testcase == 2 || testcase == 6){",
+									"    business_id = pm.environment.get(\"C-business_id_1\");",
+									"    userToken = pm.environment.get(\"C-userToken_1\");",
+									"} else {",
+									"    business_id = pm.environment.get(\"C-business_id_2\");",
+									"    userToken = pm.environment.get(\"C-userToken_2\");",
+									"}",
+									"pm.environment.set(\"C-business_id\",business_id);",
+									"pm.environment.set(\"C-userToken\",userToken);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"/**",
+									" * object_type: transaction, invoice",
+									" * object_id => id respective with object_type (tnx_id, invoice_id)",
+									" * object_id_ref => use for invoice with product/item (product_id, item_id)",
+									" * is_credit",
+									" * created_at",
+									" * value_at",
+									" */",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if (pm.response.code == 200) {",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = 1;",
+									"    let total_records = 0;",
+									"    try {",
+									"        total_pages = jsData.meta.total_pages;",
+									"        total_records = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"currently, this branch with null data\");",
+									"    }",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_posting, old_list_posting;",
+									"    switch (testcase) {",
+									"        case 2:",
+									"            list_posting = pm.environment.get(\"C-list_posting\");",
+									"            if (!list_posting) {",
+									"                list_posting = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            list_posting = pm.environment.get(\"C-list_posting_2\");",
+									"            if (!list_posting) {",
+									"                list_posting = [];",
+									"            }",
+									"            break;",
+									"        case 6:",
+									"            old_list_posting = pm.environment.get(\"C-old_list_posting\");",
+									"            if (!old_list_posting) {",
+									"                old_list_posting = pm.environment.get(\"C-list_posting\");",
+									"                pm.environment.unset(\"C-list_posting\");",
+									"                pm.environment.set(\"C-old_list_posting\", old_list_posting);",
+									"            }",
+									"",
+									"            list_posting = pm.environment.get(\"C-list_posting\");",
+									"            if (!list_posting) {",
+									"                list_posting = [];",
+									"            }",
+									"            break;",
+									"        case 7:",
+									"            old_list_posting = pm.environment.get(\"C-old_list_posting_2\");",
+									"            if (!old_list_posting) {",
+									"                old_list_posting = pm.environment.get(\"C-list_posting_2\");",
+									"                pm.environment.unset(\"C-list_posting_2\");",
+									"                pm.environment.set(\"C-old_list_posting_2\", old_list_posting);",
+									"            }",
+									"",
+									"            list_posting = pm.environment.get(\"C-list_posting_2\");",
+									"            if (!list_posting) {",
+									"                list_posting = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for (let item in jsData.data) {",
+									"        list_posting[list_posting.length] = {",
+									"            \"posting_id\": jsData.data[item].id,",
+									"            \"account_id\": jsData.data[item].account_id,",
+									"            \"amount\": jsData.data[item].amount,",
+									"            \"branch_id\": jsData.data[item].branch_id,",
+									"            \"created_at\": jsData.data[item].created_at,",
+									"            \"currency\": jsData.data[item].currency,",
+									"            \"deleted_at\": jsData.data[item].deleted_at,",
+									"            \"is_credit\": jsData.data[item].is_credit,",
+									"            \"is_final_status\": jsData.data[item].is_final_status,",
+									"            \"object_id_ref\": jsData.data[item].object_id_ref,",
+									"            \"object_id\": jsData.data[item].object_id,",
+									"            \"object_type\": jsData.data[item].object_type,",
+									"            // \"value_at\":jsData.data[item].value_at,",
+									"            \"short_desc\": jsData.data[item].short_desc",
+									"        }",
+									"    }",
+									"",
+									"    if (testcase == 2 || testcase == 6) {",
+									"        pm.environment.set(\"C-list_posting\", list_posting);",
+									"    } else {",
+									"        pm.environment.set(\"C-list_posting_2\", list_posting);",
+									"    }",
+									"",
+									"    let configs = pm.environment.get(\"C-configs\");",
+									"    if (page >= total_pages || page >= configs.limit_page) {",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        let transfer_obj = pm.environment.get(\"C-transfer_obj\");",
+									"        let old_total_records;",
+									"        let count = 0;",
+									"        let foundAll = false;",
+									"        switch (testcase) {",
+									"            case 2:",
+									"                pm.test(\"Got all posting! \" + list_posting.length, function () {",
+									"                    pm.expect(list_posting.length > 0).to.be.true;",
+									"                });",
+									"                pm.environment.set(\"C-total_records\", total_records);",
+									"                console.log(\"total posting from: \" + total_records);",
+									"",
+									"                testcase++;",
+									"                pm.environment.set(\"C-testcase\", testcase);",
+									"",
+									"                postman.setNextRequest(\"login\"); // login",
+									"                break;",
+									"            case 4:",
+									"                pm.test(\"Got all posting! \" + list_posting.length, function () {",
+									"                    pm.expect(list_posting.length > 0).to.be.true;",
+									"                });",
+									"                pm.environment.set(\"C-total_records_2\", total_records);",
+									"                console.log(\"total posting to: \" + total_records);",
+									"",
+									"                testcase++;",
+									"                pm.environment.set(\"C-testcase\", testcase);",
+									"",
+									"                postman.setNextRequest(\"verify_bank_account\"); // verify_bank_account",
+									"                break;",
+									"            case 6:",
+									"                old_total_records = pm.environment.get(\"C-total_records\");",
+									"                let account_uncategory_expense = pm.environment.get(\"C-account_uncategory_expense\");",
+									"                let transfer_from_account = pm.environment.get(\"C-transfer_from_account\");",
+									"",
+									"                pm.test(\"Have 2 new records\", function () {",
+									"                    console.log(\"old: \" + old_total_records);",
+									"                    console.log(\"new: \" + total_records);",
+									"                    pm.expect(total_records == old_total_records + 2).to.be.true;",
+									"                });",
+									"",
+									"                for (let i in list_posting) {",
+									"                    if (list_posting[i].object_type == \"transaction\" && list_posting[i].object_id == transfer_obj.tnx_id) {",
+									"                        // console.log(\"list_posting[i]: \", list_posting[i]);",
+									"                        if (!list_posting[i].is_credit) {",
+									"                            count++;",
+									"                            pm.test(\"Found account_uncategory_expense for debit\", function () {",
+									"                                pm.expect(list_posting[i].account_id == account_uncategory_expense.id).to.be.true;",
+									"                            });",
+									"",
+									"                            pm.test(\"--- amount correctly \" + transfer_obj.amount, function () {",
+									"                                console.log(\"actual: \" + list_posting[i].amount);",
+									"                                pm.expect(list_posting[i].amount == transfer_obj.amount).to.be.true;",
+									"                            });",
+									"                        } else {",
+									"                            count++;",
+									"                            pm.test(\"Found account_id(shinhan_bank_account) for credit\", function () {",
+									"                                pm.expect(list_posting[i].account_id == transfer_from_account.id).to.be.true;",
+									"                            });",
+									"",
+									"                            pm.test(\"--- amount correctly \" + transfer_obj.amount, function () {",
+									"                                console.log(\"actual: \" + list_posting[i].amount);",
+									"                                pm.expect(list_posting[i].amount.toFixed(2) == transfer_obj.amount.toFixed(2)).to.be.true;",
+									"                            });",
+									"                        }",
+									"",
+									"                        if (count == 2) {",
+									"                            foundAll = true;",
+									"                            break;",
+									"                        }",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found all posting\", function () {",
+									"                    pm.expect(foundAll).to.be.true;",
+									"                });",
+									"",
+									"                testcase++;",
+									"                pm.environment.set(\"C-testcase\",testcase);",
+									"                postman.setNextRequest(\"get_list_shinhan_va\"); // ",
+									"                break;",
+									"            case 7:",
+									"                old_total_records = pm.environment.get(\"C-total_records_2\");",
+									"                let account_uncategory_income = pm.environment.get(\"C-account_uncategory_income\");",
+									"                let transfer_to_account = pm.environment.get(\"C-transfer_to_account\");",
+									"",
+									"                pm.test(\"Have 2 new records\", function () {",
+									"                    console.log(\"old: \" + old_total_records);",
+									"                    console.log(\"new: \" + total_records);",
+									"                    pm.expect(total_records == old_total_records + 2).to.be.true;",
+									"                });",
+									"",
+									"                for (let i in list_posting) {",
+									"                    if (list_posting[i].object_type == \"transaction\" && list_posting[i].object_id == transfer_obj.tnx_id) {",
+									"                        // console.log(\"list_posting[i]: \", list_posting[i]);",
+									"                        if (list_posting[i].is_credit) {",
+									"                            count++;",
+									"                            pm.test(\"Found account_uncategory_income for credit\", function () {",
+									"                                pm.expect(list_posting[i].account_id == account_uncategory_income.id).to.be.true;",
+									"                            });",
+									"",
+									"                            pm.test(\"--- amount correctly \" + transfer_obj.amount, function () {",
+									"                                console.log(\"actual: \" + list_posting[i].amount);",
+									"                                pm.expect(list_posting[i].amount == transfer_obj.amount).to.be.true;",
+									"                            });",
+									"                        } else {",
+									"                            count++;",
+									"                            pm.test(\"Found account_id(shinhan_bank_account) for account_debit\", function () {",
+									"                                pm.expect(list_posting[i].account_id == transfer_to_account.id).to.be.true;",
+									"                            });",
+									"",
+									"                            pm.test(\"--- amount correctly \" + transfer_obj.amount, function () {",
+									"                                console.log(\"actual: \" + list_posting[i].amount);",
+									"                                pm.expect(list_posting[i].amount.toFixed(2) == transfer_obj.amount.toFixed(2)).to.be.true;",
+									"                            });",
+									"                        }",
+									"",
+									"                        if (count == 2) {",
+									"                            foundAll = true;",
+									"                            break;",
+									"                        }",
+									"                    }",
+									"                }",
+									"",
+									"                pm.test(\"Found all posting\", function () {",
+									"                    pm.expect(foundAll).to.be.true;",
+									"                });",
+									"",
+									"                console.log(\"-------- End Testsuite 127 --------\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\", page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more posting\");",
+									"        postman.setNextRequest(\"get_list_posting\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list posting, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-ledger/api/v1/posting/get-list?page={{C-page}}&page_size={{C-page_size}}&search=&sort=",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-ledger",
+								"api",
+								"v1",
+								"posting",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.request.headers.add({",
+							" key: \"authorization\",",
+							" value: \"Bearer \" + pm.environment.get(\"C-userToken\")",
+							"});",
+							"",
+							"pm.request.headers.add({",
+							" key: \"Content-Type\",",
+							" value: \"application/json\"",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "transfer",
+			"item": [
+				{
+					"name": "verify_bank_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let business_id = pm.environment.get(\"C-business_id_1\");",
+									"let userToken = pm.environment.get(\"C-userToken_1\");",
+									"",
+									"let transfer_to_account = pm.environment.get(\"C-transfer_to_account\");",
+									"let to_account_number = transfer_to_account.account_number;",
+									"",
+									"pm.environment.set(\"C-to_account_number\",to_account_number);",
+									"pm.environment.set(\"C-business_id\",business_id);",
+									"pm.environment.set(\"C-userToken\",userToken);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){ // handle lỗi để bypass sang API kế",
+									"    console.log(\"debug: \", jsData);",
+									"",
+									"    postman.setNextRequest(\"request_external_transfer\"); //request_external_transfer",
+									"} else {",
+									"    console.log(\"Can't verify bank account, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{finone_url}}/fo-banking/api/v1/beneficiary-account/verify?account_number={{C-to_account_number}}&bank_id=616",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-banking",
+								"api",
+								"v1",
+								"beneficiary-account",
+								"verify"
+							],
+							"query": [
+								{
+									"key": "account_number",
+									"value": "{{C-to_account_number}}",
+									"description": "INFP000001, INFP00000101"
+								},
+								{
+									"key": "bank_id",
+									"value": "616"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "request_external_transfer",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let list_func = eval(pm.environment.get(\"list_common_func\"));",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let transfer_from_account = pm.environment.get(\"C-transfer_from_account\");",
+									"let transfer_to_account = pm.environment.get(\"C-transfer_to_account\");",
+									"",
+									"let payload = {",
+									"    \"account_id\": transfer_from_account.external_account_id,",
+									"    \"amount\": list_func.getRandomInt(10,50)*1000,",
+									"    \"beneficiary_bank_id\": \"SHBVN\", // 616, SHBVN",
+									"    \"beneficiary_account_name\": transfer_to_account.account_name,",
+									"    \"beneficiary_account_number\": transfer_to_account.account_number,",
+									"    \"currency_code\": \"VND\",",
+									"    \"note\": transfer_from_account.account_name_custom + \" transfer to \" + transfer_to_account.account_name_custom, // + \" transfer to other tanent va\"",
+									"    \"is_internal_transfer\": false",
+									"}",
+									"",
+									"console.log(\"payload: \", payload);",
+									"",
+									"let business_id = pm.environment.get(\"C-business_id_1\");",
+									"let userToken = pm.environment.get(\"C-userToken_1\");",
+									"pm.environment.set(\"C-business_id\",business_id);",
+									"pm.environment.set(\"C-userToken\",userToken);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-transfer_obj\",payload);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    console.log(\"debug: \", jsData);",
+									"    let transfer_obj = pm.environment.get(\"C-transfer_obj\");",
+									"    transfer_obj.transfer_request_id = jsData.data.id;",
+									"",
+									"    pm.test(\"Got transfer request id\", function () {",
+									"        pm.expect(transfer_obj.transfer_request_id != null).to.be.true;",
+									"    });",
+									"",
+									"    pm.environment.set(\"C-transfer_obj\",transfer_obj);",
+									"",
+									"    postman.setNextRequest(\"get_list_email_for_an_account\"); // get_list_email_for_an_account",
+									"} else {",
+									"    console.log(\"Can't request external transfer, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-banking/api/v1/cash-out/request",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-banking",
+								"api",
+								"v1",
+								"cash-out",
+								"request"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "confirm_external_transfer",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let transfer_obj = pm.environment.get(\"C-transfer_obj\");",
+									"let otp = pm.environment.get(\"C-otp\");",
+									"",
+									"let payload = {",
+									"    \"id\": transfer_obj.transfer_request_id,",
+									"    \"pass_code\": otp",
+									"}",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    console.log(\"debug: \", jsData);",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    let transfer_obj = pm.environment.get(\"C-transfer_obj\");",
+									"    try {",
+									"        transfer_obj.transaction_number = jsData.data.transaction_number;",
+									"        transfer_obj.provider_transaction_number = jsData.data.provider_transaction_number;",
+									"        transfer_obj.provider_payment_number = jsData.data.provider_payment_number;",
+									"        transfer_obj.otp_status = jsData.data.otp_status;",
+									"        transfer_obj.status = jsData.data.status;",
+									"    } catch {",
+									"        console.log(\"Cant' get tnx data: \", jsData);",
+									"    }",
+									"",
+									"    pm.test(\"OTP success\", function () {",
+									"        pm.expect(transfer_obj.otp_status).to.eql(\"success\");",
+									"    });",
+									"",
+									"    pm.test(\"Transfer success\", function () {",
+									"        pm.expect(transfer_obj.status).to.eql(\"processing\");",
+									"    });",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"get_list_shinhan_va\"); // get_list_shinhan_va",
+									"} else {",
+									"    console.log(\"Can't confirm external transfer, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "Bearer {{C-userToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{finone_url}}/fo-banking/api/v1/cash-out/verify",
+							"host": [
+								"{{finone_url}}"
+							],
+							"path": [
+								"fo-banking",
+								"api",
+								"v1",
+								"cash-out",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "email-mailinator",
+			"item": [
+				{
+					"name": "get_list_email_for_an_account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.set(\"inbox\",\"chaulth\");",
+									"pm.environment.set(\"token\",\"4675ee5fca294748ab0b0d724701bb87\");",
+									"pm.environment.set(\"domain\",\"finanteam.testinator.com\");",
+									"setTimeout(function(){}, 10000); // should timeout 10s => need apply best practice timeout",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let email_obj = null;",
+									"    for(let i in jsData.msgs){",
+									"        if(jsData.msgs[i].seconds_ago <= 10){ // cho phép độ trễ 10s",
+									"            email_obj = jsData.msgs[i];",
+									"            break;",
+									"        } ",
+									"    }",
+									"",
+									"    pm.test(\"Got email_obj\", function () {",
+									"        pm.expect(email_obj != null).to.be.true;",
+									"    });",
+									"",
+									"    pm.environment.set(\"C-email_obj\",email_obj);",
+									"",
+									"    if(email_obj != null){",
+									"        postman.setNextRequest(\"get_email_detail\"); // get_email_detail",
+									"    } else {",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list mailinator, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.mailinator.com/api/v2/domains/private/inboxes/{{inbox}}?token={{token}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"mailinator",
+								"com"
+							],
+							"path": [
+								"api",
+								"v2",
+								"domains",
+								"private",
+								"inboxes",
+								"{{inbox}}"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "{{token}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_email_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let email_obj = pm.environment.get(\"C-email_obj\");",
+									"pm.environment.set(\"msg_id\",email_obj.id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// var jsdom = require('jsdom');",
+									"// global.document = jsdom();",
+									"",
+									"// function parseHTML(markup) {",
+									"//   var doc = document.createElement('html');",
+									"//   doc.innerHTML = markup;",
+									"//   return doc;",
+									"// }",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let new_mess = null;",
+									"    try{",
+									"        let message_body = jsData.headers.subject;",
+									"        new_mess = message_body.slice(-6);",
+									"        console.log(\"new_mess: \" + new_mess);",
+									"    } catch {",
+									"        console.log(\"Can't get OTP\");",
+									"    }",
+									"",
+									"    pm.test(\"Got OTP \" + new_mess, function () {",
+									"        pm.expect(new_mess != null).to.be.true;",
+									"    });",
+									"",
+									"    pm.environment.set(\"C-otp\",new_mess);",
+									"",
+									"    postman.setNextRequest(\"confirm_external_transfer\");",
+									"} else {",
+									"    console.log(\"Can't get mailinator, end test\",jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://mailinator.com/api/v2/domains/{{domain}}/inboxes/{{inbox}}/messages/{{msg_id}}?token={{token}}",
+							"protocol": "https",
+							"host": [
+								"mailinator",
+								"com"
+							],
+							"path": [
+								"api",
+								"v2",
+								"domains",
+								"{{domain}}",
+								"inboxes",
+								"{{inbox}}",
+								"messages",
+								"{{msg_id}}"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "{{token}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let configs = {",
+					"    \"limit_page\":2,",
+					"    \"is_the_same_branch\":true",
+					"}",
+					"",
+					"pm.environment.set(\"C-configs\",configs);",
+					"// console.log(\"configs: \",configs);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// ====================================== parser cURL",
+					"function parseCURL(request_api){",
+					"    let curl = \"\";",
+					"    switch(request_api.method){",
+					"        case \"PUT\":",
+					"            curl = \"curl --location --request PUT \";",
+					"            break;",
+					"        case \"PATCH\":",
+					"            curl = \"curl --location --request PATCH \";",
+					"            break;",
+					"        case \"DELETE\":",
+					"            curl = \"curl --location --request DELETE \";",
+					"            break;",
+					"        default:",
+					"            curl = \"curl --location \";",
+					"            break;",
+					"    }",
+					"    curl += \"'\" + request_api.url.protocol + \"://\"",
+					"",
+					"    // host",
+					"    for(let i in request_api.url.host){",
+					"        if(i >= request_api.url.host.length - 1){",
+					"            curl += request_api.url.host[i] + \"/\";",
+					"        } else {",
+					"            curl += request_api.url.host[i] + \".\";",
+					"        }",
+					"    }",
+					"    // path",
+					"    for(let i in request_api.url.path){",
+					"        if(i >= request_api.url.path.length - 1){",
+					"            curl += request_api.url.path[i];",
+					"        } else {",
+					"            curl += request_api.url.path[i] + \"/\";",
+					"        }",
+					"    }",
+					"    // query (if have)",
+					"    if(\"query\" in request_api.url){",
+					"        if(request_api.url.query.length > 0){",
+					"            curl += \"?\";",
+					"            for(let i in request_api.url.query){",
+					"                if(i >= request_api.url.query.length - 1){",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"' \";",
+					"                } else {",
+					"                    curl += request_api.url.query[i].key + \"=\" + request_api.url.query[i].value + \"&\";",
+					"                }",
+					"            }",
+					"        } else {",
+					"            curl += \"' \";",
+					"        }",
+					"    } else {",
+					"        curl += \"' \";",
+					"    }",
+					"    // header",
+					"    for(let i in request_api.header){",
+					"        if(i >= request_api.header.length - 1){",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"'\";",
+					"        } else {",
+					"            curl += \"--header '\" + request_api.header[i].key + \": \" + request_api.header[i].value + \"' \";",
+					"        }",
+					"    }",
+					"    switch(request_api.method){",
+					"        case \"POST\":",
+					"            curl += \" --data '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        case \"PUT\": case \"PATCH\":",
+					"            curl += \" --data-raw '\" + request_api.body.raw + \"'\"",
+					"            break;",
+					"        default:",
+					"            break;",
+					"    }",
+					"    console.log(curl);",
+					"    return curl;",
+					"}",
+					"const request_api = pm.request.toJSON();",
+					"// console.log(\"request_api\",request_api);",
+					"parseCURL(request_api);"
+				]
+			}
+		}
+	]
+}
