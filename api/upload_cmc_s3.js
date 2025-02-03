@@ -14,8 +14,8 @@ const apiPath = "auto-test-api-output/" + currentDate + "/";
 const s3Client = new S3Client({
     region: "hcm-1",
     credentials: {
-        accessKeyId: "8TWHBVT15TT09WDDMQE9",
-        secretAccessKey: "VYakCZxVZpsOmkjDqAzZkF58kwDDoDTpHovvYwDj"
+        accessKeyId:"",
+        secretAccessKey: ""
     },
     endpoint: "https://s3.hcm-1.cloud.cmctelecom.vn"
 });

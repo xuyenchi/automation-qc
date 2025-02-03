@@ -8,8 +8,8 @@ let currentDate = today.getFullYear()+'-'+String((today.getMonth()+1)).padStart(
 const apiPath = "auto-test-api-output/" + currentDate + "/";
 
 const s3 = new AWS.S3({
-    accessKeyId:"AKIA5R4DTE6KGNNHOHVJ",
-    secretAccessKey:"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",
+    accessKeyId:"",
+    secretAccessKey:"",
     region: process.env.AWS_REGION
 })
 
